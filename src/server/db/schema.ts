@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { index, pgTableCreator, primaryKey } from "drizzle-orm/pg-core";
+import { index, pgTableCreator, primaryKey, unique } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 
 /**
@@ -105,4 +105,36 @@ export const verificationTokens = createTable(
     expires: d.timestamp({ mode: "date", withTimezone: true }).notNull(),
   }),
   (t) => [primaryKey({ columns: [t.identifier, t.token] })]
+);
+
+export const cells = createTable(
+  "cell",
+  (d) => ({
+    id: d.uuid().primaryKey().defaultRandom(),
+    rowIndex: d.integer().notNull(),
+    colIndex: d.integer().notNull(),
+    content: d.text(),
+    createdAt: d.timestamp({ withTimezone: true }).defaultNow(),
+    updatedAt: d.timestamp({ withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
+  }),
+  (t) => [
+    index("cell_position_idx").on(t.rowIndex, t.colIndex),
+    unique("cell_unique_position").on(t.rowIndex, t.colIndex),
+  ]
+);
+
+export const eventQueue = createTable(
+  "event_queue",
+  (d) => ({
+    id: d.uuid().primaryKey().defaultRandom(),
+    eventType: d.varchar({ length: 100 }).notNull(),
+    payload: d.jsonb().notNull(),
+    status: d.varchar({ length: 20 }).default('pending'),
+    createdAt: d.timestamp({ withTimezone: true }).defaultNow(),
+    processedAt: d.timestamp({ withTimezone: true }),
+  }),
+  (t) => [
+    index("event_queue_status_idx").on(t.status),
+    index("event_queue_created_idx").on(t.createdAt),
+  ]
 );
