@@ -13,12 +13,13 @@ The Gemini API offers text embedding models to generate embeddings for words, ph
 Install required dependencies:
 
 ```bash
-npm install @google/genai
+pnpm install @google/genai
 ```
 
 For similarity calculations:
+
 ```bash
-npm install compute-cosine-similarity
+pnpm install compute-cosine-similarity
 ```
 
 ### Basic Usage: Generate Single Embedding
@@ -30,12 +31,12 @@ async function generateEmbedding() {
   const ai = new GoogleGenAI({});
 
   const response = await ai.models.embedContent({
-    model: 'gemini-embedding-001',
-    contents: 'What is the meaning of life?',
+    model: "gemini-embedding-001",
+    contents: "What is the meaning of life?",
   });
 
-  console.log('Embedding:', response.embeddings);
-  console.log('Dimension:', response.embeddings[0].values.length);
+  console.log("Embedding:", response.embeddings);
+  console.log("Dimension:", response.embeddings[0].values.length);
 }
 
 generateEmbedding();
@@ -52,18 +53,18 @@ async function generateBatchEmbeddings() {
   const ai = new GoogleGenAI({});
 
   const texts = [
-    'What is the meaning of life?',
-    'What is the purpose of existence?',
-    'How do I bake a cake?'
+    "What is the meaning of life?",
+    "What is the purpose of existence?",
+    "How do I bake a cake?",
   ];
 
   const response = await ai.models.embedContent({
-    model: 'gemini-embedding-001',
+    model: "gemini-embedding-001",
     contents: texts,
   });
 
   console.log(`Generated ${response.embeddings.length} embeddings`);
-  
+
   response.embeddings.forEach((embedding, index) => {
     console.log(`Text ${index + 1}: ${texts[index]}`);
     console.log(`Embedding length: ${embedding.values.length}`);
@@ -79,7 +80,7 @@ generateBatchEmbeddings();
 ```typescript
 interface EmbeddingResponse {
   embeddings: Array<{
-    values: number[];  // The embedding vector
+    values: number[]; // The embedding vector
   }>;
 }
 
@@ -94,16 +95,16 @@ Specifying the right task type helps optimize embeddings for intended relationsh
 
 ### Supported Task Types
 
-| Task Type | Description | Examples |
-|-----------|-------------|----------|
-| `SEMANTIC_SIMILARITY` | Assess text similarity | Recommendation systems, duplicate detection |
-| `CLASSIFICATION` | Classify texts by preset labels | Sentiment analysis, spam detection |
-| `CLUSTERING` | Cluster texts by similarities | Document organization, market research, anomaly detection |
-| `RETRIEVAL_DOCUMENT` | Document search optimization | Indexing articles, books, or web pages |
-| `RETRIEVAL_QUERY` | General search queries | Custom search (use with RETRIEVAL_DOCUMENT) |
+| Task Type              | Description                     | Examples                                                  |
+| ---------------------- | ------------------------------- | --------------------------------------------------------- |
+| `SEMANTIC_SIMILARITY`  | Assess text similarity          | Recommendation systems, duplicate detection               |
+| `CLASSIFICATION`       | Classify texts by preset labels | Sentiment analysis, spam detection                        |
+| `CLUSTERING`           | Cluster texts by similarities   | Document organization, market research, anomaly detection |
+| `RETRIEVAL_DOCUMENT`   | Document search optimization    | Indexing articles, books, or web pages                    |
+| `RETRIEVAL_QUERY`      | General search queries          | Custom search (use with RETRIEVAL_DOCUMENT)               |
 | `CODE_RETRIEVAL_QUERY` | Code search by natural language | Code suggestions and search (use with RETRIEVAL_DOCUMENT) |
-| `QUESTION_ANSWERING` | Q&A system questions | Chatbox (use with RETRIEVAL_DOCUMENT) |
-| `FACT_VERIFICATION` | Verify statements | Automated fact-checking (use with RETRIEVAL_DOCUMENT) |
+| `QUESTION_ANSWERING`   | Q&A system questions            | Chatbox (use with RETRIEVAL_DOCUMENT)                     |
+| `FACT_VERIFICATION`    | Verify statements               | Automated fact-checking (use with RETRIEVAL_DOCUMENT)     |
 
 ### Example: Semantic Similarity
 
@@ -121,21 +122,23 @@ async function compareTextSimilarity() {
   ];
 
   const response = await ai.models.embedContent({
-    model: 'gemini-embedding-001',
+    model: "gemini-embedding-001",
     contents: texts,
-    taskType: 'SEMANTIC_SIMILARITY'
+    taskType: "SEMANTIC_SIMILARITY",
   });
 
-  const embeddings = response.embeddings.map(e => e.values);
+  const embeddings = response.embeddings.map((e) => e.values);
 
-  console.log('\nSemantic Similarity Matrix:\n');
-  
+  console.log("\nSemantic Similarity Matrix:\n");
+
   for (let i = 0; i < texts.length; i++) {
     for (let j = i + 1; j < texts.length; j++) {
       const text1 = texts[i];
       const text2 = texts[j];
       const similarity = cosineSimilarity(embeddings[i], embeddings[j]);
-      console.log(`"${text1}"\nvs\n"${text2}"\nSimilarity: ${similarity.toFixed(4)}\n`);
+      console.log(
+        `"${text1}"\nvs\n"${text2}"\nSimilarity: ${similarity.toFixed(4)}\n`,
+      );
     }
   }
 }
@@ -187,8 +190,8 @@ async function generateWithCustomDimension() {
   const ai = new GoogleGenAI({});
 
   const response = await ai.models.embedContent({
-    model: 'gemini-embedding-001',
-    contents: 'What is the meaning of life?',
+    model: "gemini-embedding-001",
+    contents: "What is the meaning of life?",
     outputDimensionality: 768,
   });
 
@@ -200,6 +203,7 @@ generateWithCustomDimension();
 ```
 
 **Output:**
+
 ```
 Length of embedding: 768
 ```
@@ -211,18 +215,18 @@ The 3072-dimension embedding is normalized by default. For other dimensions (768
 ```typescript
 function normalizeEmbedding(embedding: number[]): number[] {
   const magnitude = Math.sqrt(
-    embedding.reduce((sum, val) => sum + val * val, 0)
+    embedding.reduce((sum, val) => sum + val * val, 0),
   );
-  
-  return embedding.map(val => val / magnitude);
+
+  return embedding.map((val) => val / magnitude);
 }
 
 async function generateNormalizedEmbedding() {
   const ai = new GoogleGenAI({});
 
   const response = await ai.models.embedContent({
-    model: 'gemini-embedding-001',
-    contents: 'What is the meaning of life?',
+    model: "gemini-embedding-001",
+    contents: "What is the meaning of life?",
     outputDimensionality: 768,
   });
 
@@ -230,9 +234,7 @@ async function generateNormalizedEmbedding() {
   const normalized = normalizeEmbedding(embeddingValues);
 
   // Verify normalization
-  const norm = Math.sqrt(
-    normalized.reduce((sum, val) => sum + val * val, 0)
-  );
+  const norm = Math.sqrt(normalized.reduce((sum, val) => sum + val * val, 0));
 
   console.log(`Normalized embedding length: ${normalized.length}`);
   console.log(`Norm of normalized embedding: ${norm.toFixed(6)}`); // Should be 1.000000
@@ -244,13 +246,13 @@ generateNormalizedEmbedding();
 ### MTEB Benchmark Scores by Dimension
 
 | MRL Dimension | MTEB Score |
-|---------------|------------|
-| 2048 | 68.16 |
-| 1536 | 68.17 |
-| 768 | 67.99 |
-| 512 | 67.55 |
-| 256 | 66.19 |
-| 128 | 63.31 |
+| ------------- | ---------- |
+| 2048          | 68.16      |
+| 1536          | 68.17      |
+| 768           | 67.99      |
+| 512           | 67.55      |
+| 256           | 66.19      |
+| 128           | 63.31      |
 
 **Key Insight**: Performance is not strictly tied to dimension size. Lower dimensions achieve scores comparable to higher dimensions.
 
@@ -279,42 +281,45 @@ class SemanticSearch {
   async indexDocuments(documents: Array<{ id: string; text: string }>) {
     console.log(`Indexing ${documents.length} documents...`);
 
-    const texts = documents.map(doc => doc.text);
-    
+    const texts = documents.map((doc) => doc.text);
+
     const response = await this.ai.models.embedContent({
-      model: 'gemini-embedding-001',
+      model: "gemini-embedding-001",
       contents: texts,
-      taskType: 'RETRIEVAL_DOCUMENT',
-      outputDimensionality: 768
+      taskType: "RETRIEVAL_DOCUMENT",
+      outputDimensionality: 768,
     });
 
     this.documents = documents.map((doc, index) => ({
       ...doc,
-      embedding: normalizeEmbedding(response.embeddings[index].values)
+      embedding: normalizeEmbedding(response.embeddings[index].values),
     }));
 
-    console.log('✓ Indexing complete');
+    console.log("✓ Indexing complete");
   }
 
-  async search(query: string, topK: number = 5): Promise<Array<{ id: string; text: string; score: number }>> {
+  async search(
+    query: string,
+    topK: number = 5,
+  ): Promise<Array<{ id: string; text: string; score: number }>> {
     console.log(`Searching for: "${query}"`);
 
     // Generate query embedding
     const response = await this.ai.models.embedContent({
-      model: 'gemini-embedding-001',
+      model: "gemini-embedding-001",
       contents: query,
-      taskType: 'RETRIEVAL_QUERY',
-      outputDimensionality: 768
+      taskType: "RETRIEVAL_QUERY",
+      outputDimensionality: 768,
     });
 
     const queryEmbedding = normalizeEmbedding(response.embeddings[0].values);
 
     // Calculate similarities
     const results = this.documents
-      .map(doc => ({
+      .map((doc) => ({
         id: doc.id,
         text: doc.text,
-        score: cosineSimilarity(queryEmbedding, doc.embedding!)
+        score: cosineSimilarity(queryEmbedding, doc.embedding!),
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, topK);
@@ -325,9 +330,9 @@ class SemanticSearch {
 
 function normalizeEmbedding(embedding: number[]): number[] {
   const magnitude = Math.sqrt(
-    embedding.reduce((sum, val) => sum + val * val, 0)
+    embedding.reduce((sum, val) => sum + val * val, 0),
   );
-  return embedding.map(val => val / magnitude);
+  return embedding.map((val) => val / magnitude);
 }
 
 // Usage
@@ -335,20 +340,28 @@ async function runSemanticSearch() {
   const search = new SemanticSearch();
 
   const documents = [
-    { id: '1', text: 'Python is a high-level programming language.' },
-    { id: '2', text: 'Machine learning is a subset of artificial intelligence.' },
-    { id: '3', text: 'Neural networks are inspired by the human brain.' },
-    { id: '4', text: 'TypeScript is a typed superset of JavaScript.' },
-    { id: '5', text: 'React is a JavaScript library for building user interfaces.' }
+    { id: "1", text: "Python is a high-level programming language." },
+    {
+      id: "2",
+      text: "Machine learning is a subset of artificial intelligence.",
+    },
+    { id: "3", text: "Neural networks are inspired by the human brain." },
+    { id: "4", text: "TypeScript is a typed superset of JavaScript." },
+    {
+      id: "5",
+      text: "React is a JavaScript library for building user interfaces.",
+    },
   ];
 
   await search.indexDocuments(documents);
 
-  const results = await search.search('What are programming languages?', 3);
-  
-  console.log('\nTop Results:');
+  const results = await search.search("What are programming languages?", 3);
+
+  console.log("\nTop Results:");
   results.forEach((result, index) => {
-    console.log(`${index + 1}. [Score: ${result.score.toFixed(4)}] ${result.text}`);
+    console.log(
+      `${index + 1}. [Score: ${result.score.toFixed(4)}] ${result.text}`,
+    );
   });
 }
 
@@ -375,27 +388,29 @@ class TextClassifier {
     this.ai = new GoogleGenAI({});
   }
 
-  async trainCategories(categories: Array<{ name: string; examples: string[] }>) {
-    console.log('Training categories...');
+  async trainCategories(
+    categories: Array<{ name: string; examples: string[] }>,
+  ) {
+    console.log("Training categories...");
 
     for (const category of categories) {
       // Generate embeddings for examples and average them
       const response = await this.ai.models.embedContent({
-        model: 'gemini-embedding-001',
+        model: "gemini-embedding-001",
         contents: category.examples,
-        taskType: 'CLASSIFICATION',
-        outputDimensionality: 768
+        taskType: "CLASSIFICATION",
+        outputDimensionality: 768,
       });
 
       // Average embeddings of examples
       const avgEmbedding = this.averageEmbeddings(
-        response.embeddings.map(e => normalizeEmbedding(e.values))
+        response.embeddings.map((e) => normalizeEmbedding(e.values)),
       );
 
       this.categories.push({
         name: category.name,
         examples: category.examples,
-        embedding: avgEmbedding
+        embedding: avgEmbedding,
       });
     }
 
@@ -412,25 +427,27 @@ class TextClassifier {
       }
     }
 
-    return avg.map(val => val / embeddings.length);
+    return avg.map((val) => val / embeddings.length);
   }
 
-  async classify(text: string): Promise<{ category: string; confidence: number }> {
+  async classify(
+    text: string,
+  ): Promise<{ category: string; confidence: number }> {
     const response = await this.ai.models.embedContent({
-      model: 'gemini-embedding-001',
+      model: "gemini-embedding-001",
       contents: text,
-      taskType: 'CLASSIFICATION',
-      outputDimensionality: 768
+      taskType: "CLASSIFICATION",
+      outputDimensionality: 768,
     });
 
     const textEmbedding = normalizeEmbedding(response.embeddings[0].values);
 
     // Find most similar category
-    let bestMatch = { category: '', confidence: -1 };
+    let bestMatch = { category: "", confidence: -1 };
 
     for (const category of this.categories) {
       const similarity = cosineSimilarity(textEmbedding, category.embedding!);
-      
+
       if (similarity > bestMatch.confidence) {
         bestMatch = { category: category.name, confidence: similarity };
       }
@@ -442,9 +459,9 @@ class TextClassifier {
 
 function normalizeEmbedding(embedding: number[]): number[] {
   const magnitude = Math.sqrt(
-    embedding.reduce((sum, val) => sum + val * val, 0)
+    embedding.reduce((sum, val) => sum + val * val, 0),
   );
-  return embedding.map(val => val / magnitude);
+  return embedding.map((val) => val / magnitude);
 }
 
 // Usage
@@ -453,42 +470,44 @@ async function runClassification() {
 
   await classifier.trainCategories([
     {
-      name: 'Technology',
+      name: "Technology",
       examples: [
-        'New smartphone released with advanced AI features',
-        'Software update improves system performance',
-        'Cloud computing revolutionizes data storage'
-      ]
+        "New smartphone released with advanced AI features",
+        "Software update improves system performance",
+        "Cloud computing revolutionizes data storage",
+      ],
     },
     {
-      name: 'Sports',
+      name: "Sports",
       examples: [
-        'Team wins championship in overtime thriller',
-        'Athlete breaks world record at Olympics',
-        'Coach announces retirement after stellar career'
-      ]
+        "Team wins championship in overtime thriller",
+        "Athlete breaks world record at Olympics",
+        "Coach announces retirement after stellar career",
+      ],
     },
     {
-      name: 'Politics',
+      name: "Politics",
       examples: [
-        'New legislation passes in parliament',
-        'Presidential candidate announces campaign',
-        'International summit addresses climate change'
-      ]
-    }
+        "New legislation passes in parliament",
+        "Presidential candidate announces campaign",
+        "International summit addresses climate change",
+      ],
+    },
   ]);
 
   const testTexts = [
-    'Revolutionary AI model achieves breakthrough in natural language processing',
-    'Basketball team secures playoff spot with decisive victory',
-    'Government proposes new economic policy reforms'
+    "Revolutionary AI model achieves breakthrough in natural language processing",
+    "Basketball team secures playoff spot with decisive victory",
+    "Government proposes new economic policy reforms",
   ];
 
-  console.log('\nClassification Results:\n');
+  console.log("\nClassification Results:\n");
   for (const text of testTexts) {
     const result = await classifier.classify(text);
     console.log(`Text: "${text}"`);
-    console.log(`Category: ${result.category} (${(result.confidence * 100).toFixed(2)}% confidence)\n`);
+    console.log(
+      `Category: ${result.category} (${(result.confidence * 100).toFixed(2)}% confidence)\n`,
+    );
   }
 }
 
@@ -517,29 +536,29 @@ class DocumentClusterer {
 
   async clusterDocuments(
     documents: Array<{ id: string; text: string }>,
-    numClusters: number
+    numClusters: number,
   ): Promise<ClusteredDocument[]> {
     console.log(`Generating embeddings for ${documents.length} documents...`);
 
     // Generate embeddings
     const response = await this.ai.models.embedContent({
-      model: 'gemini-embedding-001',
-      contents: documents.map(d => d.text),
-      taskType: 'CLUSTERING',
-      outputDimensionality: 768
+      model: "gemini-embedding-001",
+      contents: documents.map((d) => d.text),
+      taskType: "CLUSTERING",
+      outputDimensionality: 768,
     });
 
     const clusteredDocs: ClusteredDocument[] = documents.map((doc, index) => ({
       ...doc,
-      embedding: normalizeEmbedding(response.embeddings[index].values)
+      embedding: normalizeEmbedding(response.embeddings[index].values),
     }));
 
-    console.log('Performing K-means clustering...');
-    
+    console.log("Performing K-means clustering...");
+
     // Simple K-means clustering
     const clusters = this.kMeans(
-      clusteredDocs.map(d => d.embedding),
-      numClusters
+      clusteredDocs.map((d) => d.embedding),
+      numClusters,
     );
 
     clusteredDocs.forEach((doc, index) => {
@@ -549,7 +568,11 @@ class DocumentClusterer {
     return clusteredDocs;
   }
 
-  private kMeans(embeddings: number[][], k: number, maxIterations: number = 100): number[] {
+  private kMeans(
+    embeddings: number[][],
+    k: number,
+    maxIterations: number = 100,
+  ): number[] {
     const n = embeddings.length;
     const dim = embeddings[0].length;
 
@@ -559,13 +582,13 @@ class DocumentClusterer {
     while (randomIndices.size < k) {
       randomIndices.add(Math.floor(Math.random() * n));
     }
-    centroids = Array.from(randomIndices).map(i => [...embeddings[i]]);
+    centroids = Array.from(randomIndices).map((i) => [...embeddings[i]]);
 
     let assignments = new Array(n).fill(0);
 
     for (let iter = 0; iter < maxIterations; iter++) {
       // Assign points to nearest centroid
-      const newAssignments = embeddings.map(embedding => {
+      const newAssignments = embeddings.map((embedding) => {
         let bestCluster = 0;
         let bestDistance = Infinity;
 
@@ -590,7 +613,7 @@ class DocumentClusterer {
       // Update centroids
       for (let c = 0; c < k; c++) {
         const clusterPoints = embeddings.filter((_, i) => assignments[i] === c);
-        
+
         if (clusterPoints.length > 0) {
           centroids[c] = new Array(dim).fill(0);
           for (const point of clusterPoints) {
@@ -618,10 +641,10 @@ class DocumentClusterer {
       clusterMap.get(doc.cluster!)!.push(doc);
     }
 
-    console.log('\nClustering Results:\n');
+    console.log("\nClustering Results:\n");
     for (const [clusterId, docs] of clusterMap.entries()) {
       console.log(`Cluster ${clusterId + 1} (${docs.length} documents):`);
-      docs.forEach(doc => {
+      docs.forEach((doc) => {
         console.log(`  - ${doc.text}`);
       });
       console.log();
@@ -631,9 +654,9 @@ class DocumentClusterer {
 
 function normalizeEmbedding(embedding: number[]): number[] {
   const magnitude = Math.sqrt(
-    embedding.reduce((sum, val) => sum + val * val, 0)
+    embedding.reduce((sum, val) => sum + val * val, 0),
   );
-  return embedding.map(val => val / magnitude);
+  return embedding.map((val) => val / magnitude);
 }
 
 // Usage
@@ -641,14 +664,14 @@ async function runClustering() {
   const clusterer = new DocumentClusterer();
 
   const documents = [
-    { id: '1', text: 'Python programming tutorial for beginners' },
-    { id: '2', text: 'JavaScript web development guide' },
-    { id: '3', text: 'Machine learning with neural networks' },
-    { id: '4', text: 'Deep learning for computer vision' },
-    { id: '5', text: 'React component library documentation' },
-    { id: '6', text: 'Natural language processing techniques' },
-    { id: '7', text: 'TypeScript advanced patterns' },
-    { id: '8', text: 'Artificial intelligence algorithms' }
+    { id: "1", text: "Python programming tutorial for beginners" },
+    { id: "2", text: "JavaScript web development guide" },
+    { id: "3", text: "Machine learning with neural networks" },
+    { id: "4", text: "Deep learning for computer vision" },
+    { id: "5", text: "React component library documentation" },
+    { id: "6", text: "Natural language processing techniques" },
+    { id: "7", text: "TypeScript advanced patterns" },
+    { id: "8", text: "Artificial intelligence algorithms" },
   ];
 
   const clustered = await clusterer.clusterDocuments(documents, 3);
@@ -679,16 +702,18 @@ class RAGSystem {
     this.ai = new GoogleGenAI({});
   }
 
-  async addDocuments(documents: Array<{ id: string; content: string; metadata?: any }>) {
+  async addDocuments(
+    documents: Array<{ id: string; content: string; metadata?: any }>,
+  ) {
     console.log(`Adding ${documents.length} documents to knowledge base...`);
 
-    const contents = documents.map(d => d.content);
+    const contents = documents.map((d) => d.content);
 
     const response = await this.ai.models.embedContent({
-      model: 'gemini-embedding-001',
+      model: "gemini-embedding-001",
       contents,
-      taskType: 'RETRIEVAL_DOCUMENT',
-      outputDimensionality: 1536
+      taskType: "RETRIEVAL_DOCUMENT",
+      outputDimensionality: 1536,
     });
 
     documents.forEach((doc, index) => {
@@ -696,37 +721,41 @@ class RAGSystem {
         id: doc.id,
         content: doc.content,
         embedding: normalizeEmbedding(response.embeddings[index].values),
-        metadata: doc.metadata
+        metadata: doc.metadata,
       });
     });
 
-    console.log(`✓ Knowledge base size: ${this.knowledgeBase.length} documents`);
+    console.log(
+      `✓ Knowledge base size: ${this.knowledgeBase.length} documents`,
+    );
   }
 
   async retrieveRelevant(query: string, topK: number = 3): Promise<string[]> {
     // Generate query embedding
     const response = await this.ai.models.embedContent({
-      model: 'gemini-embedding-001',
+      model: "gemini-embedding-001",
       contents: query,
-      taskType: 'RETRIEVAL_QUERY',
-      outputDimensionality: 1536
+      taskType: "RETRIEVAL_QUERY",
+      outputDimensionality: 1536,
     });
 
     const queryEmbedding = normalizeEmbedding(response.embeddings[0].values);
 
     // Find most similar documents
     const results = this.knowledgeBase
-      .map(doc => ({
+      .map((doc) => ({
         ...doc,
-        score: cosineSimilarity(queryEmbedding, doc.embedding)
+        score: cosineSimilarity(queryEmbedding, doc.embedding),
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, topK);
 
-    return results.map(r => r.content);
+    return results.map((r) => r.content);
   }
 
-  async generateAnswer(question: string): Promise<{ answer: string; context: string[] }> {
+  async generateAnswer(
+    question: string,
+  ): Promise<{ answer: string; context: string[] }> {
     // Retrieve relevant context
     const context = await this.retrieveRelevant(question, 3);
 
@@ -735,7 +764,7 @@ class RAGSystem {
 Based on the following context, answer the question.
 
 Context:
-${context.map((c, i) => `${i + 1}. ${c}`).join('\n\n')}
+${context.map((c, i) => `${i + 1}. ${c}`).join("\n\n")}
 
 Question: ${question}
 
@@ -743,22 +772,22 @@ Answer:`;
 
     // Generate answer using Gemini
     const response = await this.ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt
+      model: "gemini-2.5-flash",
+      contents: prompt,
     });
 
     return {
       answer: response.text,
-      context
+      context,
     };
   }
 }
 
 function normalizeEmbedding(embedding: number[]): number[] {
   const magnitude = Math.sqrt(
-    embedding.reduce((sum, val) => sum + val * val, 0)
+    embedding.reduce((sum, val) => sum + val * val, 0),
   );
-  return embedding.map(val => val / magnitude);
+  return embedding.map((val) => val / magnitude);
 }
 
 // Usage
@@ -768,38 +797,42 @@ async function runRAG() {
   // Add company knowledge
   await rag.addDocuments([
     {
-      id: '1',
-      content: 'Our company offers a 30-day money-back guarantee on all products. Customers can return items for a full refund within 30 days of purchase.',
-      metadata: { category: 'return-policy' }
+      id: "1",
+      content:
+        "Our company offers a 30-day money-back guarantee on all products. Customers can return items for a full refund within 30 days of purchase.",
+      metadata: { category: "return-policy" },
     },
     {
-      id: '2',
-      content: 'Standard shipping takes 3-5 business days. Express shipping is available for 1-2 business days delivery at an additional cost.',
-      metadata: { category: 'shipping' }
+      id: "2",
+      content:
+        "Standard shipping takes 3-5 business days. Express shipping is available for 1-2 business days delivery at an additional cost.",
+      metadata: { category: "shipping" },
     },
     {
-      id: '3',
-      content: 'Our customer support team is available Monday through Friday, 9 AM to 5 PM EST. You can reach us by phone, email, or live chat.',
-      metadata: { category: 'support' }
+      id: "3",
+      content:
+        "Our customer support team is available Monday through Friday, 9 AM to 5 PM EST. You can reach us by phone, email, or live chat.",
+      metadata: { category: "support" },
     },
     {
-      id: '4',
-      content: 'We accept all major credit cards, PayPal, and Apple Pay. Payment information is encrypted and secure.',
-      metadata: { category: 'payment' }
-    }
+      id: "4",
+      content:
+        "We accept all major credit cards, PayPal, and Apple Pay. Payment information is encrypted and secure.",
+      metadata: { category: "payment" },
+    },
   ]);
 
   // Ask questions
   const questions = [
-    'Can I return a product if I don\'t like it?',
-    'How long does shipping take?',
-    'What payment methods do you accept?'
+    "Can I return a product if I don't like it?",
+    "How long does shipping take?",
+    "What payment methods do you accept?",
   ];
 
   for (const question of questions) {
-    console.log(`\n${'='.repeat(60)}`);
+    console.log(`\n${"=".repeat(60)}`);
     console.log(`Q: ${question}`);
-    console.log('='.repeat(60));
+    console.log("=".repeat(60));
 
     const result = await rag.generateAnswer(question);
 
@@ -821,11 +854,13 @@ For production systems, use vector databases to efficiently store, index, and re
 ### Supported Vector Databases
 
 **Google Cloud Services:**
+
 - BigQuery
 - AlloyDB
 - Cloud SQL
 
 **Third-Party Solutions:**
+
 - ChromaDB
 - Qdrant
 - Weaviate
@@ -847,19 +882,22 @@ class SimpleVectorDB {
     this.vectors.push({ id, embedding, metadata });
   }
 
-  search(queryEmbedding: number[], topK: number = 5): Array<{ id: string; score: number; metadata: any }> {
+  search(
+    queryEmbedding: number[],
+    topK: number = 5,
+  ): Array<{ id: string; score: number; metadata: any }> {
     return this.vectors
-      .map(vec => ({
+      .map((vec) => ({
         id: vec.id,
         score: cosineSimilarity(queryEmbedding, vec.embedding),
-        metadata: vec.metadata
+        metadata: vec.metadata,
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, topK);
   }
 
   delete(id: string) {
-    this.vectors = this.vectors.filter(vec => vec.id !== id);
+    this.vectors = this.vectors.filter((vec) => vec.id !== id);
   }
 
   size(): number {
@@ -872,14 +910,14 @@ class SimpleVectorDB {
 
 ### Model Properties
 
-| Property | Details |
-|----------|---------|
-| **Model Code** | `gemini-embedding-001` |
-| **Input Types** | Text |
-| **Output** | Text embeddings |
-| **Input Token Limit** | 2,048 tokens |
+| Property                  | Details                                            |
+| ------------------------- | -------------------------------------------------- |
+| **Model Code**            | `gemini-embedding-001`                             |
+| **Input Types**           | Text                                               |
+| **Output**                | Text embeddings                                    |
+| **Input Token Limit**     | 2,048 tokens                                       |
 | **Output Dimension Size** | Flexible: 128-3072<br>Recommended: 768, 1536, 3072 |
-| **Latest Update** | June 2025 |
+| **Latest Update**         | June 2025                                          |
 
 ### Model Versions
 
@@ -889,6 +927,7 @@ class SimpleVectorDB {
 ### Deprecation Notice
 
 The following models will be deprecated in **October 2025**:
+
 - `embedding-001`
 - `embedding-gecko-001`
 - `gemini-embedding-exp-03-07` (gemini-embedding-exp)
@@ -901,13 +940,13 @@ For non-latency-critical workloads, use the Batch API for much higher throughput
 // Conceptual example - check latest SDK for exact implementation
 async function batchEmbeddings(texts: string[]) {
   const ai = new GoogleGenAI({});
-  
+
   // Use batch API for large-scale embedding generation
   const batchRequest = {
-    model: 'gemini-embedding-001',
+    model: "gemini-embedding-001",
     contents: texts,
-    taskType: 'RETRIEVAL_DOCUMENT',
-    outputDimensionality: 768
+    taskType: "RETRIEVAL_DOCUMENT",
+    outputDimensionality: 768,
   };
 
   // Submit batch job
@@ -922,20 +961,20 @@ async function batchEmbeddings(texts: string[]) {
 ```typescript
 // ✓ Good: Specific task types
 const searchDocs = await ai.models.embedContent({
-  model: 'gemini-embedding-001',
+  model: "gemini-embedding-001",
   contents: documents,
-  taskType: 'RETRIEVAL_DOCUMENT'  // For documents to be searched
+  taskType: "RETRIEVAL_DOCUMENT", // For documents to be searched
 });
 
 const searchQuery = await ai.models.embedContent({
-  model: 'gemini-embedding-001',
+  model: "gemini-embedding-001",
   contents: userQuery,
-  taskType: 'RETRIEVAL_QUERY'  // For search queries
+  taskType: "RETRIEVAL_QUERY", // For search queries
 });
 
 // ✗ Bad: Same task type for both
 const embeddings = await ai.models.embedContent({
-  model: 'gemini-embedding-001',
+  model: "gemini-embedding-001",
   contents: [...documents, userQuery],
   // No task type specified or wrong task type
 });
@@ -947,13 +986,13 @@ const embeddings = await ai.models.embedContent({
 // Always normalize for dimensions other than 3072
 async function safeEmbedding(text: string, dimension: number) {
   const response = await ai.models.embedContent({
-    model: 'gemini-embedding-001',
+    model: "gemini-embedding-001",
     contents: text,
-    outputDimensionality: dimension
+    outputDimensionality: dimension,
   });
 
   const embedding = response.embeddings[0].values;
-  
+
   // Normalize if not default dimension
   return dimension === 3072 ? embedding : normalizeEmbedding(embedding);
 }
@@ -990,14 +1029,14 @@ class EmbeddingCache {
     }
 
     const response = await ai.models.embedContent({
-      model: 'gemini-embedding-001',
+      model: "gemini-embedding-001",
       contents: text,
-      outputDimensionality: 768
+      outputDimensionality: 768,
     });
 
     const embedding = normalizeEmbedding(response.embeddings[0].values);
     this.cache.set(text, embedding);
-    
+
     return embedding;
   }
 
@@ -1016,34 +1055,34 @@ class EmbeddingCache {
 ```typescript
 async function robustEmbedding(
   texts: string[],
-  retries: number = 3
+  retries: number = 3,
 ): Promise<number[][]> {
   const ai = new GoogleGenAI({});
-  
+
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const response = await ai.models.embedContent({
-        model: 'gemini-embedding-001',
+        model: "gemini-embedding-001",
         contents: texts,
-        outputDimensionality: 768
+        outputDimensionality: 768,
       });
 
-      return response.embeddings.map(e => normalizeEmbedding(e.values));
+      return response.embeddings.map((e) => normalizeEmbedding(e.values));
     } catch (error) {
       console.error(`Attempt ${attempt} failed:`, error);
-      
+
       if (attempt === retries) {
         throw error;
       }
-      
+
       // Exponential backoff
-      await new Promise(resolve => 
-        setTimeout(resolve, Math.pow(2, attempt) * 1000)
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.pow(2, attempt) * 1000),
       );
     }
   }
-  
-  throw new Error('Failed to generate embeddings');
+
+  throw new Error("Failed to generate embeddings");
 }
 ```
 
@@ -1055,7 +1094,7 @@ async function robustEmbedding(
 ```typescript
 function estimateEmbeddingCost(
   numTokens: number,
-  useBatchAPI: boolean = false
+  useBatchAPI: boolean = false,
 ): number {
   const pricePerMillion = useBatchAPI ? 0.075 : 0.15;
   return (numTokens / 1_000_000) * pricePerMillion;
@@ -1063,8 +1102,12 @@ function estimateEmbeddingCost(
 
 // Example
 const tokens = 500_000;
-console.log(`Interactive API cost: $${estimateEmbeddingCost(tokens, false).toFixed(4)}`);
-console.log(`Batch API cost: $${estimateEmbeddingCost(tokens, true).toFixed(4)}`);
+console.log(
+  `Interactive API cost: $${estimateEmbeddingCost(tokens, false).toFixed(4)}`,
+);
+console.log(
+  `Batch API cost: $${estimateEmbeddingCost(tokens, true).toFixed(4)}`,
+);
 ```
 
 ## Responsible Use Notice

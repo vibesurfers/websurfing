@@ -19,7 +19,7 @@ Structured outputs are ideal for:
 Install required dependencies:
 
 ```bash
-npm install @google/genai zod zod-to-json-schema
+pnpm install @google/genai zod zod-to-json-schema
 ```
 
 ### Basic Usage
@@ -62,7 +62,8 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 const employeeSchema = z.object({
   name: z.string(),
   employee_id: z.number().int(),
-  reports: z.lazy(() => z.array(employeeSchema))
+  reports: z
+    .lazy(() => z.array(employeeSchema))
     .describe("A list of employees reporting to this employee."),
 });
 
@@ -123,7 +124,8 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 const ai = new GoogleGenAI({});
-const prompt = "The new UI is incredibly intuitive and visually appealing. Great job! Add a very long summary to test streaming!";
+const prompt =
+  "The new UI is incredibly intuitive and visually appealing. Great job! Add a very long summary to test streaming!";
 
 const feedbackSchema = z.object({
   sentiment: z.enum(["positive", "neutral", "negative"]),
@@ -164,20 +166,24 @@ for await (const chunk of stream) {
 ### Type-Specific Properties
 
 **For object values:**
+
 - `properties`: Object where each key is a property name and value is its schema
 - `required`: Array of strings listing mandatory properties
 - `additionalProperties`: Controls whether unlisted properties are allowed (boolean or schema)
 
 **For string values:**
+
 - `enum`: Specific set of possible strings for classification
 - `format`: Syntax specification (e.g., `date-time`, `date`, `time`)
 
 **For number and integer values:**
+
 - `enum`: Specific set of possible numeric values
 - `minimum`: Minimum inclusive value
 - `maximum`: Maximum inclusive value
 
 **For array values:**
+
 - `items`: Schema for all array items
 - `prefixItems`: List of schemas for first N items (tuple-like structures)
 - `minItems`: Minimum number of items
@@ -185,36 +191,42 @@ for await (const chunk of stream) {
 
 ## Model Support
 
-| Model | Structured Outputs |
-|-------|-------------------|
-| Gemini 2.5 Pro | ✔️ |
-| Gemini 2.5 Flash | ✔️ |
-| Gemini 2.5 Flash-Lite | ✔️ |
-| Gemini 2.0 Flash | ✔️* |
-| Gemini 2.0 Flash-Lite | ✔️* |
+| Model                 | Structured Outputs |
+| --------------------- | ------------------ |
+| Gemini 2.5 Pro        | ✔️                 |
+| Gemini 2.5 Flash      | ✔️                 |
+| Gemini 2.5 Flash-Lite | ✔️                 |
+| Gemini 2.0 Flash      | ✔️\*               |
+| Gemini 2.0 Flash-Lite | ✔️\*               |
 
-*Note: Gemini 2.0 requires an explicit `propertyOrdering` list within the JSON input to define preferred structure.
+\*Note: Gemini 2.0 requires an explicit `propertyOrdering` list within the JSON input to define preferred structure.
 
 ## Structured Outputs vs. Function Calling
 
-| Feature | Primary Use Case |
-|---------|-----------------|
+| Feature                | Primary Use Case                                                                                                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Structured Outputs** | Formatting the final response to the user. Use when you want the model's answer in a specific format (e.g., extracting data from documents to save to a database). |
-| **Function Calling** | Taking action during conversation. Use when the model needs to ask you to perform a task (e.g., "get current weather") before providing a final answer. |
+| **Function Calling**   | Taking action during conversation. Use when the model needs to ask you to perform a task (e.g., "get current weather") before providing a final answer.            |
 
 ## Best Practices
 
 ### 1. Clear Descriptions
+
 Use the `description` field in your schema to provide clear instructions about what each property represents. This is crucial for guiding the model's output.
 
 ```typescript
 const schema = z.object({
-  customerName: z.string().describe("The full name of the customer as it appears in the document"),
-  orderTotal: z.number().describe("The total order amount in USD, including tax"),
+  customerName: z
+    .string()
+    .describe("The full name of the customer as it appears in the document"),
+  orderTotal: z
+    .number()
+    .describe("The total order amount in USD, including tax"),
 });
 ```
 
 ### 2. Strong Typing
+
 Use specific types (`integer`, `string`, `enum`) whenever possible. For parameters with limited valid values, use enums.
 
 ```typescript
@@ -225,6 +237,7 @@ const schema = z.object({
 ```
 
 ### 3. Prompt Engineering
+
 Clearly state in your prompt what you want the model to do.
 
 ```typescript
@@ -240,6 +253,7 @@ Text: [your text here]
 ```
 
 ### 4. Validation
+
 While structured output guarantees syntactically correct JSON, it doesn't guarantee semantically correct values. Always validate the final output in your application code before using it.
 
 ```typescript
@@ -252,6 +266,7 @@ if (result.orderTotal < 0) {
 ```
 
 ### 5. Error Handling
+
 Implement robust error handling to gracefully manage cases where the model's output, while schema-compliant, may not meet your business logic requirements.
 
 ```typescript
@@ -264,14 +279,14 @@ try {
       responseJsonSchema: zodToJsonSchema(schema),
     },
   });
-  
+
   const result = schema.parse(JSON.parse(response.text));
-  
+
   // Additional validation
   if (!isValidBusinessLogic(result)) {
     throw new Error("Business logic validation failed");
   }
-  
+
   return result;
 } catch (error) {
   console.error("Failed to generate structured output:", error);
@@ -282,16 +297,20 @@ try {
 ## Limitations
 
 ### Schema Subset
+
 Not all features of the JSON Schema specification are supported. The model ignores unsupported properties.
 
 ### Schema Complexity
+
 The API may reject very large or deeply nested schemas. If you encounter errors, try:
+
 - Shortening property names
 - Reducing nesting levels
 - Limiting the number of constraints
 - Breaking complex schemas into smaller, focused schemas
 
 ### Output Ordering
+
 The model produces outputs in the same order as the keys in the schema. For Gemini 2.0 models, you may need to specify explicit `propertyOrdering` to control output structure.
 
 ## TypeScript Tips
@@ -382,7 +401,7 @@ const invoiceSchema = z.object({
 
 async function extractInvoiceData(invoiceText: string) {
   const ai = new GoogleGenAI({});
-  
+
   const prompt = `
   Extract all invoice information from the following text and structure it according to the schema.
   Ensure all monetary values are in USD and dates are in YYYY-MM-DD format.
@@ -390,7 +409,7 @@ async function extractInvoiceData(invoiceText: string) {
   Invoice text:
   ${invoiceText}
   `;
-  
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -400,15 +419,18 @@ async function extractInvoiceData(invoiceText: string) {
         responseJsonSchema: zodToJsonSchema(invoiceSchema),
       },
     });
-    
+
     const invoice = invoiceSchema.parse(JSON.parse(response.text));
-    
+
     // Validate business logic
-    const calculatedSubtotal = invoice.items.reduce((sum, item) => sum + item.total, 0);
+    const calculatedSubtotal = invoice.items.reduce(
+      (sum, item) => sum + item.total,
+      0,
+    );
     if (Math.abs(calculatedSubtotal - invoice.subtotal) > 0.01) {
       console.warn("Subtotal mismatch detected");
     }
-    
+
     return invoice;
   } catch (error) {
     console.error("Failed to extract invoice data:", error);

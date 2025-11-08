@@ -19,7 +19,7 @@ Use cases include:
 Install required dependency:
 
 ```bash
-npm install @google/genai
+pnpm install @google/genai
 ```
 
 ### Basic Usage
@@ -68,13 +68,13 @@ When using code execution, the model returns several content parts:
 
 ```typescript
 interface ExecutableCode {
-  language: string;  // Always "PYTHON"
-  code: string;      // The Python code
+  language: string; // Always "PYTHON"
+  code: string; // The Python code
 }
 
 interface CodeExecutionResult {
   outcome: "OUTCOME_OK" | "OUTCOME_FAILED" | "OUTCOME_DEADLINE_EXCEEDED";
-  output: string;    // Standard output from code execution
+  output: string; // Standard output from code execution
 }
 
 interface ContentPart {
@@ -83,7 +83,7 @@ interface ContentPart {
   codeExecutionResult?: CodeExecutionResult;
   inlineData?: {
     mimeType: string;
-    data: string;  // Base64 encoded
+    data: string; // Base64 encoded
   };
 }
 
@@ -100,7 +100,7 @@ interface CodeExecutionResponse {
     promptTokenCount: number;
     candidatesTokenCount: number;
     totalTokenCount: number;
-    intermediateTokenCount?: number;  // Code execution tokens
+    intermediateTokenCount?: number; // Code execution tokens
   };
 }
 ```
@@ -169,22 +169,22 @@ interface CodeExecutionParts {
   }>;
 }
 
-function extractCodeExecutionParts(response: CodeExecutionResponse): CodeExecutionParts {
+function extractCodeExecutionParts(
+  response: CodeExecutionResponse,
+): CodeExecutionParts {
   const parts = response.candidates?.[0]?.content?.parts || [];
-  
+
   return {
-    explanation: parts
-      .filter(part => part.text)
-      .map(part => part.text!),
+    explanation: parts.filter((part) => part.text).map((part) => part.text!),
     code: parts
-      .filter(part => part.executableCode)
-      .map(part => part.executableCode!.code),
+      .filter((part) => part.executableCode)
+      .map((part) => part.executableCode!.code),
     results: parts
-      .filter(part => part.codeExecutionResult)
-      .map(part => part.codeExecutionResult!.output),
+      .filter((part) => part.codeExecutionResult)
+      .map((part) => part.codeExecutionResult!.output),
     images: parts
-      .filter(part => part.inlineData)
-      .map(part => ({
+      .filter((part) => part.inlineData)
+      .map((part) => ({
         mimeType: part.inlineData!.mimeType,
         data: part.inlineData!.data,
       })),
@@ -204,11 +204,11 @@ console.log(`\n🖼️ Images: ${parts.images.length} generated`);
 ```typescript
 function checkCodeExecutionStatus(response: CodeExecutionResponse): void {
   const parts = response.candidates?.[0]?.content?.parts || [];
-  
+
   for (const part of parts) {
     if (part.codeExecutionResult) {
       const result = part.codeExecutionResult;
-      
+
       switch (result.outcome) {
         case "OUTCOME_OK":
           console.log("✓ Code executed successfully");
@@ -246,7 +246,9 @@ const chat = ai.chats.create({
     },
     {
       role: "model",
-      parts: [{ text: "Great! I'm ready for your math question. Please ask away." }],
+      parts: [
+        { text: "Great! I'm ready for your math question. Please ask away." },
+      ],
     },
   ],
   config: {
@@ -255,8 +257,9 @@ const chat = ai.chats.create({
 });
 
 const response = await chat.sendMessage({
-  message: "What is the sum of the first 50 prime numbers? " +
-           "Generate and run code for the calculation, and make sure you get all 50.",
+  message:
+    "What is the sum of the first 50 prime numbers? " +
+    "Generate and run code for the calculation, and make sure you get all 50.",
 });
 
 console.log("Chat response:", response.text);
@@ -267,7 +270,7 @@ console.log("Chat response:", response.text);
 ```typescript
 async function interactiveCodeSession() {
   const ai = new GoogleGenAI({});
-  
+
   const chat = ai.chats.create({
     model: "gemini-2.5-flash",
     config: {
@@ -283,7 +286,8 @@ async function interactiveCodeSession() {
 
   // Follow-up query building on previous result
   const response2 = await chat.sendMessage({
-    message: "Now calculate the factorial of 20 and compare it to the previous result",
+    message:
+      "Now calculate the factorial of 20 and compare it to the previous result",
   });
   console.log("Response 2:", response2.text);
 
@@ -310,11 +314,11 @@ import { readFileSync } from "fs";
 
 async function analyzeCSVFile(filePath: string) {
   const ai = new GoogleGenAI({});
-  
+
   // Read and encode file
   const fileData = readFileSync(filePath);
   const base64Data = fileData.toString("base64");
-  
+
   const response = await ai.models.generateContent({
     model: "gemini-2.0-flash",
     contents: [
@@ -340,8 +344,8 @@ async function analyzeCSVFile(filePath: string) {
   // Extract generated graphs
   const parts = response.candidates?.[0]?.content?.parts || [];
   const images = parts
-    .filter(part => part.inlineData?.mimeType.startsWith("image/"))
-    .map(part => part.inlineData!);
+    .filter((part) => part.inlineData?.mimeType.startsWith("image/"))
+    .map((part) => part.inlineData!);
 
   console.log(`Generated ${images.length} graph(s)`);
   return { response, images };
@@ -355,7 +359,7 @@ import { GoogleGenAI } from "@google/genai";
 
 async function analyzeUploadedFile(fileId: string) {
   const ai = new GoogleGenAI({});
-  
+
   const response = await ai.models.generateContent({
     model: "gemini-2.0-flash",
     contents: [
@@ -387,16 +391,19 @@ async function analyzeUploadedFile(fileId: string) {
 ```typescript
 import { writeFileSync } from "fs";
 
-function saveGeneratedGraphs(response: CodeExecutionResponse, outputDir: string): void {
+function saveGeneratedGraphs(
+  response: CodeExecutionResponse,
+  outputDir: string,
+): void {
   const parts = response.candidates?.[0]?.content?.parts || [];
-  
+
   parts
-    .filter(part => part.inlineData?.mimeType.startsWith("image/"))
+    .filter((part) => part.inlineData?.mimeType.startsWith("image/"))
     .forEach((part, index) => {
       const imageData = part.inlineData!.data;
       const extension = part.inlineData!.mimeType.split("/")[1];
       const filename = `${outputDir}/graph_${index + 1}.${extension}`;
-      
+
       writeFileSync(filename, Buffer.from(imageData, "base64"));
       console.log(`✓ Saved graph to ${filename}`);
     });
@@ -407,23 +414,23 @@ function saveGeneratedGraphs(response: CodeExecutionResponse, outputDir: string)
 
 ### Technical Details
 
-| Feature | Details |
-|---------|---------|
-| Maximum runtime | 30 seconds |
-| Error regeneration | Up to 5 times if code generates an error |
+| Feature                 | Details                                                    |
+| ----------------------- | ---------------------------------------------------------- |
+| Maximum runtime         | 30 seconds                                                 |
+| Error regeneration      | Up to 5 times if code generates an error                   |
 | Maximum file input size | Limited by model token window (~1M tokens / ~2MB for text) |
-| Best file types | Text and CSV files |
-| Input methods | `part.inlineData` or `part.fileData` (Files API) |
-| Output format | Always returned as `part.inlineData` |
+| Best file types         | Text and CSV files                                         |
+| Input methods           | `part.inlineData` or `part.fileData` (Files API)           |
+| Output format           | Always returned as `part.inlineData`                       |
 
 ### Supported Features by Model
 
-| Feature | Single Turn | Multimodal Live API |
-|---------|-------------|---------------------|
-| Models supported | All Gemini 2.0 and 2.5 models | Only Flash experimental models |
-| File input types | .png, .jpeg, .csv, .xml, .cpp, .java, .py, .js, .ts | Same |
-| Plotting libraries | Matplotlib, seaborn | Matplotlib, seaborn |
-| Multi-tool use | Yes (code execution + grounding only) | Yes |
+| Feature            | Single Turn                                         | Multimodal Live API            |
+| ------------------ | --------------------------------------------------- | ------------------------------ |
+| Models supported   | All Gemini 2.0 and 2.5 models                       | Only Flash experimental models |
+| File input types   | .png, .jpeg, .csv, .xml, .cpp, .java, .py, .js, .ts | Same                           |
+| Plotting libraries | Matplotlib, seaborn                                 | Matplotlib, seaborn            |
+| Multi-tool use     | Yes (code execution + grounding only)               | Yes                            |
 
 ## Pricing and Billing
 
@@ -452,26 +459,33 @@ interface CodeExecutionUsage {
   promptTokenCount: number;
   candidatesTokenCount: number;
   totalTokenCount: number;
-  intermediateTokenCount?: number;  // Additional input tokens from code execution
+  intermediateTokenCount?: number; // Additional input tokens from code execution
 }
 
 function analyzeCodeExecutionCost(
   usage: CodeExecutionUsage,
-  modelPricing: { inputPer1M: number; outputPer1M: number }
+  modelPricing: { inputPer1M: number; outputPer1M: number },
 ): void {
-  const totalInputTokens = usage.promptTokenCount + (usage.intermediateTokenCount || 0);
+  const totalInputTokens =
+    usage.promptTokenCount + (usage.intermediateTokenCount || 0);
   const outputTokens = usage.candidatesTokenCount;
-  
+
   const inputCost = (totalInputTokens / 1_000_000) * modelPricing.inputPer1M;
   const outputCost = (outputTokens / 1_000_000) * modelPricing.outputPer1M;
   const totalCost = inputCost + outputCost;
 
   console.log("\n💰 Cost Breakdown:");
   console.log(`  Original prompt: ${usage.promptTokenCount} tokens`);
-  console.log(`  Intermediate (code execution): ${usage.intermediateTokenCount || 0} tokens`);
-  console.log(`  Total input: ${totalInputTokens} tokens ($${inputCost.toFixed(6)})`);
+  console.log(
+    `  Intermediate (code execution): ${usage.intermediateTokenCount || 0} tokens`,
+  );
+  console.log(
+    `  Total input: ${totalInputTokens} tokens ($${inputCost.toFixed(6)})`,
+  );
   console.log(`  Output: ${outputTokens} tokens ($${outputCost.toFixed(6)})`);
-  console.log(`  Total: ${usage.totalTokenCount} tokens ($${totalCost.toFixed(6)})`);
+  console.log(
+    `  Total: ${usage.totalTokenCount} tokens ($${totalCost.toFixed(6)})`,
+  );
 }
 ```
 
@@ -480,9 +494,11 @@ function analyzeCodeExecutionCost(
 When using code execution I/O:
 
 **Input tokens:**
+
 - User prompt
 
 **Output tokens:**
+
 - Code generated by the model
 - Code execution output in the code environment
 - Thinking tokens
@@ -493,25 +509,30 @@ When using code execution I/O:
 The code execution environment includes these libraries:
 
 **Core Python Libraries:**
+
 - `numpy` - Numerical computing
 - `pandas` - Data manipulation and analysis
 - `scipy` - Scientific computing
 - `sympy` - Symbolic mathematics
 
 **Visualization:**
+
 - `matplotlib` - Plotting (only library supported for graph rendering)
 - `seaborn` - Statistical data visualization
 
 **Machine Learning:**
+
 - `scikit-learn` - Machine learning algorithms
 - `tensorflow` - Deep learning
 
 **Data Processing:**
+
 - `opencv-python` - Image processing
 - `pillow` - Image manipulation
 - `imageio` - Read/write images
 
 **File Handling:**
+
 - `openpyxl` - Excel files
 - `xlrd` - Excel files (older format)
 - `PyPDF2` - PDF files
@@ -519,9 +540,11 @@ The code execution environment includes these libraries:
 - `python-pptx` - PowerPoint files
 
 **Geospatial:**
+
 - `geopandas` - Geographic data
 
 **Other Libraries:**
+
 - `chess` - Chess game logic
 - `reportlab` - PDF generation
 - `fpdf` - PDF generation
@@ -542,7 +565,7 @@ import { GoogleGenAI } from "@google/genai";
 
 async function analyzeTrendsWithData(topic: string) {
   const ai = new GoogleGenAI({});
-  
+
   const prompt = `
   Search for the latest statistical data about ${topic}.
   Then analyze the data using Python code and create visualizations.
@@ -552,10 +575,7 @@ async function analyzeTrendsWithData(topic: string) {
     model: "gemini-2.5-flash",
     contents: [prompt],
     config: {
-      tools: [
-        { googleSearch: {} },
-        { codeExecution: {} },
-      ],
+      tools: [{ googleSearch: {} }, { codeExecution: {} }],
     },
   });
 
@@ -614,7 +634,7 @@ Print results in a formatted way.
 ```typescript
 async function safeCodeExecution(prompt: string): Promise<string> {
   const ai = new GoogleGenAI({});
-  
+
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: [prompt],
@@ -624,18 +644,23 @@ async function safeCodeExecution(prompt: string): Promise<string> {
   });
 
   const parts = response.candidates?.[0]?.content?.parts || [];
-  
+
   // Check if code execution was successful
-  const executionResult = parts.find(part => part.codeExecutionResult);
-  
+  const executionResult = parts.find((part) => part.codeExecutionResult);
+
   if (executionResult) {
     if (executionResult.codeExecutionResult?.outcome === "OUTCOME_OK") {
       console.log("✓ Code executed successfully");
-    } else if (executionResult.codeExecutionResult?.outcome === "OUTCOME_FAILED") {
+    } else if (
+      executionResult.codeExecutionResult?.outcome === "OUTCOME_FAILED"
+    ) {
       console.error("✗ Code execution failed");
       console.error("Error:", executionResult.codeExecutionResult.output);
       throw new Error("Code execution failed");
-    } else if (executionResult.codeExecutionResult?.outcome === "OUTCOME_DEADLINE_EXCEEDED") {
+    } else if (
+      executionResult.codeExecutionResult?.outcome ===
+      "OUTCOME_DEADLINE_EXCEEDED"
+    ) {
       console.error("⏱️ Code execution timeout");
       throw new Error("Code execution exceeded 30 second limit");
     }
@@ -650,19 +675,23 @@ async function safeCodeExecution(prompt: string): Promise<string> {
 ```typescript
 function logCodeExecutionUsage(response: CodeExecutionResponse): void {
   const usage = response.usageMetadata;
-  
+
   if (!usage) {
     return;
   }
 
   console.log("\n📊 Token Usage:");
   console.log(`  Prompt: ${usage.promptTokenCount}`);
-  
+
   if (usage.intermediateTokenCount) {
-    console.log(`  Intermediate (code execution): ${usage.intermediateTokenCount}`);
-    console.log(`  Total input: ${usage.promptTokenCount + usage.intermediateTokenCount}`);
+    console.log(
+      `  Intermediate (code execution): ${usage.intermediateTokenCount}`,
+    );
+    console.log(
+      `  Total input: ${usage.promptTokenCount + usage.intermediateTokenCount}`,
+    );
   }
-  
+
   console.log(`  Output: ${usage.candidatesTokenCount}`);
   console.log(`  Total: ${usage.totalTokenCount}`);
 }
@@ -698,7 +727,8 @@ await chat.sendMessage({
 
 // Step 2: Clean data
 await chat.sendMessage({
-  message: "Now clean the data by removing outliers and handling missing values",
+  message:
+    "Now clean the data by removing outliers and handling missing values",
 });
 
 // Step 3: Analyze
@@ -727,11 +757,13 @@ interface DataAnalysisResult {
   graphs: number;
 }
 
-async function performDataAnalysis(csvData: string): Promise<DataAnalysisResult> {
+async function performDataAnalysis(
+  csvData: string,
+): Promise<DataAnalysisResult> {
   const ai = new GoogleGenAI({});
-  
+
   const base64Data = Buffer.from(csvData).toString("base64");
-  
+
   const prompt = `
   Analyze this CSV data and provide:
   1. Summary statistics (mean, median, std dev)
@@ -765,12 +797,12 @@ async function performDataAnalysis(csvData: string): Promise<DataAnalysisResult>
   });
 
   const parts = extractCodeExecutionParts(response);
-  
+
   // Save generated graphs
   parts.images.forEach((image, index) => {
     writeFileSync(
       `output_graph_${index + 1}.png`,
-      Buffer.from(image.data, "base64")
+      Buffer.from(image.data, "base64"),
     );
   });
 
@@ -807,7 +839,7 @@ async function solveMathProblem(problem: string): Promise<{
   result: string;
 }> {
   const ai = new GoogleGenAI({});
-  
+
   const prompt = `
   Solve this mathematical problem step by step:
   ${problem}
@@ -853,7 +885,7 @@ import { GoogleGenAI } from "@google/genai";
 
 async function analyzeRealTimeData(query: string) {
   const ai = new GoogleGenAI({});
-  
+
   const prompt = `
   ${query}
   
@@ -868,10 +900,7 @@ async function analyzeRealTimeData(query: string) {
     model: "gemini-2.5-flash",
     contents: [prompt],
     config: {
-      tools: [
-        { googleSearch: {} },
-        { codeExecution: {} },
-      ],
+      tools: [{ googleSearch: {} }, { codeExecution: {} }],
     },
   });
 
@@ -883,14 +912,14 @@ async function analyzeRealTimeData(query: string) {
 
   // Check code execution
   checkCodeExecutionStatus(response);
-  
+
   return response.text;
 }
 
 // Usage
 const result = await analyzeRealTimeData(
   "What are the current unemployment rates across major economies? " +
-  "Analyze trends and create comparison charts."
+    "Analyze trends and create comparison charts.",
 );
 console.log(result);
 ```
@@ -902,7 +931,7 @@ import { GoogleGenAI } from "@google/genai";
 
 async function simulatePhysics(scenario: string) {
   const ai = new GoogleGenAI({});
-  
+
   const prompt = `
   ${scenario}
   
@@ -922,7 +951,7 @@ async function simulatePhysics(scenario: string) {
   });
 
   const parts = extractCodeExecutionParts(response);
-  
+
   return {
     explanation: parts.explanation.join("\n"),
     simulation: parts.results.join("\n"),
@@ -951,7 +980,7 @@ import { GoogleGenAI } from "@google/genai";
 
 async function analyzeText(text: string, analysisType: string) {
   const ai = new GoogleGenAI({});
-  
+
   const prompt = `
   Perform ${analysisType} on this text:
   "${text}"
@@ -982,7 +1011,10 @@ The slings and arrows of outrageous fortune,
 Or to take arms against a sea of troubles.
 `;
 
-const analysis = await analyzeText(text, "word frequency analysis and sentiment");
+const analysis = await analyzeText(
+  text,
+  "word frequency analysis and sentiment",
+);
 console.log("Results:", analysis.results.join("\n"));
 ```
 
@@ -995,7 +1027,7 @@ class CodeExecutionError extends Error {
   constructor(
     message: string,
     public outcome?: string,
-    public output?: string
+    public output?: string,
   ) {
     super(message);
     this.name = "CodeExecutionError";
@@ -1004,7 +1036,7 @@ class CodeExecutionError extends Error {
 
 async function robustCodeExecution(prompt: string): Promise<string> {
   const ai = new GoogleGenAI({});
-  
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -1016,22 +1048,22 @@ async function robustCodeExecution(prompt: string): Promise<string> {
 
     // Verify code execution
     const parts = response.candidates?.[0]?.content?.parts || [];
-    const executionResult = parts.find(part => part.codeExecutionResult);
+    const executionResult = parts.find((part) => part.codeExecutionResult);
 
     if (executionResult) {
       const result = executionResult.codeExecutionResult!;
-      
+
       if (result.outcome === "OUTCOME_FAILED") {
         throw new CodeExecutionError(
           "Code execution failed",
           result.outcome,
-          result.output
+          result.output,
         );
       } else if (result.outcome === "OUTCOME_DEADLINE_EXCEEDED") {
         throw new CodeExecutionError(
           "Code execution timeout (>30s)",
           result.outcome,
-          result.output
+          result.output,
         );
       }
     }
@@ -1042,11 +1074,11 @@ async function robustCodeExecution(prompt: string): Promise<string> {
       console.error(`❌ ${error.message}`);
       console.error(`Outcome: ${error.outcome}`);
       console.error(`Output: ${error.output}`);
-      
+
       // Attempt simpler version
       console.log("Retrying with simplified prompt...");
       const simplifiedPrompt = `${prompt}\n\nUse a simple, straightforward approach.`;
-      
+
       try {
         const retryResponse = await ai.models.generateContent({
           model: "gemini-2.5-flash",
@@ -1055,14 +1087,14 @@ async function robustCodeExecution(prompt: string): Promise<string> {
             tools: [{ codeExecution: {} }],
           },
         });
-        
+
         return retryResponse.text;
       } catch (retryError) {
         console.error("Retry also failed");
         throw retryError;
       }
     }
-    
+
     throw error;
   }
 }

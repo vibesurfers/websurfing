@@ -13,7 +13,7 @@ File Search uses **semantic search** to find information relevant to user prompt
 Install required dependency:
 
 ```bash
-npm install @google/genai
+pnpm install @google/genai
 ```
 
 **Note**: The TypeScript/JavaScript SDK for File Search is evolving. The examples below demonstrate the conceptual approach. Always refer to the latest SDK documentation for exact method signatures.
@@ -25,32 +25,32 @@ npm install @google/genai
 This approach uploads a file directly to your file search store in one operation:
 
 ```typescript
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from "@google/genai";
 
 const client = new GoogleGenAI({});
 
 async function uploadDirectlyToFileSearch() {
   // Create the file search store with an optional display name
   const fileSearchStore = await client.fileSearchStores.create({
-    displayName: 'your-fileSearchStore-name'
+    displayName: "your-fileSearchStore-name",
   });
 
   // Upload and import a file into the file search store
   let operation = await client.fileSearchStores.uploadToFileSearchStore({
-    file: 'sample.txt',
+    file: "sample.txt",
     fileSearchStoreName: fileSearchStore.name,
     config: {
-      displayName: 'display-file-name',
-    }
+      displayName: "display-file-name",
+    },
   });
 
   // Wait until import is complete
   while (!operation.done) {
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     operation = await client.operations.get(operation.name);
   }
 
-  console.log('File uploaded and indexed successfully');
+  console.log("File uploaded and indexed successfully");
   return fileSearchStore;
 }
 ```
@@ -60,37 +60,37 @@ async function uploadDirectlyToFileSearch() {
 Alternatively, upload a file first using the Files API, then import it:
 
 ```typescript
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from "@google/genai";
 
 const client = new GoogleGenAI({});
 
 async function uploadThenImport() {
   // Upload the file using the Files API
   const sampleFile = await client.files.upload({
-    file: 'sample.txt',
+    file: "sample.txt",
     config: {
-      name: 'display_file_name'
-    }
+      name: "display_file_name",
+    },
   });
 
   // Create the file search store
   const fileSearchStore = await client.fileSearchStores.create({
-    displayName: 'your-fileSearchStore-name'
+    displayName: "your-fileSearchStore-name",
   });
 
   // Import the file into the file search store
   let operation = await client.fileSearchStores.importFile({
     fileSearchStoreName: fileSearchStore.name,
-    fileName: sampleFile.name
+    fileName: sampleFile.name,
   });
 
   // Wait until import is complete
   while (!operation.done) {
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     operation = await client.operations.get(operation.name);
   }
 
-  console.log('File imported and indexed successfully');
+  console.log("File imported and indexed successfully");
   return fileSearchStore;
 }
 ```
@@ -100,21 +100,23 @@ async function uploadThenImport() {
 Once your files are imported and indexed, you can query them:
 
 ```typescript
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from "@google/genai";
 
 async function queryFileSearch(fileSearchStoreName: string) {
   const client = new GoogleGenAI({});
 
   const response = await client.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: 'Can you tell me about Robert Graves?',
+    model: "gemini-2.5-flash",
+    contents: "Can you tell me about Robert Graves?",
     config: {
-      tools: [{
-        fileSearch: {
-          fileSearchStoreNames: [fileSearchStoreName]
-        }
-      }]
-    }
+      tools: [
+        {
+          fileSearch: {
+            fileSearchStoreNames: [fileSearchStoreName],
+          },
+        },
+      ],
+    },
   });
 
   console.log(response.text);
@@ -163,7 +165,7 @@ interface ChunkingConfig {
 
 async function uploadWithCustomChunking(
   fileSearchStoreName: string,
-  filePath: string
+  filePath: string,
 ) {
   const client = new GoogleGenAI({});
 
@@ -171,14 +173,14 @@ async function uploadWithCustomChunking(
     fileSearchStoreName,
     file: filePath,
     config: {
-      displayName: 'custom-chunked-file',
+      displayName: "custom-chunked-file",
       chunkingConfig: {
         whiteSpaceConfig: {
-          maxTokensPerChunk: 200,  // Maximum tokens per chunk
-          maxOverlapTokens: 20,    // Overlapping tokens between chunks
-        }
-      }
-    }
+          maxTokensPerChunk: 200, // Maximum tokens per chunk
+          maxOverlapTokens: 20, // Overlapping tokens between chunks
+        },
+      },
+    },
   });
 
   // Wait for completion
@@ -187,7 +189,7 @@ async function uploadWithCustomChunking(
 
 async function waitForOperation(operation: any): Promise<any> {
   while (!operation.done) {
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     const client = new GoogleGenAI({});
     operation = await client.operations.get(operation.name);
   }
@@ -223,14 +225,14 @@ interface FileSearchStoreConfig {
 
 ```typescript
 async function createFileSearchStore(
-  displayName: string
+  displayName: string,
 ): Promise<FileSearchStore> {
   const client = new GoogleGenAI({});
-  
+
   const store = await client.fileSearchStores.create({
-    displayName
+    displayName,
   });
-  
+
   console.log(`Created store: ${store.name}`);
   return store;
 }
@@ -241,15 +243,15 @@ async function createFileSearchStore(
 ```typescript
 async function listFileSearchStores(): Promise<FileSearchStore[]> {
   const client = new GoogleGenAI({});
-  
+
   const stores: FileSearchStore[] = [];
   const iterator = client.fileSearchStores.list();
-  
+
   for await (const store of iterator) {
     console.log(`Store: ${store.name} (${store.displayName})`);
     stores.push(store);
   }
-  
+
   return stores;
 }
 ```
@@ -257,15 +259,13 @@ async function listFileSearchStores(): Promise<FileSearchStore[]> {
 ### Get a Specific File Search Store
 
 ```typescript
-async function getFileSearchStore(
-  storeName: string
-): Promise<FileSearchStore> {
+async function getFileSearchStore(storeName: string): Promise<FileSearchStore> {
   const client = new GoogleGenAI({});
-  
+
   const store = await client.fileSearchStores.get({
-    name: storeName
+    name: storeName,
   });
-  
+
   console.log(`Retrieved store: ${store.displayName}`);
   return store;
 }
@@ -276,15 +276,15 @@ async function getFileSearchStore(
 ```typescript
 async function deleteFileSearchStore(
   storeName: string,
-  force: boolean = true
+  force: boolean = true,
 ): Promise<void> {
   const client = new GoogleGenAI({});
-  
+
   await client.fileSearchStores.delete({
     name: storeName,
-    config: { force }
+    config: { force },
   });
-  
+
   console.log(`Deleted store: ${storeName}`);
 }
 ```
@@ -302,7 +302,7 @@ interface CustomMetadata {
 
 async function uploadWithMetadata(
   fileSearchStoreName: string,
-  fileName: string
+  fileName: string,
 ) {
   const client = new GoogleGenAI({});
 
@@ -310,10 +310,10 @@ async function uploadWithMetadata(
     fileSearchStoreName,
     fileName,
     customMetadata: [
-      { key: 'author', stringValue: 'Robert Graves' },
-      { key: 'year', numericValue: 1934 },
-      { key: 'genre', stringValue: 'historical fiction' }
-    ]
+      { key: "author", stringValue: "Robert Graves" },
+      { key: "year", numericValue: 1934 },
+      { key: "genre", stringValue: "historical fiction" },
+    ],
   });
 
   return await waitForOperation(operation);
@@ -328,21 +328,23 @@ Search within a subset of documents using metadata filters:
 async function queryWithMetadataFilter(
   fileSearchStoreName: string,
   query: string,
-  filter: string
+  filter: string,
 ) {
   const client = new GoogleGenAI({});
 
   const response = await client.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: "gemini-2.5-flash",
     contents: query,
     config: {
-      tools: [{
-        fileSearch: {
-          fileSearchStoreNames: [fileSearchStoreName],
-          metadataFilter: filter  // e.g., 'author="Robert Graves"'
-        }
-      }]
-    }
+      tools: [
+        {
+          fileSearch: {
+            fileSearchStoreNames: [fileSearchStoreName],
+            metadataFilter: filter, // e.g., 'author="Robert Graves"'
+          },
+        },
+      ],
+    },
   });
 
   return response;
@@ -352,13 +354,13 @@ async function queryWithMetadataFilter(
 const response1 = await queryWithMetadataFilter(
   storeName,
   "Tell me about the book 'I, Claudius'",
-  'author="Robert Graves"'
+  'author="Robert Graves"',
 );
 
 const response2 = await queryWithMetadataFilter(
   storeName,
   "Find books from the 1930s",
-  'year >= 1930 AND year < 1940'
+  "year >= 1930 AND year < 1940",
 );
 ```
 
@@ -368,22 +370,22 @@ Filter syntax follows [google.aip.dev/160](https://google.aip.dev/160):
 
 ```typescript
 // String comparison
-'author="Robert Graves"'
-'genre="historical fiction"'
+'author="Robert Graves"';
+'genre="historical fiction"';
 
 // Numeric comparison
-'year=1934'
-'year >= 1930'
-'year < 1940'
+"year=1934";
+"year >= 1930";
+"year < 1940";
 
 // Logical operators
-'author="Robert Graves" AND year=1934'
-'genre="fiction" OR genre="non-fiction"'
-'year >= 1930 AND year < 1940 AND author="Robert Graves"'
+'author="Robert Graves" AND year=1934';
+'genre="fiction" OR genre="non-fiction"';
+'year >= 1930 AND year < 1940 AND author="Robert Graves"';
 
 // Negation
-'NOT genre="romance"'
-'year != 1934'
+'NOT genre="romance"';
+"year != 1934";
 ```
 
 ## Citations
@@ -408,30 +410,29 @@ interface GroundingMetadata {
   }>;
 }
 
-async function queryWithCitations(
-  fileSearchStoreName: string,
-  query: string
-) {
+async function queryWithCitations(fileSearchStoreName: string, query: string) {
   const client = new GoogleGenAI({});
 
   const response = await client.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: "gemini-2.5-flash",
     contents: query,
     config: {
-      tools: [{
-        fileSearch: {
-          fileSearchStoreNames: [fileSearchStoreName]
-        }
-      }]
-    }
+      tools: [
+        {
+          fileSearch: {
+            fileSearchStoreNames: [fileSearchStoreName],
+          },
+        },
+      ],
+    },
   });
 
-  console.log('Response:', response.text);
-  
+  console.log("Response:", response.text);
+
   // Access grounding metadata
   const groundingMetadata = response.candidates[0].groundingMetadata;
   if (groundingMetadata) {
-    console.log('\nCitations:');
+    console.log("\nCitations:");
     console.log(JSON.stringify(groundingMetadata, null, 2));
   }
 
@@ -452,21 +453,25 @@ function extractCitations(response: any): Array<{
   const chunks = metadata.groundingChunks || [];
   const supports = metadata.groundingSupports || [];
 
-  return supports.map(support => ({
-    text: support.segment?.text || '',
-    sources: (support.groundingChunkIndices || [])
-      .map(index => chunks[index]?.web?.title || 'Unknown source')
+  return supports.map((support) => ({
+    text: support.segment?.text || "",
+    sources: (support.groundingChunkIndices || []).map(
+      (index) => chunks[index]?.web?.title || "Unknown source",
+    ),
   }));
 }
 
 // Usage
-const response = await queryWithCitations(storeName, 'Tell me about Robert Graves');
+const response = await queryWithCitations(
+  storeName,
+  "Tell me about Robert Graves",
+);
 const citations = extractCitations(response);
 
-console.log('\nCitations:');
+console.log("\nCitations:");
 citations.forEach((citation, index) => {
   console.log(`\n${index + 1}. "${citation.text}"`);
-  console.log(`   Sources: ${citation.sources.join(', ')}`);
+  console.log(`   Sources: ${citation.sources.join(", ")}`);
 });
 ```
 
@@ -506,14 +511,15 @@ The following models support File Search:
 
 ### Total Storage by Tier
 
-| Tier | Total Storage Limit |
-|------|---------------------|
-| Free | 1 GB |
-| Tier 1 | 10 GB |
-| Tier 2 | 100 GB |
-| Tier 3 | 1 TB |
+| Tier   | Total Storage Limit |
+| ------ | ------------------- |
+| Free   | 1 GB                |
+| Tier 1 | 10 GB               |
+| Tier 2 | 100 GB              |
+| Tier 3 | 1 TB                |
 
 **Note**: The limit on file search store size is computed on the backend based on:
+
 - Size of your input
 - Embeddings generated and stored with it
 - Typically approximately **3x the size of your input data**
@@ -521,15 +527,19 @@ The following models support File Search:
 ## Pricing
 
 **Embedding Generation (Indexing Time)**:
+
 - $0.15 per 1M tokens (using existing embeddings pricing)
 
 **Storage**:
+
 - Free of charge
 
 **Query Time Embeddings**:
+
 - Free of charge
 
 **Retrieved Document Tokens**:
+
 - Charged as regular context tokens (based on model pricing)
 
 ### Cost Estimation
@@ -537,7 +547,7 @@ The following models support File Search:
 ```typescript
 function estimateIndexingCost(
   inputTokens: number,
-  pricePerMillion: number = 0.15
+  pricePerMillion: number = 0.15,
 ): number {
   return (inputTokens / 1_000_000) * pricePerMillion;
 }
@@ -554,8 +564,8 @@ console.log(`Estimated indexing cost: $${cost.toFixed(4)}`);
 ### Example 1: Document Q&A System
 
 ```typescript
-import { GoogleGenAI } from '@google/genai';
-import { readFileSync } from 'fs';
+import { GoogleGenAI } from "@google/genai";
+import { readFileSync } from "fs";
 
 class DocumentQASystem {
   private client: GoogleGenAI;
@@ -568,41 +578,42 @@ class DocumentQASystem {
   async initialize(displayName: string): Promise<void> {
     // Create file search store
     const store = await this.client.fileSearchStores.create({
-      displayName
+      displayName,
     });
-    
+
     this.storeName = store.name;
     console.log(`✓ Created file search store: ${this.storeName}`);
   }
 
   async uploadDocuments(filePaths: string[]): Promise<void> {
     if (!this.storeName) {
-      throw new Error('Store not initialized');
+      throw new Error("Store not initialized");
     }
 
     for (const filePath of filePaths) {
       console.log(`Uploading ${filePath}...`);
-      
-      const operation = await this.client.fileSearchStores.uploadToFileSearchStore({
-        fileSearchStoreName: this.storeName,
-        file: filePath,
-        config: {
-          displayName: filePath.split('/').pop(),
-          chunkingConfig: {
-            whiteSpaceConfig: {
-              maxTokensPerChunk: 300,
-              maxOverlapTokens: 50
-            }
-          }
-        }
-      });
+
+      const operation =
+        await this.client.fileSearchStores.uploadToFileSearchStore({
+          fileSearchStoreName: this.storeName,
+          file: filePath,
+          config: {
+            displayName: filePath.split("/").pop(),
+            chunkingConfig: {
+              whiteSpaceConfig: {
+                maxTokensPerChunk: 300,
+                maxOverlapTokens: 50,
+              },
+            },
+          },
+        });
 
       // Wait for completion
       while (!operation.done) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
         operation = await this.client.operations.get(operation.name);
       }
-      
+
       console.log(`✓ Uploaded and indexed ${filePath}`);
     }
   }
@@ -612,38 +623,43 @@ class DocumentQASystem {
     citations: Array<{ text: string; sources: string[] }>;
   }> {
     if (!this.storeName) {
-      throw new Error('Store not initialized');
+      throw new Error("Store not initialized");
     }
 
     const response = await this.client.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: "gemini-2.5-flash",
       contents: question,
       config: {
-        tools: [{
-          fileSearch: {
-            fileSearchStoreNames: [this.storeName]
-          }
-        }]
-      }
+        tools: [
+          {
+            fileSearch: {
+              fileSearchStoreNames: [this.storeName],
+            },
+          },
+        ],
+      },
     });
 
     return {
       answer: response.text,
-      citations: this.extractCitations(response)
+      citations: this.extractCitations(response),
     };
   }
 
-  private extractCitations(response: any): Array<{ text: string; sources: string[] }> {
+  private extractCitations(
+    response: any,
+  ): Array<{ text: string; sources: string[] }> {
     const metadata = response.candidates[0]?.groundingMetadata;
     if (!metadata) return [];
 
     const chunks = metadata.groundingChunks || [];
     const supports = metadata.groundingSupports || [];
 
-    return supports.map(support => ({
-      text: support.segment?.text || '',
-      sources: (support.groundingChunkIndices || [])
-        .map((index: number) => chunks[index]?.web?.title || 'Unknown')
+    return supports.map((support) => ({
+      text: support.segment?.text || "",
+      sources: (support.groundingChunkIndices || []).map(
+        (index: number) => chunks[index]?.web?.title || "Unknown",
+      ),
     }));
   }
 
@@ -651,9 +667,9 @@ class DocumentQASystem {
     if (this.storeName) {
       await this.client.fileSearchStores.delete({
         name: this.storeName,
-        config: { force: true }
+        config: { force: true },
       });
-      console.log('✓ Cleaned up file search store');
+      console.log("✓ Cleaned up file search store");
     }
   }
 }
@@ -661,22 +677,24 @@ class DocumentQASystem {
 // Usage
 async function main() {
   const qa = new DocumentQASystem();
-  
+
   try {
-    await qa.initialize('company-docs');
-    
+    await qa.initialize("company-docs");
+
     await qa.uploadDocuments([
-      './docs/company-handbook.pdf',
-      './docs/policies.docx',
-      './docs/benefits.pdf'
+      "./docs/company-handbook.pdf",
+      "./docs/policies.docx",
+      "./docs/benefits.pdf",
     ]);
 
-    const result = await qa.query('What is the vacation policy?');
-    
-    console.log('\nAnswer:', result.answer);
-    console.log('\nCitations:');
+    const result = await qa.query("What is the vacation policy?");
+
+    console.log("\nAnswer:", result.answer);
+    console.log("\nCitations:");
     result.citations.forEach((citation, i) => {
-      console.log(`${i + 1}. "${citation.text}" - ${citation.sources.join(', ')}`);
+      console.log(
+        `${i + 1}. "${citation.text}" - ${citation.sources.join(", ")}`,
+      );
     });
   } finally {
     await qa.cleanup();
@@ -689,7 +707,7 @@ main();
 ### Example 2: Multi-Document Research Assistant
 
 ```typescript
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from "@google/genai";
 
 interface ResearchDocument {
   filePath: string;
@@ -710,45 +728,51 @@ class ResearchAssistant {
 
   async setup(storeName: string): Promise<void> {
     const store = await this.client.fileSearchStores.create({
-      displayName: storeName
+      displayName: storeName,
     });
-    
+
     this.storeName = store.name;
   }
 
   async ingestDocuments(documents: ResearchDocument[]): Promise<void> {
-    if (!this.storeName) throw new Error('Not initialized');
+    if (!this.storeName) throw new Error("Not initialized");
 
     for (const doc of documents) {
       console.log(`Ingesting: ${doc.filePath}`);
-      
+
       // Upload file first
       const file = await this.client.files.upload({
         file: doc.filePath,
         config: {
-          name: doc.filePath.split('/').pop()
-        }
+          name: doc.filePath.split("/").pop(),
+        },
       });
 
       // Import with metadata
       const customMetadata = [
-        doc.metadata.author && { key: 'author', stringValue: doc.metadata.author },
-        doc.metadata.year && { key: 'year', numericValue: doc.metadata.year },
-        doc.metadata.category && { key: 'category', stringValue: doc.metadata.category }
+        doc.metadata.author && {
+          key: "author",
+          stringValue: doc.metadata.author,
+        },
+        doc.metadata.year && { key: "year", numericValue: doc.metadata.year },
+        doc.metadata.category && {
+          key: "category",
+          stringValue: doc.metadata.category,
+        },
       ].filter(Boolean);
 
       const operation = await this.client.fileSearchStores.importFile({
         fileSearchStoreName: this.storeName,
         fileName: file.name,
-        customMetadata
+        customMetadata,
       });
 
       // Wait for completion
       while (!operation.done) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
         operation = await this.client.operations.get(operation.name);
       }
-      
+
       console.log(`✓ Ingested ${doc.filePath}`);
     }
   }
@@ -759,43 +783,45 @@ class ResearchAssistant {
       author?: string;
       yearRange?: { start: number; end: number };
       category?: string;
-    }
+    },
   ): Promise<string> {
-    if (!this.storeName) throw new Error('Not initialized');
+    if (!this.storeName) throw new Error("Not initialized");
 
     // Build metadata filter
-    let metadataFilter = '';
+    let metadataFilter = "";
     if (filters) {
       const conditions: string[] = [];
-      
+
       if (filters.author) {
         conditions.push(`author="${filters.author}"`);
       }
-      
+
       if (filters.yearRange) {
         conditions.push(
-          `year >= ${filters.yearRange.start} AND year <= ${filters.yearRange.end}`
+          `year >= ${filters.yearRange.start} AND year <= ${filters.yearRange.end}`,
         );
       }
-      
+
       if (filters.category) {
         conditions.push(`category="${filters.category}"`);
       }
-      
-      metadataFilter = conditions.join(' AND ');
+
+      metadataFilter = conditions.join(" AND ");
     }
 
     const response = await this.client.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: "gemini-2.5-flash",
       contents: question,
       config: {
-        tools: [{
-          fileSearch: {
-            fileSearchStoreNames: [this.storeName],
-            ...(metadataFilter && { metadataFilter })
-          }
-        }]
-      }
+        tools: [
+          {
+            fileSearch: {
+              fileSearchStoreNames: [this.storeName],
+              ...(metadataFilter && { metadataFilter }),
+            },
+          },
+        ],
+      },
     });
 
     return response.text;
@@ -805,43 +831,43 @@ class ResearchAssistant {
 // Usage
 async function conductResearch() {
   const assistant = new ResearchAssistant();
-  
-  await assistant.setup('climate-research');
-  
+
+  await assistant.setup("climate-research");
+
   await assistant.ingestDocuments([
     {
-      filePath: './papers/climate-change-2020.pdf',
-      metadata: { author: 'IPCC', year: 2020, category: 'climate' }
+      filePath: "./papers/climate-change-2020.pdf",
+      metadata: { author: "IPCC", year: 2020, category: "climate" },
     },
     {
-      filePath: './papers/renewable-energy-2021.pdf',
-      metadata: { author: 'IEA', year: 2021, category: 'energy' }
+      filePath: "./papers/renewable-energy-2021.pdf",
+      metadata: { author: "IEA", year: 2021, category: "energy" },
     },
     {
-      filePath: './papers/carbon-capture-2022.pdf',
-      metadata: { author: 'MIT', year: 2022, category: 'technology' }
-    }
+      filePath: "./papers/carbon-capture-2022.pdf",
+      metadata: { author: "MIT", year: 2022, category: "technology" },
+    },
   ]);
 
   // Query all documents
   const answer1 = await assistant.research(
-    'What are the latest findings on climate change mitigation?'
+    "What are the latest findings on climate change mitigation?",
   );
-  console.log('All documents:', answer1);
+  console.log("All documents:", answer1);
 
   // Query filtered by year range
   const answer2 = await assistant.research(
-    'What renewable energy technologies show the most promise?',
-    { yearRange: { start: 2021, end: 2022 } }
+    "What renewable energy technologies show the most promise?",
+    { yearRange: { start: 2021, end: 2022 } },
   );
-  console.log('\n2021-2022 documents:', answer2);
+  console.log("\n2021-2022 documents:", answer2);
 
   // Query filtered by category
   const answer3 = await assistant.research(
-    'What are the challenges in carbon capture?',
-    { category: 'technology' }
+    "What are the challenges in carbon capture?",
+    { category: "technology" },
   );
-  console.log('\nTechnology documents:', answer3);
+  console.log("\nTechnology documents:", answer3);
 }
 
 conductResearch();
@@ -850,7 +876,7 @@ conductResearch();
 ### Example 3: Customer Support Knowledge Base
 
 ```typescript
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from "@google/genai";
 
 interface SupportDocument {
   content: string;
@@ -868,36 +894,34 @@ class SupportKnowledgeBase {
 
   async initialize(): Promise<void> {
     const store = await this.client.fileSearchStores.create({
-      displayName: 'support-kb'
+      displayName: "support-kb",
     });
     this.storeName = store.name;
   }
 
-  async addDocument(
-    doc: SupportDocument,
-    filename: string
-  ): Promise<void> {
-    if (!this.storeName) throw new Error('Not initialized');
+  async addDocument(doc: SupportDocument, filename: string): Promise<void> {
+    if (!this.storeName) throw new Error("Not initialized");
 
     // Create temporary file (in real app, you'd handle this differently)
     const tempFile = `./temp/${filename}`;
     // Write doc.content to tempFile
 
-    const operation = await this.client.fileSearchStores.uploadToFileSearchStore({
-      fileSearchStoreName: this.storeName,
-      file: tempFile,
-      config: {
-        displayName: filename,
-        customMetadata: [
-          { key: 'category', stringValue: doc.category },
-          { key: 'priority', numericValue: doc.priority }
-        ]
-      }
-    });
+    const operation =
+      await this.client.fileSearchStores.uploadToFileSearchStore({
+        fileSearchStoreName: this.storeName,
+        file: tempFile,
+        config: {
+          displayName: filename,
+          customMetadata: [
+            { key: "category", stringValue: doc.category },
+            { key: "priority", numericValue: doc.priority },
+          ],
+        },
+      });
 
     // Wait for completion
     while (!operation.done) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       operation = await this.client.operations.get(operation.name);
     }
   }
@@ -905,48 +929,49 @@ class SupportKnowledgeBase {
   async findAnswer(
     question: string,
     category?: string,
-    minPriority?: number
+    minPriority?: number,
   ): Promise<{
     answer: string;
     sources: string[];
-    confidence: 'high' | 'medium' | 'low';
+    confidence: "high" | "medium" | "low";
   }> {
-    if (!this.storeName) throw new Error('Not initialized');
+    if (!this.storeName) throw new Error("Not initialized");
 
     // Build filter
     const filters: string[] = [];
     if (category) filters.push(`category="${category}"`);
     if (minPriority) filters.push(`priority >= ${minPriority}`);
-    const metadataFilter = filters.join(' AND ');
+    const metadataFilter = filters.join(" AND ");
 
     const response = await this.client.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: "gemini-2.5-flash",
       contents: question,
       config: {
-        tools: [{
-          fileSearch: {
-            fileSearchStoreNames: [this.storeName],
-            ...(metadataFilter && { metadataFilter })
-          }
-        }]
-      }
+        tools: [
+          {
+            fileSearch: {
+              fileSearchStoreNames: [this.storeName],
+              ...(metadataFilter && { metadataFilter }),
+            },
+          },
+        ],
+      },
     });
 
     // Extract sources from grounding metadata
     const metadata = response.candidates[0]?.groundingMetadata;
     const sources = (metadata?.groundingChunks || [])
-      .map(chunk => chunk.web?.title)
+      .map((chunk) => chunk.web?.title)
       .filter(Boolean);
 
     // Estimate confidence based on number of sources
-    const confidence = sources.length >= 3 ? 'high' 
-                     : sources.length >= 2 ? 'medium' 
-                     : 'low';
+    const confidence =
+      sources.length >= 3 ? "high" : sources.length >= 2 ? "medium" : "low";
 
     return {
       answer: response.text,
       sources,
-      confidence
+      confidence,
     };
   }
 
@@ -962,27 +987,30 @@ async function supportExample() {
   await kb.initialize();
 
   // Add documents
-  await kb.addDocument({
-    content: 'Password reset instructions...',
-    category: 'account',
-    priority: 1
-  }, 'password-reset.txt');
-
-  await kb.addDocument({
-    content: 'Billing cycle information...',
-    category: 'billing',
-    priority: 2
-  }, 'billing-cycles.txt');
-
-  // Find answers
-  const result = await kb.findAnswer(
-    'How do I reset my password?',
-    'account'
+  await kb.addDocument(
+    {
+      content: "Password reset instructions...",
+      category: "account",
+      priority: 1,
+    },
+    "password-reset.txt",
   );
 
-  console.log('Answer:', result.answer);
-  console.log('Confidence:', result.confidence);
-  console.log('Sources:', result.sources);
+  await kb.addDocument(
+    {
+      content: "Billing cycle information...",
+      category: "billing",
+      priority: 2,
+    },
+    "billing-cycles.txt",
+  );
+
+  // Find answers
+  const result = await kb.findAnswer("How do I reset my password?", "account");
+
+  console.log("Answer:", result.answer);
+  console.log("Confidence:", result.confidence);
+  console.log("Sources:", result.sources);
 }
 
 supportExample();
@@ -996,9 +1024,9 @@ Create separate file search stores for different domains:
 
 ```typescript
 const stores = {
-  legal: await createFileSearchStore('legal-documents'),
-  hr: await createFileSearchStore('hr-policies'),
-  engineering: await createFileSearchStore('technical-docs')
+  legal: await createFileSearchStore("legal-documents"),
+  hr: await createFileSearchStore("hr-policies"),
+  engineering: await createFileSearchStore("technical-docs"),
 };
 ```
 
@@ -1007,18 +1035,18 @@ const stores = {
 ```typescript
 // ✓ Good
 const operation = await client.fileSearchStores.uploadToFileSearchStore({
-  file: 'document.pdf',
+  file: "document.pdf",
   config: {
-    displayName: '2024-Q1-Financial-Report'
-  }
+    displayName: "2024-Q1-Financial-Report",
+  },
 });
 
 // ✗ Bad
 const operation = await client.fileSearchStores.uploadToFileSearchStore({
-  file: 'document.pdf',
+  file: "document.pdf",
   config: {
-    displayName: 'doc1'
-  }
+    displayName: "doc1",
+  },
 });
 ```
 
@@ -1026,11 +1054,11 @@ const operation = await client.fileSearchStores.uploadToFileSearchStore({
 
 ```typescript
 const metadata = [
-  { key: 'document_type', stringValue: 'financial_report' },
-  { key: 'quarter', stringValue: 'Q1' },
-  { key: 'year', numericValue: 2024 },
-  { key: 'department', stringValue: 'finance' },
-  { key: 'confidentiality', stringValue: 'internal' }
+  { key: "document_type", stringValue: "financial_report" },
+  { key: "quarter", stringValue: "Q1" },
+  { key: "year", numericValue: 2024 },
+  { key: "department", stringValue: "finance" },
+  { key: "confidentiality", stringValue: "internal" },
 ];
 ```
 
@@ -1040,10 +1068,10 @@ const metadata = [
 async function checkStoreSize(storeName: string): Promise<void> {
   const client = new GoogleGenAI({});
   const store = await client.fileSearchStores.get({ name: storeName });
-  
+
   // Check if approaching limits
   // Implementation depends on API providing size information
-  console.log('Store:', store);
+  console.log("Store:", store);
 }
 ```
 
@@ -1052,18 +1080,18 @@ async function checkStoreSize(storeName: string): Promise<void> {
 ```typescript
 async function waitForOperationWithProgress(
   operation: any,
-  taskName: string
+  taskName: string,
 ): Promise<any> {
   const client = new GoogleGenAI({});
   let iteration = 0;
-  
+
   while (!operation.done) {
     iteration++;
     console.log(`${taskName}: still processing... (${iteration * 5}s)`);
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     operation = await client.operations.get(operation.name);
   }
-  
+
   console.log(`${taskName}: complete ✓`);
   return operation;
 }
@@ -1075,29 +1103,29 @@ async function waitForOperationWithProgress(
 async function uploadWithRetry(
   storeName: string,
   filePath: string,
-  maxRetries: number = 3
+  maxRetries: number = 3,
 ): Promise<any> {
   const client = new GoogleGenAI({});
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const operation = await client.fileSearchStores.uploadToFileSearchStore({
         fileSearchStoreName: storeName,
         file: filePath,
-        config: { displayName: filePath }
+        config: { displayName: filePath },
       });
-      
-      return await waitForOperationWithProgress(operation, 'Upload');
+
+      return await waitForOperationWithProgress(operation, "Upload");
     } catch (error) {
       console.error(`Attempt ${attempt} failed:`, error);
-      
+
       if (attempt === maxRetries) {
         throw new Error(`Failed after ${maxRetries} attempts`);
       }
-      
+
       // Exponential backoff
-      await new Promise(resolve => 
-        setTimeout(resolve, Math.pow(2, attempt) * 1000)
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.pow(2, attempt) * 1000),
       );
     }
   }
@@ -1111,60 +1139,56 @@ class FileSearchError extends Error {
   constructor(
     message: string,
     public code?: string,
-    public details?: any
+    public details?: any,
   ) {
     super(message);
-    this.name = 'FileSearchError';
+    this.name = "FileSearchError";
   }
 }
 
 async function safeFileSearch(
   storeName: string,
-  query: string
+  query: string,
 ): Promise<string> {
   const client = new GoogleGenAI({});
-  
+
   try {
     // Verify store exists
     await client.fileSearchStores.get({ name: storeName });
-    
+
     const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: "gemini-2.5-flash",
       contents: query,
       config: {
-        tools: [{
-          fileSearch: {
-            fileSearchStoreNames: [storeName]
-          }
-        }]
-      }
+        tools: [
+          {
+            fileSearch: {
+              fileSearchStoreNames: [storeName],
+            },
+          },
+        ],
+      },
     });
 
     if (!response.text) {
-      throw new FileSearchError(
-        'No response generated',
-        'EMPTY_RESPONSE'
-      );
+      throw new FileSearchError("No response generated", "EMPTY_RESPONSE");
     }
 
     return response.text;
   } catch (error) {
     if (error instanceof Error) {
-      if (error.message.includes('not found')) {
+      if (error.message.includes("not found")) {
         throw new FileSearchError(
           `Store not found: ${storeName}`,
-          'STORE_NOT_FOUND'
+          "STORE_NOT_FOUND",
         );
       }
-      
-      if (error.message.includes('quota')) {
-        throw new FileSearchError(
-          'Storage quota exceeded',
-          'QUOTA_EXCEEDED'
-        );
+
+      if (error.message.includes("quota")) {
+        throw new FileSearchError("Storage quota exceeded", "QUOTA_EXCEEDED");
       }
     }
-    
+
     throw error;
   }
 }

@@ -18,7 +18,7 @@ The URL context tool is useful for tasks like:
 Install required dependency:
 
 ```bash
-npm install @google/genai
+pnpm install @google/genai
 ```
 
 ### Basic Usage
@@ -38,7 +38,7 @@ async function main() {
       tools: [{ urlContext: {} }],
     },
   });
-  
+
   console.log(response.text);
 
   // For verification, inspect metadata to see which URLs the model retrieved
@@ -142,15 +142,12 @@ async function main() {
       "Give me three day events schedule based on https://example.com/event. Also let me know what needs to be taken care of considering weather and commute.",
     ],
     config: {
-      tools: [
-        { urlContext: {} },
-        { googleSearch: {} }
-      ],
+      tools: [{ urlContext: {} }, { googleSearch: {} }],
     },
   });
-  
+
   console.log(response.text);
-  
+
   // Get URLs retrieved for context
   console.log(response.candidates[0].urlContextMetadata);
 }
@@ -177,7 +174,7 @@ const recipeSchema = z.object({
 
 async function extractRecipeData(url: string) {
   const ai = new GoogleGenAI({});
-  
+
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: [`Extract the recipe information from ${url}`],
@@ -187,7 +184,7 @@ async function extractRecipeData(url: string) {
       responseJsonSchema: zodToJsonSchema(recipeSchema),
     },
   });
-  
+
   const recipe = recipeSchema.parse(JSON.parse(response.text));
   return recipe;
 }
@@ -202,13 +199,13 @@ The system performs content moderation checks on URLs to confirm they meet safet
 ```typescript
 function checkUrlRetrievalStatus(response: UrlContextResponse): void {
   const metadata = response.candidates[0]?.urlContextMetadata;
-  
+
   if (!metadata) {
     console.log("No URL context metadata available");
     return;
   }
 
-  metadata.url_metadata.forEach(urlMeta => {
+  metadata.url_metadata.forEach((urlMeta) => {
     switch (urlMeta.url_retrieval_status) {
       case "URL_RETRIEVAL_STATUS_SUCCESS":
         console.log(`✓ Successfully retrieved: ${urlMeta.retrieved_url}`);
@@ -279,7 +276,7 @@ interface UsageMetadata {
 ```typescript
 function logTokenUsage(response: any): void {
   const usage = response.usageMetadata;
-  
+
   if (!usage) {
     console.log("No usage metadata available");
     return;
@@ -290,7 +287,7 @@ function logTokenUsage(response: any): void {
   console.log(`  Tool use tokens: ${usage.tool_use_prompt_token_count}`);
   console.log(`  Response tokens: ${usage.candidates_token_count}`);
   console.log(`  Total tokens: ${usage.total_token_count}`);
-  
+
   // Estimate cost (example: $0.075 per 1M input tokens for Gemini 2.5 Flash)
   const estimatedCost = (usage.total_token_count / 1_000_000) * 0.075;
   console.log(`  Estimated cost: $${estimatedCost.toFixed(6)}`);
@@ -325,12 +322,12 @@ Verify URLs don't lead to pages requiring login or behind paywalls:
 
 ```typescript
 const accessibleUrls = [
-  "https://example.com/public-article",  // ✓ Good
-  "https://arxiv.org/abs/2401.12345",    // ✓ Good
+  "https://example.com/public-article", // ✓ Good
+  "https://arxiv.org/abs/2401.12345", // ✓ Good
 ];
 
 const problematicUrls = [
-  "https://medium.com/premium-article",   // ✗ Paywall
+  "https://medium.com/premium-article", // ✗ Paywall
   "https://docs.google.com/document/...", // ✗ Requires auth
 ];
 ```
@@ -361,13 +358,13 @@ function isValidUrl(urlString: string): boolean {
 
 async function generateWithUrlContext(urls: string[], prompt: string) {
   const validUrls = urls.filter(isValidUrl);
-  
+
   if (validUrls.length === 0) {
     throw new Error("No valid URLs provided");
   }
 
   const ai = new GoogleGenAI({});
-  
+
   const urlsText = validUrls.join(", ");
   const fullPrompt = `${prompt}\n\nURLs to analyze: ${urlsText}`;
 
@@ -386,10 +383,10 @@ async function generateWithUrlContext(urls: string[], prompt: string) {
 ```typescript
 async function robustUrlContextGeneration(
   urls: string[],
-  prompt: string
+  prompt: string,
 ): Promise<string> {
   const ai = new GoogleGenAI({});
-  
+
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: [`${prompt}\n\nAnalyze: ${urls.join(", ")}`],
@@ -399,15 +396,15 @@ async function robustUrlContextGeneration(
   });
 
   const metadata = response.candidates[0]?.urlContextMetadata;
-  
+
   if (metadata) {
     const failedUrls = metadata.url_metadata
-      .filter(m => m.url_retrieval_status !== "URL_RETRIEVAL_STATUS_SUCCESS")
-      .map(m => m.retrieved_url);
-    
+      .filter((m) => m.url_retrieval_status !== "URL_RETRIEVAL_STATUS_SUCCESS")
+      .map((m) => m.retrieved_url);
+
     if (failedUrls.length > 0) {
       console.warn(`⚠ Failed to retrieve ${failedUrls.length} URL(s):`);
-      failedUrls.forEach(url => console.warn(`  - ${url}`));
+      failedUrls.forEach((url) => console.warn(`  - ${url}`));
     }
   }
 
@@ -427,6 +424,7 @@ async function robustUrlContextGeneration(
 The tool can extract content from URLs with these content types:
 
 **Text formats:**
+
 - `text/html`
 - `application/json`
 - `text/plain`
@@ -437,12 +435,14 @@ The tool can extract content from URLs with these content types:
 - `text/rtf`
 
 **Image formats:**
+
 - `image/png`
 - `image/jpeg`
 - `image/bmp`
 - `image/webp`
 
 **Document formats:**
+
 - `application/pdf`
 
 ### Unsupported Content Types
@@ -478,7 +478,7 @@ async function checkUrlContentType(url: string): Promise<boolean> {
   try {
     const response = await fetch(url, { method: "HEAD" });
     const contentType = response.headers.get("content-type");
-    
+
     if (!contentType) {
       console.warn(`No content-type header for ${url}`);
       return false;
@@ -486,11 +486,11 @@ async function checkUrlContentType(url: string): Promise<boolean> {
 
     const baseType = contentType.split(";")[0].trim();
     const isSupported = supportedContentTypes.has(baseType);
-    
+
     if (!isSupported) {
       console.warn(`Unsupported content-type: ${baseType} for ${url}`);
     }
-    
+
     return isSupported;
   } catch (error) {
     console.error(`Error checking ${url}:`, error);
@@ -516,12 +516,12 @@ interface CostEstimator {
 const costEstimator: CostEstimator = {
   modelPricing: {
     "gemini-2.5-flash": {
-      inputPer1M: 0.075,  // $0.075 per 1M input tokens
-      outputPer1M: 0.30,  // $0.30 per 1M output tokens
+      inputPer1M: 0.075, // $0.075 per 1M input tokens
+      outputPer1M: 0.3, // $0.30 per 1M output tokens
     },
     "gemini-2.5-pro": {
-      inputPer1M: 1.25,   // $1.25 per 1M input tokens
-      outputPer1M: 5.00,  // $5.00 per 1M output tokens
+      inputPer1M: 1.25, // $1.25 per 1M input tokens
+      outputPer1M: 5.0, // $5.00 per 1M output tokens
     },
   },
 };
@@ -529,17 +529,17 @@ const costEstimator: CostEstimator = {
 function estimateRequestCost(
   model: string,
   inputTokens: number,
-  outputTokens: number
+  outputTokens: number,
 ): number {
   const pricing = costEstimator.modelPricing[model];
-  
+
   if (!pricing) {
     throw new Error(`Unknown model: ${model}`);
   }
 
   const inputCost = (inputTokens / 1_000_000) * pricing.inputPer1M;
   const outputCost = (outputTokens / 1_000_000) * pricing.outputPer1M;
-  
+
   return inputCost + outputCost;
 }
 ```
@@ -564,7 +564,7 @@ async function compareDocuments(urls: string[]): Promise<DocumentComparison> {
   }
 
   const ai = new GoogleGenAI({});
-  
+
   const prompt = `
   Compare the documents at the following URLs:
   ${urls.map((url, i) => `${i + 1}. ${url}`).join("\n")}
@@ -585,9 +585,10 @@ async function compareDocuments(urls: string[]): Promise<DocumentComparison> {
 
   // Check which URLs were successfully retrieved
   const metadata = response.candidates[0]?.urlContextMetadata;
-  const successfulUrls = metadata?.url_metadata
-    .filter(m => m.url_retrieval_status === "URL_RETRIEVAL_STATUS_SUCCESS")
-    .map(m => m.retrieved_url) || [];
+  const successfulUrls =
+    metadata?.url_metadata
+      .filter((m) => m.url_retrieval_status === "URL_RETRIEVAL_STATUS_SUCCESS")
+      .map((m) => m.retrieved_url) || [];
 
   return {
     summary: response.text,
@@ -615,17 +616,19 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 const productDataSchema = z.object({
-  products: z.array(z.object({
-    name: z.string(),
-    price: z.number(),
-    source: z.string(),
-    inStock: z.boolean(),
-  })),
+  products: z.array(
+    z.object({
+      name: z.string(),
+      price: z.number(),
+      source: z.string(),
+      inStock: z.boolean(),
+    }),
+  ),
 });
 
 async function extractProductData(urls: string[]) {
   const ai = new GoogleGenAI({});
-  
+
   const prompt = `
   Extract product information from the following URLs:
   ${urls.join("\n")}
@@ -648,10 +651,12 @@ async function extractProductData(urls: string[]) {
   });
 
   const data = productDataSchema.parse(JSON.parse(response.text));
-  
+
   // Log token usage
-  console.log(`\nTokens used: ${response.usageMetadata?.total_token_count || 0}`);
-  
+  console.log(
+    `\nTokens used: ${response.usageMetadata?.total_token_count || 0}`,
+  );
+
   return data;
 }
 ```
@@ -670,13 +675,13 @@ interface RepoAnalysis {
 
 async function analyzeGitHubRepo(repoUrl: string): Promise<RepoAnalysis> {
   const ai = new GoogleGenAI({});
-  
+
   // Construct URLs for key repository files
   const urls = [
     `${repoUrl}`,
     `${repoUrl}/blob/main/README.md`,
     `${repoUrl}/blob/main/package.json`,
-  ].filter(url => url.includes("github.com"));
+  ].filter((url) => url.includes("github.com"));
 
   const prompt = `
   Analyze the GitHub repository at ${repoUrl}
@@ -723,10 +728,10 @@ interface ResearchReport {
 
 async function generateResearchReport(
   topic: string,
-  referenceUrls: string[]
+  referenceUrls: string[],
 ): Promise<ResearchReport> {
   const ai = new GoogleGenAI({});
-  
+
   const prompt = `
   Create a comprehensive research report on: ${topic}
   
@@ -746,10 +751,7 @@ async function generateResearchReport(
     model: "gemini-2.5-flash",
     contents: [prompt],
     config: {
-      tools: [
-        { urlContext: {} },
-        { googleSearch: {} }
-      ],
+      tools: [{ urlContext: {} }, { googleSearch: {} }],
     },
   });
 
@@ -759,22 +761,20 @@ async function generateResearchReport(
   return {
     summary: response.text,
     keyFindings: [], // Parse from response
-    sources: urlMetadata?.url_metadata.map(m => ({
-      url: m.retrieved_url,
-      status: m.url_retrieval_status,
-    })) || [],
+    sources:
+      urlMetadata?.url_metadata.map((m) => ({
+        url: m.retrieved_url,
+        status: m.url_retrieval_status,
+      })) || [],
     searchQueries: groundingMetadata?.webSearchQueries || [],
   };
 }
 
 // Usage
-const report = await generateResearchReport(
-  "Machine Learning in Healthcare",
-  [
-    "https://www.nature.com/articles/s41591-020-0842-6",
-    "https://arxiv.org/abs/2304.12345",
-  ]
-);
+const report = await generateResearchReport("Machine Learning in Healthcare", [
+  "https://www.nature.com/articles/s41591-020-0842-6",
+  "https://arxiv.org/abs/2304.12345",
+]);
 
 console.log("📊 Research Report Generated");
 console.log(`\n📄 Summary:\n${report.summary}`);
@@ -791,7 +791,7 @@ class UrlContextError extends Error {
   constructor(
     message: string,
     public failedUrls: string[],
-    public cause?: Error
+    public cause?: Error,
   ) {
     super(message);
     this.name = "UrlContextError";
@@ -800,7 +800,7 @@ class UrlContextError extends Error {
 
 async function safeUrlContextGeneration(
   urls: string[],
-  prompt: string
+  prompt: string,
 ): Promise<string> {
   // Validate input
   if (urls.length === 0) {
@@ -808,10 +808,7 @@ async function safeUrlContextGeneration(
   }
 
   if (urls.length > 20) {
-    throw new UrlContextError(
-      "Too many URLs (max 20)",
-      urls.slice(20)
-    );
+    throw new UrlContextError("Too many URLs (max 20)", urls.slice(20));
   }
 
   const validUrls = urls.filter(isValidUrl);
@@ -834,8 +831,10 @@ async function safeUrlContextGeneration(
     const metadata = response.candidates[0]?.urlContextMetadata;
     if (metadata) {
       const failedUrls = metadata.url_metadata
-        .filter(m => m.url_retrieval_status !== "URL_RETRIEVAL_STATUS_SUCCESS")
-        .map(m => m.retrieved_url);
+        .filter(
+          (m) => m.url_retrieval_status !== "URL_RETRIEVAL_STATUS_SUCCESS",
+        )
+        .map((m) => m.retrieved_url);
 
       if (failedUrls.length > 0) {
         console.warn(`⚠ ${failedUrls.length} URL(s) failed to retrieve`);
@@ -847,7 +846,7 @@ async function safeUrlContextGeneration(
     throw new UrlContextError(
       "Failed to generate content with URL context",
       validUrls,
-      error instanceof Error ? error : undefined
+      error instanceof Error ? error : undefined,
     );
   }
 }

@@ -17,7 +17,7 @@ Grounding helps you build applications that can:
 Install required dependency:
 
 ```bash
-npm install @google/genai
+pnpm install @google/genai
 ```
 
 ### Basic Usage
@@ -102,10 +102,7 @@ interface GroundingMetadata {
         "role": "model"
       },
       "groundingMetadata": {
-        "webSearchQueries": [
-          "UEFA Euro 2024 winner",
-          "who won euro 2024"
-        ],
+        "webSearchQueries": ["UEFA Euro 2024 winner", "who won euro 2024"],
         "searchEntryPoint": {
           "renderedContent": "<!-- HTML and CSS for the search widget -->"
         },
@@ -207,7 +204,7 @@ function addCitations(response: GroundedResponse): string {
     }
 
     const citationLinks = support.groundingChunkIndices
-      .map(i => {
+      .map((i) => {
         const uri = chunks[i]?.web?.uri;
         if (uri) {
           return `[${i + 1}](${uri})`;
@@ -267,12 +264,12 @@ function addHTMLCitations(response: GroundedResponse): string {
     }
 
     const citations: Citation[] = support.groundingChunkIndices
-      .map(i => {
+      .map((i) => {
         const chunk = chunks[i];
         const uri = chunk?.web?.uri;
         const title = chunk?.web?.title;
         if (uri) {
-          return { url: uri, title: title || 'Source', index: i + 1 };
+          return { url: uri, title: title || "Source", index: i + 1 };
         }
         return null;
       })
@@ -280,7 +277,10 @@ function addHTMLCitations(response: GroundedResponse): string {
 
     if (citations.length > 0) {
       const citationHTML = citations
-        .map(c => `<sup><a href="${c.url}" title="${c.title}">[${c.index}]</a></sup>`)
+        .map(
+          (c) =>
+            `<sup><a href="${c.url}" title="${c.title}">[${c.index}]</a></sup>`,
+        )
         .join("");
       text = text.slice(0, endIndex) + citationHTML + text.slice(endIndex);
     }
@@ -301,7 +301,7 @@ interface Source {
 
 function extractSources(response: GroundedResponse): Source[] {
   const chunks = response.candidates[0]?.groundingMetadata?.groundingChunks;
-  
+
   if (!chunks) {
     return [];
   }
@@ -309,16 +309,16 @@ function extractSources(response: GroundedResponse): Source[] {
   return chunks
     .map((chunk, index) => ({
       index: index + 1,
-      url: chunk.web?.uri || '',
-      title: chunk.web?.title || 'Unknown Source',
+      url: chunk.web?.uri || "",
+      title: chunk.web?.title || "Unknown Source",
     }))
-    .filter(source => source.url !== '');
+    .filter((source) => source.url !== "");
 }
 
 // Usage: Display sources at the end of the response
 const sources = extractSources(response);
-console.log('\nSources:');
-sources.forEach(source => {
+console.log("\nSources:");
+sources.forEach((source) => {
   console.log(`[${source.index}] ${source.title}: ${source.url}`);
 });
 ```
@@ -335,7 +335,7 @@ const ai = new GoogleGenAI({});
 const config = {
   tools: [
     { googleSearch: {} },
-    { urlContext: { urls: ["https://example.com/specific-article"] } }
+    { urlContext: { urls: ["https://example.com/specific-article"] } },
   ],
 };
 
@@ -350,14 +350,14 @@ console.log(response.text);
 
 ## Model Support
 
-| Model | Grounding with Google Search |
-|-------|------------------------------|
-| Gemini 2.5 Pro | ✔️ |
-| Gemini 2.5 Flash | ✔️ |
-| Gemini 2.5 Flash-Lite | ✔️ |
-| Gemini 2.0 Flash | ✔️ |
-| Gemini 1.5 Pro | ✔️ |
-| Gemini 1.5 Flash | ✔️ |
+| Model                 | Grounding with Google Search |
+| --------------------- | ---------------------------- |
+| Gemini 2.5 Pro        | ✔️                           |
+| Gemini 2.5 Flash      | ✔️                           |
+| Gemini 2.5 Flash-Lite | ✔️                           |
+| Gemini 2.0 Flash      | ✔️                           |
+| Gemini 1.5 Pro        | ✔️                           |
+| Gemini 1.5 Flash      | ✔️                           |
 
 **Note**: Older models use a `google_search_retrieval` tool. For all current models, use the `google_search` tool as shown in the examples.
 
@@ -371,10 +371,7 @@ You can use Grounding with Google Search with other tools to power more complex 
 
 ```typescript
 const config = {
-  tools: [
-    { googleSearch: {} },
-    { codeExecution: {} },
-  ],
+  tools: [{ googleSearch: {} }, { codeExecution: {} }],
 };
 ```
 
@@ -441,7 +438,7 @@ Always verify if the response was grounded before attempting to extract citation
 ```typescript
 async function getGroundedResponse(prompt: string) {
   const ai = new GoogleGenAI({});
-  
+
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: prompt,
@@ -451,10 +448,12 @@ async function getGroundedResponse(prompt: string) {
   });
 
   const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
-  
+
   if (groundingMetadata) {
     console.log("Response is grounded in search results");
-    console.log(`Search queries used: ${groundingMetadata.webSearchQueries?.join(", ")}`);
+    console.log(
+      `Search queries used: ${groundingMetadata.webSearchQueries?.join(", ")}`,
+    );
   } else {
     console.log("Response based on model's training data");
   }
@@ -472,7 +471,7 @@ function safeAddCitations(response: GroundedResponse): string {
   try {
     const text = response.text;
     const metadata = response.candidates[0]?.groundingMetadata;
-    
+
     if (!metadata?.groundingSupports || !metadata?.groundingChunks) {
       console.warn("No grounding metadata available");
       return text;
@@ -522,7 +521,7 @@ class GroundedSearchCache {
 
   async getGroundedResponse(prompt: string): Promise<GroundedResponse> {
     const cached = this.cache.get(prompt);
-    
+
     if (cached && Date.now() - cached.timestamp < this.ttl) {
       console.log("Returning cached response");
       return cached as GroundedResponse;
@@ -605,7 +604,7 @@ Show users what search queries were used:
 ```typescript
 function displaySearchProcess(response: GroundedResponse): void {
   const queries = response.candidates[0]?.groundingMetadata?.webSearchQueries;
-  
+
   if (queries && queries.length > 0) {
     console.log("🔍 Searches performed:");
     queries.forEach((query, index) => {
@@ -632,7 +631,9 @@ interface NewsResponse {
   searchQueries: string[];
 }
 
-async function getNewsSummaryWithCitations(topic: string): Promise<NewsResponse> {
+async function getNewsSummaryWithCitations(
+  topic: string,
+): Promise<NewsResponse> {
   const ai = new GoogleGenAI({});
 
   const prompt = `
@@ -669,10 +670,10 @@ async function getNewsSummaryWithCitations(topic: string): Promise<NewsResponse>
   const sources = (metadata.groundingChunks || [])
     .map((chunk, index) => ({
       index: index + 1,
-      title: chunk.web?.title || 'Unknown',
-      url: chunk.web?.uri || '',
+      title: chunk.web?.title || "Unknown",
+      url: chunk.web?.uri || "",
     }))
-    .filter(s => s.url !== '');
+    .filter((s) => s.url !== "");
 
   // Add citations
   const citations = addCitations(response);
@@ -693,8 +694,8 @@ async function main() {
   console.log("📰 NEWS SUMMARY\n");
   console.log(result.citations);
   console.log("\n📚 SOURCES\n");
-  
-  result.sources.forEach(source => {
+
+  result.sources.forEach((source) => {
     console.log(`[${source.index}] ${source.title}`);
     console.log(`    ${source.url}\n`);
   });
@@ -713,7 +714,7 @@ main();
 ```typescript
 async function safeGroundedSearch(prompt: string): Promise<string> {
   const ai = new GoogleGenAI({});
-  
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -727,7 +728,7 @@ async function safeGroundedSearch(prompt: string): Promise<string> {
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error during grounded search:", error.message);
-      
+
       // Retry without grounding if search fails
       try {
         console.log("Retrying without search grounding...");
@@ -735,7 +736,7 @@ async function safeGroundedSearch(prompt: string): Promise<string> {
           model: "gemini-2.5-flash",
           contents: prompt,
         });
-        
+
         console.warn("⚠️ Response generated without search grounding");
         return fallbackResponse.text;
       } catch (fallbackError) {

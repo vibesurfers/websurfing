@@ -21,28 +21,29 @@ Function calling has three primary use cases:
 Install required dependency:
 
 ```bash
-npm install @google/genai
+pnpm install @google/genai
 ```
 
 ### Basic Example: Schedule Meeting
 
 ```typescript
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, Type } from "@google/genai";
 
 // Configure the client
 const ai = new GoogleGenAI({});
 
 // Define the function declaration for the model
 const scheduleMeetingFunctionDeclaration = {
-  name: 'schedule_meeting',
-  description: 'Schedules a meeting with specified attendees at a given time and date.',
+  name: "schedule_meeting",
+  description:
+    "Schedules a meeting with specified attendees at a given time and date.",
   parameters: {
     type: Type.OBJECT,
     properties: {
       attendees: {
         type: Type.ARRAY,
         items: { type: Type.STRING },
-        description: 'List of people attending the meeting.',
+        description: "List of people attending the meeting.",
       },
       date: {
         type: Type.STRING,
@@ -54,21 +55,24 @@ const scheduleMeetingFunctionDeclaration = {
       },
       topic: {
         type: Type.STRING,
-        description: 'The subject or topic of the meeting.',
+        description: "The subject or topic of the meeting.",
       },
     },
-    required: ['attendees', 'date', 'time', 'topic'],
+    required: ["attendees", "date", "time", "topic"],
   },
 };
 
 // Send request with function declarations
 const response = await ai.models.generateContent({
-  model: 'gemini-2.5-flash',
-  contents: 'Schedule a meeting with Bob and Alice for 03/27/2025 at 10:00 AM about the Q3 planning.',
+  model: "gemini-2.5-flash",
+  contents:
+    "Schedule a meeting with Bob and Alice for 03/27/2025 at 10:00 AM about the Q3 planning.",
   config: {
-    tools: [{
-      functionDeclarations: [scheduleMeetingFunctionDeclaration]
-    }],
+    tools: [
+      {
+        functionDeclarations: [scheduleMeetingFunctionDeclaration],
+      },
+    ],
   },
 });
 
@@ -102,6 +106,7 @@ Function calling involves a structured interaction between your application, the
 4. **Create User-Friendly Response**: If a function was executed, capture the result and send it back to the model in a subsequent turn. The model uses the result to generate a final, user-friendly response.
 
 This process can be repeated over multiple turns, allowing for complex interactions and workflows. The model also supports:
+
 - **Parallel function calling**: Multiple functions in a single turn
 - **Compositional function calling**: Functions called in sequence
 
@@ -110,26 +115,28 @@ This process can be repeated over multiple turns, allowing for complex interacti
 ### Step 1: Define a Function Declaration
 
 ```typescript
-import { Type } from '@google/genai';
+import { Type } from "@google/genai";
 
 // Define a function that the model can call to control smart lights
 const setLightValuesFunctionDeclaration = {
-  name: 'set_light_values',
-  description: 'Sets the brightness and color temperature of a light.',
+  name: "set_light_values",
+  description: "Sets the brightness and color temperature of a light.",
   parameters: {
     type: Type.OBJECT,
     properties: {
       brightness: {
         type: Type.NUMBER,
-        description: 'Light level from 0 to 100. Zero is off and 100 is full brightness',
+        description:
+          "Light level from 0 to 100. Zero is off and 100 is full brightness",
       },
       color_temp: {
         type: Type.STRING,
-        enum: ['daylight', 'cool', 'warm'],
-        description: 'Color temperature of the light fixture, which can be `daylight`, `cool` or `warm`.',
+        enum: ["daylight", "cool", "warm"],
+        description:
+          "Color temperature of the light fixture, which can be `daylight`, `cool` or `warm`.",
       },
     },
-    required: ['brightness', 'color_temp'],
+    required: ["brightness", "color_temp"],
   },
 };
 
@@ -151,13 +158,15 @@ function setLightValues(brightness: number, colorTemp: string) {
 ### Step 2: Call the Model with Function Declarations
 
 ```typescript
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from "@google/genai";
 
 // Generation config with function declaration
 const config = {
-  tools: [{
-    functionDeclarations: [setLightValuesFunctionDeclaration]
-  }]
+  tools: [
+    {
+      functionDeclarations: [setLightValuesFunctionDeclaration],
+    },
+  ],
 };
 
 // Configure the client
@@ -166,16 +175,16 @@ const ai = new GoogleGenAI({});
 // Define user prompt
 const contents = [
   {
-    role: 'user',
-    parts: [{ text: 'Turn the lights down to a romantic level' }]
-  }
+    role: "user",
+    parts: [{ text: "Turn the lights down to a romantic level" }],
+  },
 ];
 
 // Send request with function declarations
 const response = await ai.models.generateContent({
-  model: 'gemini-2.5-flash',
+  model: "gemini-2.5-flash",
   contents: contents,
-  config: config
+  config: config,
 });
 
 console.log(response.functionCalls[0]);
@@ -200,7 +209,7 @@ console.log(response.functionCalls[0]);
 const toolCall = response.functionCalls[0];
 
 let result;
-if (toolCall.name === 'set_light_values') {
+if (toolCall.name === "set_light_values") {
   result = setLightValues(toolCall.args.brightness, toolCall.args.color_temp);
   console.log(`Function execution result: ${JSON.stringify(result)}`);
 }
@@ -212,21 +221,21 @@ if (toolCall.name === 'set_light_values') {
 // Create a function response part
 const functionResponsePart = {
   name: toolCall.name,
-  response: { result }
+  response: { result },
 };
 
 // Append function call and result to contents
 contents.push(response.candidates[0].content);
-contents.push({ 
-  role: 'user', 
-  parts: [{ functionResponse: functionResponsePart }] 
+contents.push({
+  role: "user",
+  parts: [{ functionResponse: functionResponsePart }],
 });
 
 // Get the final response from the model
 const finalResponse = await ai.models.generateContent({
-  model: 'gemini-2.5-flash',
+  model: "gemini-2.5-flash",
   contents: contents,
-  config: config
+  config: config,
 });
 
 console.log(finalResponse.text);
@@ -240,19 +249,19 @@ Function declarations are defined using JSON with a subset of the OpenAPI schema
 
 ```typescript
 interface FunctionDeclaration {
-  name: string;           // Unique function name (use underscores or camelCase)
-  description: string;    // Clear explanation of function's purpose
+  name: string; // Unique function name (use underscores or camelCase)
+  description: string; // Clear explanation of function's purpose
   parameters: {
-    type: 'object';
+    type: "object";
     properties: {
       [key: string]: {
-        type: 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object';
+        type: "string" | "number" | "integer" | "boolean" | "array" | "object";
         description: string;
-        enum?: string[];   // For fixed set of values
-        items?: object;    // For array types
+        enum?: string[]; // For fixed set of values
+        items?: object; // For array types
       };
     };
-    required: string[];    // Mandatory parameters
+    required: string[]; // Mandatory parameters
   };
 }
 ```
@@ -260,26 +269,29 @@ interface FunctionDeclaration {
 ### Best Practices for Declarations
 
 1. **Use Descriptive Names**: Clear function names without spaces or special characters
+
    ```typescript
    // ✓ Good
-   name: 'get_weather_forecast'
-   name: 'sendEmail'
-   
+   name: "get_weather_forecast";
+   name: "sendEmail";
+
    // ✗ Bad
-   name: 'get weather'
-   name: 'fn1'
+   name: "get weather";
+   name: "fn1";
    ```
 
 2. **Write Detailed Descriptions**: Be specific about what the function does
+
    ```typescript
    // ✓ Good
-   description: 'Finds theaters based on location and optionally movie title which is currently playing in theaters.'
-   
+   description: "Finds theaters based on location and optionally movie title which is currently playing in theaters.";
+
    // ✗ Bad
-   description: 'Gets theaters'
+   description: "Gets theaters";
    ```
 
 3. **Use Enum for Fixed Values**: Improves accuracy over just describing in text
+
    ```typescript
    // ✓ Good
    color_temp: {
@@ -287,7 +299,7 @@ interface FunctionDeclaration {
      enum: ['daylight', 'cool', 'warm'],
      description: 'Color temperature of the light fixture.'
    }
-   
+
    // ✗ Less effective
    color_temp: {
      type: Type.STRING,
@@ -296,6 +308,7 @@ interface FunctionDeclaration {
    ```
 
 4. **Provide Parameter Examples**: Help the model understand format
+
    ```typescript
    date: {
      type: Type.STRING,
@@ -305,7 +318,7 @@ interface FunctionDeclaration {
 
 5. **Mark Required Parameters**: Always specify which parameters are mandatory
    ```typescript
-   required: ['attendees', 'date', 'time', 'topic']
+   required: ["attendees", "date", "time", "topic"];
    ```
 
 ## Function Calling with Thinking
@@ -317,6 +330,7 @@ Enabling "thinking" can improve function call performance by allowing the model 
 A **thought signature** is an encrypted representation of the model's internal thought process. You pass it back to the model on subsequent turns to preserve reasoning context.
 
 **Standard Pattern** (No code changes required):
+
 ```typescript
 // Simply append the complete model response to conversation history
 // The content object includes thought_signatures automatically
@@ -337,13 +351,14 @@ If you modify conversation history manually, follow these rules:
 // After receiving a response from a model with thinking enabled
 const part = response.candidates[0].content.parts[0];
 if (part.thoughtSignature) {
-  console.log('Thought signature:', part.thoughtSignature);
+  console.log("Thought signature:", part.thoughtSignature);
 }
 ```
 
 ## Parallel Function Calling
 
 Parallel function calling executes multiple functions at once when they're not dependent on each other. Useful for:
+
 - Gathering data from multiple independent sources
 - Checking inventory across various warehouses
 - Performing multiple simultaneous actions
@@ -351,86 +366,88 @@ Parallel function calling executes multiple functions at once when they're not d
 ### Example: Party Mode
 
 ```typescript
-import { Type } from '@google/genai';
+import { Type } from "@google/genai";
 
 const powerDiscoBall = {
-  name: 'power_disco_ball',
-  description: 'Powers the spinning disco ball.',
+  name: "power_disco_ball",
+  description: "Powers the spinning disco ball.",
   parameters: {
     type: Type.OBJECT,
     properties: {
       power: {
         type: Type.BOOLEAN,
-        description: 'Whether to turn the disco ball on or off.'
-      }
+        description: "Whether to turn the disco ball on or off.",
+      },
     },
-    required: ['power']
-  }
+    required: ["power"],
+  },
 };
 
 const startMusic = {
-  name: 'start_music',
-  description: 'Play some music matching the specified parameters.',
+  name: "start_music",
+  description: "Play some music matching the specified parameters.",
   parameters: {
     type: Type.OBJECT,
     properties: {
       energetic: {
         type: Type.BOOLEAN,
-        description: 'Whether the music is energetic or not.'
+        description: "Whether the music is energetic or not.",
       },
       loud: {
         type: Type.BOOLEAN,
-        description: 'Whether the music is loud or not.'
-      }
+        description: "Whether the music is loud or not.",
+      },
     },
-    required: ['energetic', 'loud']
-  }
+    required: ["energetic", "loud"],
+  },
 };
 
 const dimLights = {
-  name: 'dim_lights',
-  description: 'Dim the lights.',
+  name: "dim_lights",
+  description: "Dim the lights.",
   parameters: {
     type: Type.OBJECT,
     properties: {
       brightness: {
         type: Type.NUMBER,
-        description: 'The brightness of the lights, 0.0 is off, 1.0 is full.'
-      }
+        description: "The brightness of the lights, 0.0 is off, 1.0 is full.",
+      },
     },
-    required: ['brightness']
-  }
+    required: ["brightness"],
+  },
 };
 ```
 
 ### Configure for Parallel Calling
 
 ```typescript
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from "@google/genai";
 
 const houseFns = [powerDiscoBall, startMusic, dimLights];
 
 const config = {
-  tools: [{
-    functionDeclarations: houseFns
-  }],
+  tools: [
+    {
+      functionDeclarations: houseFns,
+    },
+  ],
   // Force the model to call 'any' function, instead of chatting
   toolConfig: {
     functionCallingConfig: {
-      mode: 'any'
-    }
-  }
+      mode: "any",
+    },
+  },
 };
 
 const ai = new GoogleGenAI({});
 
 const chat = ai.chats.create({
-  model: 'gemini-2.5-flash',
-  config: config
+  model: "gemini-2.5-flash",
+  config: config,
 });
 
 const response = await chat.sendMessage({
-  message: 'Turn this place into a party!'
+  message: "Turn this place into a party!",
 });
 
 // Print out each function call requested
@@ -438,12 +455,13 @@ console.log("Parallel function calling:");
 for (const fn of response.functionCalls) {
   const args = Object.entries(fn.args)
     .map(([key, val]) => `${key}=${val}`)
-    .join(', ');
+    .join(", ");
   console.log(`${fn.name}(${args})`);
 }
 ```
 
 **Output:**
+
 ```
 power_disco_ball(power=true)
 start_music(energetic=true, loud=true)
@@ -470,7 +488,9 @@ function getWeatherForecast({ location }: { location: string }) {
 }
 
 function setThermostatTemperature({ temperature }: { temperature: number }) {
-  console.log(`Tool Call: set_thermostat_temperature(temperature=${temperature})`);
+  console.log(
+    `Tool Call: set_thermostat_temperature(temperature=${temperature})`,
+  );
   // TODO: Make actual API call
   console.log("Tool Response: {'status': 'success'}");
   return { status: "success" };
@@ -486,7 +506,8 @@ const tools = [
     functionDeclarations: [
       {
         name: "get_weather_forecast",
-        description: "Gets the current weather temperature for a given location.",
+        description:
+          "Gets the current weather temperature for a given location.",
         parameters: {
           type: Type.OBJECT,
           properties: {
@@ -549,12 +570,14 @@ while (true) {
     contents.push(result.candidates[0].content);
     contents.push({
       role: "user",
-      parts: [{
-        functionResponse: {
-          name: name,
-          response: { result: functionResult }
-        }
-      }]
+      parts: [
+        {
+          functionResponse: {
+            name: name,
+            response: { result: functionResult },
+          },
+        },
+      ],
     });
   } else {
     // No more function calls, print final response
@@ -571,7 +594,7 @@ while (true) {
 ```typescript
 interface ToolConfig {
   functionCallingConfig?: {
-    mode?: 'auto' | 'any' | 'none';
+    mode?: "auto" | "any" | "none";
     allowedFunctionNames?: string[];
   };
 }
@@ -587,15 +610,17 @@ interface ToolConfig {
 
 ```typescript
 const config = {
-  tools: [{
-    functionDeclarations: [func1, func2, func3]
-  }],
+  tools: [
+    {
+      functionDeclarations: [func1, func2, func3],
+    },
+  ],
   toolConfig: {
     functionCallingConfig: {
-      mode: 'any',
-      allowedFunctionNames: ['func1', 'func2']  // Only allow these
-    }
-  }
+      mode: "any",
+      allowedFunctionNames: ["func1", "func2"], // Only allow these
+    },
+  },
 };
 ```
 
@@ -613,16 +638,18 @@ interface ScheduleMeetingArgs {
 
 interface MeetingResult {
   meetingId: string;
-  status: 'scheduled' | 'failed';
+  status: "scheduled" | "failed";
   message: string;
 }
 
-async function scheduleMeeting(args: ScheduleMeetingArgs): Promise<MeetingResult> {
+async function scheduleMeeting(
+  args: ScheduleMeetingArgs,
+): Promise<MeetingResult> {
   // Implementation
   return {
-    meetingId: 'meeting-123',
-    status: 'scheduled',
-    message: `Meeting scheduled for ${args.date} at ${args.time}`
+    meetingId: "meeting-123",
+    status: "scheduled",
+    message: `Meeting scheduled for ${args.date} at ${args.time}`,
   };
 }
 ```
@@ -641,10 +668,10 @@ interface FunctionCall {
 
 async function executeFunctionCall<T>(
   functionCall: FunctionCall,
-  functionMap: FunctionMap
+  functionMap: FunctionMap,
 ): Promise<T> {
   const func = functionMap[functionCall.name];
-  
+
   if (!func) {
     throw new Error(`Function ${functionCall.name} not found`);
   }
@@ -659,10 +686,7 @@ const functions: FunctionMap = {
   get_weather: getWeather,
 };
 
-const result = await executeFunctionCall(
-  response.functionCalls[0],
-  functions
-);
+const result = await executeFunctionCall(response.functionCalls[0], functions);
 ```
 
 ## Complete Examples
@@ -670,16 +694,16 @@ const result = await executeFunctionCall(
 ### Example 1: Customer Service Bot
 
 ```typescript
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, Type } from "@google/genai";
 
 // Database mock functions
 async function getCustomerInfo(customerId: string) {
   // Mock database call
   return {
     id: customerId,
-    name: 'John Doe',
-    email: 'john@example.com',
-    accountStatus: 'active'
+    name: "John Doe",
+    email: "john@example.com",
+    accountStatus: "active",
   };
 }
 
@@ -687,117 +711,120 @@ async function getOrderStatus(orderId: string) {
   // Mock API call
   return {
     orderId: orderId,
-    status: 'shipped',
-    trackingNumber: 'TRACK123',
-    estimatedDelivery: '2025-03-15'
+    status: "shipped",
+    trackingNumber: "TRACK123",
+    estimatedDelivery: "2025-03-15",
   };
 }
 
 async function createSupportTicket(issue: string, customerId: string) {
   // Mock ticket creation
   return {
-    ticketId: 'TICKET-' + Date.now(),
-    status: 'open',
-    assignedTo: 'support-team'
+    ticketId: "TICKET-" + Date.now(),
+    status: "open",
+    assignedTo: "support-team",
   };
 }
 
 // Function declarations
 const customerServiceFunctions = [
   {
-    name: 'get_customer_info',
-    description: 'Retrieves customer information from the database',
+    name: "get_customer_info",
+    description: "Retrieves customer information from the database",
     parameters: {
       type: Type.OBJECT,
       properties: {
         customer_id: {
           type: Type.STRING,
-          description: 'The unique customer identifier'
-        }
+          description: "The unique customer identifier",
+        },
       },
-      required: ['customer_id']
-    }
+      required: ["customer_id"],
+    },
   },
   {
-    name: 'get_order_status',
-    description: 'Gets the current status of an order',
+    name: "get_order_status",
+    description: "Gets the current status of an order",
     parameters: {
       type: Type.OBJECT,
       properties: {
         order_id: {
           type: Type.STRING,
-          description: 'The unique order identifier'
-        }
+          description: "The unique order identifier",
+        },
       },
-      required: ['order_id']
-    }
+      required: ["order_id"],
+    },
   },
   {
-    name: 'create_support_ticket',
-    description: 'Creates a new support ticket for customer issues',
+    name: "create_support_ticket",
+    description: "Creates a new support ticket for customer issues",
     parameters: {
       type: Type.OBJECT,
       properties: {
         issue: {
           type: Type.STRING,
-          description: 'Description of the customer issue'
+          description: "Description of the customer issue",
         },
         customer_id: {
           type: Type.STRING,
-          description: 'The customer ID for the ticket'
-        }
+          description: "The customer ID for the ticket",
+        },
       },
-      required: ['issue', 'customer_id']
-    }
-  }
+      required: ["issue", "customer_id"],
+    },
+  },
 ];
 
 const functionMap: Record<string, Function> = {
   get_customer_info: ({ customer_id }) => getCustomerInfo(customer_id),
   get_order_status: ({ order_id }) => getOrderStatus(order_id),
-  create_support_ticket: ({ issue, customer_id }) => createSupportTicket(issue, customer_id)
+  create_support_ticket: ({ issue, customer_id }) =>
+    createSupportTicket(issue, customer_id),
 };
 
 async function handleCustomerQuery(query: string) {
   const ai = new GoogleGenAI({});
-  
+
   let contents = [
     {
-      role: 'user',
-      parts: [{ text: query }]
-    }
+      role: "user",
+      parts: [{ text: query }],
+    },
   ];
 
   const config = {
-    tools: [{ functionDeclarations: customerServiceFunctions }]
+    tools: [{ functionDeclarations: customerServiceFunctions }],
   };
 
   // Handle multi-turn conversation with function calls
   while (true) {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: "gemini-2.5-flash",
       contents,
-      config
+      config,
     });
 
     if (response.functionCalls && response.functionCalls.length > 0) {
       // Execute all function calls
       const functionCalls = response.functionCalls;
-      
+
       contents.push(response.candidates[0].content);
-      
+
       for (const call of functionCalls) {
         console.log(`Executing: ${call.name}(${JSON.stringify(call.args)})`);
         const result = await functionMap[call.name](call.args);
-        
+
         contents.push({
-          role: 'user',
-          parts: [{
-            functionResponse: {
-              name: call.name,
-              response: { result }
-            }
-          }]
+          role: "user",
+          parts: [
+            {
+              functionResponse: {
+                name: call.name,
+                response: { result },
+              },
+            },
+          ],
         });
       }
     } else {
@@ -808,7 +835,7 @@ async function handleCustomerQuery(query: string) {
 
 // Usage
 const response = await handleCustomerQuery(
-  "Customer C123 wants to know about order ORD456 status"
+  "Customer C123 wants to know about order ORD456 status",
 );
 console.log(response);
 ```
@@ -816,7 +843,7 @@ console.log(response);
 ### Example 2: Smart Home Controller
 
 ```typescript
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, Type } from "@google/genai";
 
 interface DeviceState {
   [deviceId: string]: any;
@@ -832,7 +859,7 @@ class SmartHomeController {
   }
 
   async getDevice(deviceId: string): Promise<any> {
-    return this.devices[deviceId] || { status: 'unknown' };
+    return this.devices[deviceId] || { status: "unknown" };
   }
 
   async getDeviceList(): Promise<string[]> {
@@ -844,75 +871,78 @@ const controller = new SmartHomeController();
 
 const smartHomeFunctions = [
   {
-    name: 'set_device_state',
-    description: 'Sets the state of a smart home device',
+    name: "set_device_state",
+    description: "Sets the state of a smart home device",
     parameters: {
       type: Type.OBJECT,
       properties: {
         device_id: {
           type: Type.STRING,
-          description: 'Device identifier (e.g., "living_room_light")'
+          description: 'Device identifier (e.g., "living_room_light")',
         },
         state: {
           type: Type.OBJECT,
-          description: 'New state for the device'
-        }
+          description: "New state for the device",
+        },
       },
-      required: ['device_id', 'state']
-    }
+      required: ["device_id", "state"],
+    },
   },
   {
-    name: 'get_device_state',
-    description: 'Gets the current state of a smart home device',
+    name: "get_device_state",
+    description: "Gets the current state of a smart home device",
     parameters: {
       type: Type.OBJECT,
       properties: {
         device_id: {
           type: Type.STRING,
-          description: 'Device identifier'
-        }
+          description: "Device identifier",
+        },
       },
-      required: ['device_id']
-    }
+      required: ["device_id"],
+    },
   },
   {
-    name: 'list_devices',
-    description: 'Lists all available smart home devices',
+    name: "list_devices",
+    description: "Lists all available smart home devices",
     parameters: {
       type: Type.OBJECT,
       properties: {},
-      required: []
-    }
-  }
+      required: [],
+    },
+  },
 ];
 
 async function processSmartHomeCommand(command: string) {
   const ai = new GoogleGenAI({});
-  
+
   const functionMap: Record<string, Function> = {
-    set_device_state: ({ device_id, state }) => controller.setDevice(device_id, state),
+    set_device_state: ({ device_id, state }) =>
+      controller.setDevice(device_id, state),
     get_device_state: ({ device_id }) => controller.getDevice(device_id),
-    list_devices: () => controller.getDeviceList()
+    list_devices: () => controller.getDeviceList(),
   };
 
-  let contents = [{ role: 'user', parts: [{ text: command }] }];
+  let contents = [{ role: "user", parts: [{ text: command }] }];
   const config = { tools: [{ functionDeclarations: smartHomeFunctions }] };
 
   while (true) {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: "gemini-2.5-flash",
       contents,
-      config
+      config,
     });
 
     if (response.functionCalls?.length) {
       contents.push(response.candidates[0].content);
-      
+
       for (const call of response.functionCalls) {
         const result = await functionMap[call.name](call.args);
         contents.push({
-          role: 'user',
-          parts: [{ functionResponse: { name: call.name, response: { result } } }]
+          role: "user",
+          parts: [
+            { functionResponse: { name: call.name, response: { result } } },
+          ],
         });
       }
     } else {
@@ -922,13 +952,15 @@ async function processSmartHomeCommand(command: string) {
 }
 
 // Usage
-await processSmartHomeCommand("Set the living room light to 50% brightness and warm color");
+await processSmartHomeCommand(
+  "Set the living room light to 50% brightness and warm color",
+);
 ```
 
 ### Example 3: Data Analysis Assistant
 
 ```typescript
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, Type } from "@google/genai";
 
 interface DataQuery {
   query: string;
@@ -943,18 +975,18 @@ interface AnalysisResult {
 
 async function queryDatabase(query: DataQuery): Promise<any[]> {
   // Mock database query
-  console.log('Querying database:', query);
+  console.log("Querying database:", query);
   return [
-    { date: '2025-01-01', revenue: 50000, users: 1000 },
-    { date: '2025-02-01', revenue: 55000, users: 1100 },
-    { date: '2025-03-01', revenue: 60000, users: 1200 }
+    { date: "2025-01-01", revenue: 50000, users: 1000 },
+    { date: "2025-02-01", revenue: 55000, users: 1100 },
+    { date: "2025-03-01", revenue: 60000, users: 1200 },
   ];
 }
 
 async function performCalculation(expression: string): Promise<number> {
   // Mock calculation
-  console.log('Calculating:', expression);
-  return eval(expression);  // Note: Never use eval in production!
+  console.log("Calculating:", expression);
+  return eval(expression); // Note: Never use eval in production!
 }
 
 async function generateChart(data: any[], chartType: string): Promise<string> {
@@ -965,86 +997,88 @@ async function generateChart(data: any[], chartType: string): Promise<string> {
 
 const dataAnalysisFunctions = [
   {
-    name: 'query_database',
-    description: 'Queries the database and returns matching records',
+    name: "query_database",
+    description: "Queries the database and returns matching records",
     parameters: {
       type: Type.OBJECT,
       properties: {
         query: {
           type: Type.STRING,
-          description: 'SQL-like query string'
+          description: "SQL-like query string",
         },
         filters: {
           type: Type.OBJECT,
-          description: 'Additional filters to apply'
-        }
+          description: "Additional filters to apply",
+        },
       },
-      required: ['query']
-    }
+      required: ["query"],
+    },
   },
   {
-    name: 'perform_calculation',
-    description: 'Performs mathematical calculations',
+    name: "perform_calculation",
+    description: "Performs mathematical calculations",
     parameters: {
       type: Type.OBJECT,
       properties: {
         expression: {
           type: Type.STRING,
-          description: 'Mathematical expression to evaluate'
-        }
+          description: "Mathematical expression to evaluate",
+        },
       },
-      required: ['expression']
-    }
+      required: ["expression"],
+    },
   },
   {
-    name: 'generate_chart',
-    description: 'Creates a visualization chart from data',
+    name: "generate_chart",
+    description: "Creates a visualization chart from data",
     parameters: {
       type: Type.OBJECT,
       properties: {
         data: {
           type: Type.ARRAY,
-          description: 'Data points to visualize'
+          description: "Data points to visualize",
         },
         chart_type: {
           type: Type.STRING,
-          enum: ['line', 'bar', 'pie', 'scatter'],
-          description: 'Type of chart to generate'
-        }
+          enum: ["line", "bar", "pie", "scatter"],
+          description: "Type of chart to generate",
+        },
       },
-      required: ['data', 'chart_type']
-    }
-  }
+      required: ["data", "chart_type"],
+    },
+  },
 ];
 
 async function analyzeData(question: string): Promise<string> {
   const ai = new GoogleGenAI({});
-  
+
   const functionMap: Record<string, Function> = {
     query_database: queryDatabase,
     perform_calculation: performCalculation,
-    generate_chart: generateChart
+    generate_chart: generateChart,
   };
 
-  let contents = [{ role: 'user', parts: [{ text: question }] }];
+  let contents = [{ role: "user", parts: [{ text: question }] }];
   const config = { tools: [{ functionDeclarations: dataAnalysisFunctions }] };
 
   while (true) {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: "gemini-2.5-flash",
       contents,
-      config
+      config,
     });
 
     if (response.functionCalls?.length) {
       contents.push(response.candidates[0].content);
-      
+
       for (const call of response.functionCalls) {
         console.log(`\nExecuting: ${call.name}`);
         const result = await functionMap[call.name](call.args);
         contents.push({
-          role: 'user',
-          parts: [{ functionResponse: { name: call.name, response: { result } } }]
+          role: "user",
+          parts: [
+            { functionResponse: { name: call.name, response: { result } } },
+          ],
         });
       }
     } else {
@@ -1055,9 +1089,9 @@ async function analyzeData(question: string): Promise<string> {
 
 // Usage
 const analysis = await analyzeData(
-  "What was our average monthly revenue growth rate? Create a line chart showing the trend."
+  "What was our average monthly revenue growth rate? Create a line chart showing the trend.",
 );
-console.log('\nAnalysis:', analysis);
+console.log("\nAnalysis:", analysis);
 ```
 
 ## Best Practices
@@ -1072,9 +1106,9 @@ function validateArgs<T>(args: any, schema: any): args is T {
 
 async function safeExecuteFunction(functionCall: FunctionCall) {
   if (!validateArgs(functionCall.args, expectedSchema)) {
-    throw new Error('Invalid arguments');
+    throw new Error("Invalid arguments");
   }
-  
+
   return await functions[functionCall.name](functionCall.args);
 }
 ```
@@ -1087,13 +1121,13 @@ async function executeFunctionWithErrorHandling(call: FunctionCall) {
     const result = await functionMap[call.name](call.args);
     return {
       success: true,
-      result
+      result,
     };
   } catch (error) {
     console.error(`Error executing ${call.name}:`, error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -1103,7 +1137,7 @@ async function executeFunctionWithErrorHandling(call: FunctionCall) {
 
 ```typescript
 function logFunctionCall(call: FunctionCall, result: any) {
-  console.log('\n🔧 Function Call:');
+  console.log("\n🔧 Function Call:");
   console.log(`  Name: ${call.name}`);
   console.log(`  Args: ${JSON.stringify(call.args, null, 2)}`);
   console.log(`  Result: ${JSON.stringify(result, null, 2)}`);
@@ -1115,13 +1149,13 @@ function logFunctionCall(call: FunctionCall, result: any) {
 ```typescript
 async function executeWithTimeout<T>(
   fn: () => Promise<T>,
-  timeoutMs: number
+  timeoutMs: number,
 ): Promise<T> {
   return Promise.race([
     fn(),
     new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error('Function timeout')), timeoutMs)
-    )
+      setTimeout(() => reject(new Error("Function timeout")), timeoutMs),
+    ),
   ]);
 }
 ```
@@ -1129,7 +1163,9 @@ async function executeWithTimeout<T>(
 ### 5. Use Strongly Typed Function Maps
 
 ```typescript
-type FunctionHandler<TArgs = any, TResult = any> = (args: TArgs) => Promise<TResult>;
+type FunctionHandler<TArgs = any, TResult = any> = (
+  args: TArgs,
+) => Promise<TResult>;
 
 interface TypedFunctionMap {
   [key: string]: FunctionHandler;
@@ -1138,8 +1174,8 @@ interface TypedFunctionMap {
 const typedFunctions: TypedFunctionMap = {
   get_weather: async (args: { location: string }) => {
     // Type-safe implementation
-    return { temp: 25, condition: 'sunny' };
-  }
+    return { temp: 25, condition: "sunny" };
+  },
 };
 ```
 
@@ -1153,34 +1189,34 @@ class FunctionCallError extends Error {
     message: string,
     public functionName: string,
     public args: any,
-    public cause?: Error
+    public cause?: Error,
   ) {
     super(message);
-    this.name = 'FunctionCallError';
+    this.name = "FunctionCallError";
   }
 }
 
 async function robustFunctionCalling(
   prompt: string,
   functions: Record<string, Function>,
-  declarations: any[]
+  declarations: any[],
 ): Promise<string> {
   const ai = new GoogleGenAI({});
-  
-  let contents = [{ role: 'user', parts: [{ text: prompt }] }];
+
+  let contents = [{ role: "user", parts: [{ text: prompt }] }];
   const config = { tools: [{ functionDeclarations: declarations }] };
-  
+
   let iterations = 0;
   const maxIterations = 10;
 
   while (iterations < maxIterations) {
     iterations++;
-    
+
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: "gemini-2.5-flash",
         contents,
-        config
+        config,
       });
 
       if (!response.functionCalls?.length) {
@@ -1194,38 +1230,45 @@ async function robustFunctionCalling(
           throw new FunctionCallError(
             `Unknown function: ${call.name}`,
             call.name,
-            call.args
+            call.args,
           );
         }
 
         try {
           const result = await functions[call.name](call.args);
           contents.push({
-            role: 'user',
-            parts: [{
-              functionResponse: {
-                name: call.name,
-                response: { result }
-              }
-            }]
+            role: "user",
+            parts: [
+              {
+                functionResponse: {
+                  name: call.name,
+                  response: { result },
+                },
+              },
+            ],
           });
         } catch (error) {
           // Send error back to model to handle
           contents.push({
-            role: 'user',
-            parts: [{
-              functionResponse: {
-                name: call.name,
-                response: {
-                  error: error instanceof Error ? error.message : 'Function execution failed'
-                }
-              }
-            }]
+            role: "user",
+            parts: [
+              {
+                functionResponse: {
+                  name: call.name,
+                  response: {
+                    error:
+                      error instanceof Error
+                        ? error.message
+                        : "Function execution failed",
+                  },
+                },
+              },
+            ],
           });
         }
       }
     } catch (error) {
-      console.error('Error in function calling loop:', error);
+      console.error("Error in function calling loop:", error);
       throw error;
     }
   }
