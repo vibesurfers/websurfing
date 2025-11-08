@@ -1,6 +1,10 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
+<<<<<<< HEAD
 import GoogleProvider from "next-auth/providers/google";
+=======
+import DiscordProvider from "next-auth/providers/discord";
+>>>>>>> ddad9af (GO GO GO)
 
 import { db } from "@/server/db";
 import {
@@ -38,7 +42,11 @@ declare module "next-auth" {
  */
 export const authConfig = {
   providers: [
+<<<<<<< HEAD
     GoogleProvider,
+=======
+    DiscordProvider,
+>>>>>>> ddad9af (GO GO GO)
     /**
      * ...add more providers here.
      *

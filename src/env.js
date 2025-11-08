@@ -11,8 +11,13 @@ export const env = createEnv({
       process.env.NODE_ENV === "production"
         ? z.string()
         : z.string().optional(),
+<<<<<<< HEAD
     AUTH_GOOGLE_ID: z.string(),
     AUTH_GOOGLE_SECRET: z.string(),
+=======
+    AUTH_DISCORD_ID: z.string(),
+    AUTH_DISCORD_SECRET: z.string(),
+>>>>>>> ddad9af (GO GO GO)
     DATABASE_URL: z.string().url(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -34,8 +39,13 @@ export const env = createEnv({
    */
   runtimeEnv: {
     AUTH_SECRET: process.env.AUTH_SECRET,
+<<<<<<< HEAD
     AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID,
     AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET,
+=======
+    AUTH_DISCORD_ID: process.env.AUTH_DISCORD_ID,
+    AUTH_DISCORD_SECRET: process.env.AUTH_DISCORD_SECRET,
+>>>>>>> ddad9af (GO GO GO)
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
   },
