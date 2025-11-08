@@ -40,10 +40,6 @@ export function SheetManager() {
     }
   }, [isLoading, authError]);
 
-  const triggerRefresh = useCallback(() => {
-    setRefreshKey(prev => prev + 1);
-  }, []);
-
   const handleUpdateTick = useCallback(async () => {
     try {
       console.log('Triggering sheet update...');
@@ -66,16 +62,13 @@ export function SheetManager() {
         setLastUpdate(new Date());
         setPendingUpdates(result.totalApplied);
 
-        // Trigger table refresh
-        triggerRefresh();
-
         // Clear the pending count after a delay
         setTimeout(() => setPendingUpdates(0), 3000);
       }
     } catch (error) {
       console.error('Error updating sheet:', error);
     }
-  }, [triggerRefresh]);
+  }, []);
 
   // Show loading state while checking authentication
   if (!isReady && authError?.data?.code === 'UNAUTHORIZED') {
@@ -109,7 +102,7 @@ export function SheetManager() {
   }
 
   return (
-    <SheetUpdateContext.Provider value={{ triggerRefresh, lastUpdate, pendingUpdates }}>
+    <SheetUpdateContext.Provider value={{ lastUpdate, pendingUpdates }}>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">

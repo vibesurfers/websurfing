@@ -36,6 +36,17 @@ export function TiptapTable() {
       }
     }
   })
+
+  // Fetch cells from the database
+  const { data: cells, refetch: refetchCells } = api.cell.getCells.useQuery(undefined, {
+    refetchInterval: false,
+    retry: (failureCount, error) => {
+      if (error.data?.code === 'UNAUTHORIZED') return false;
+      return failureCount < 3;
+    },
+    refetchOnWindowFocus: false,
+  })
+
   const { data: events, refetch, error: eventsError } = api.cell.getEvents.useQuery(undefined, {
     refetchInterval: false, // Disable polling - we use the 5-second timer instead
     retry: (failureCount, error) => {
@@ -46,12 +57,13 @@ export function TiptapTable() {
     refetchOnWindowFocus: false,
   })
 
-  // Refresh events when sheet updates happen
+  // Refresh events and cells when sheet updates happen
   useEffect(() => {
     if (lastUpdate) {
       void refetch()
+      void refetchCells()
     }
-  }, [lastUpdate, refetch])
+  }, [lastUpdate, refetch, refetchCells])
 
   // Debounce mechanism - only fire events after user stops typing
   const debounceRefs = useRef<Map<string, NodeJS.Timeout>>(new Map())
