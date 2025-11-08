@@ -111,7 +111,7 @@ export const cells = createTable(
   "cell",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    // userId: d.varchar({ length: 255 }).notNull().references(() => users.id), // Temporarily removed - DB doesn't have this column yet
+    userid: d.varchar({ length: 255 }).references(() => users.id), // Note: nullable for now
     rowIndex: d.integer().notNull(),
     colIndex: d.integer().notNull(),
     content: d.text(),
@@ -120,8 +120,8 @@ export const cells = createTable(
   }),
   (t) => [
     index("cell_position_idx").on(t.rowIndex, t.colIndex),
-    // index("cell_user_idx").on(t.userId), // Temporarily removed
-    unique("cell_unique_position").on(t.rowIndex, t.colIndex), // Temporarily simplified
+    index("cell_user_idx").on(t.userid),
+    unique("cell_unique_position").on(t.rowIndex, t.colIndex), // Keep existing constraint for now
   ]
 );
 
@@ -129,7 +129,7 @@ export const eventQueue = createTable(
   "event_queue",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    // userId: d.varchar({ length: 255 }).notNull().references(() => users.id), // Temporarily removed - DB doesn't have this column yet
+    userid: d.varchar({ length: 255 }).references(() => users.id), // Note: nullable for now
     eventType: d.varchar({ length: 100 }).notNull(),
     payload: d.jsonb().notNull(),
     status: d.varchar({ length: 20 }).default('pending'),
@@ -139,7 +139,7 @@ export const eventQueue = createTable(
   (t) => [
     index("event_queue_status_idx").on(t.status),
     index("event_queue_created_idx").on(t.createdAt),
-    // index("event_queue_user_idx").on(t.userId), // Temporarily removed
+    index("event_queue_user_idx").on(t.userid),
   ]
 );
 
@@ -147,18 +147,18 @@ export const sheetUpdates = createTable(
   "sheet_updates",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    // userId: d.varchar({ length: 255 }).notNull().references(() => users.id), // Temporarily removed - DB doesn't have this column yet
-    rowIndex: d.integer().notNull(),
-    colIndex: d.integer().notNull(),
+    userid: d.varchar({ length: 255 }).notNull().references(() => users.id),
+    rowindex: d.integer().notNull(),
+    colindex: d.integer().notNull(),
     content: d.text(),
-    updateType: d.varchar({ length: 50 }).notNull(), // 'user_edit', 'ai_response', 'auto_copy'
-    createdAt: d.timestamp({ withTimezone: true }).defaultNow(),
-    appliedAt: d.timestamp({ withTimezone: true }),
+    updatetype: d.varchar({ length: 50 }).notNull(), // 'user_edit', 'ai_response', 'auto_copy'
+    createdat: d.timestamp({ withTimezone: true }).defaultNow(),
+    appliedat: d.timestamp({ withTimezone: true }),
   }),
   (t) => [
-    // index("sheet_updates_user_idx").on(t.userId), // Temporarily removed
-    index("sheet_updates_created_idx").on(t.createdAt),
-    index("sheet_updates_applied_idx").on(t.appliedAt),
-    index("sheet_updates_position_idx").on(t.rowIndex, t.colIndex),
+    index("sheet_updates_user_idx").on(t.userid),
+    index("sheet_updates_created_idx").on(t.createdat),
+    index("sheet_updates_applied_idx").on(t.appliedat),
+    index("sheet_updates_position_idx").on(t.rowindex, t.colindex),
   ]
 );
