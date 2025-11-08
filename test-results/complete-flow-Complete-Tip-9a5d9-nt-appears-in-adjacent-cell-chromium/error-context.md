@@ -1,0 +1,80 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: Welcome, Test User
+      - button "Sign out" [ref=e7]
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - heading "Event Queue Test - Tiptap Table" [level=1] [ref=e10]
+        - generic [ref=e12]:
+          - generic [ref=e15]: Next update
+          - generic [ref=e16]: 3s
+      - generic [ref=e17]:
+        - textbox [active] [ref=e20]:
+          - table [ref=e22]:
+            - rowgroup [ref=e26]:
+              - row "Cell 1 Cell 2" [ref=e27]:
+                - cell "Cell 1" [ref=e28]:
+                  - paragraph [ref=e29]: Cell 1
+                - cell "Cell 2" [ref=e30]:
+                  - paragraph [ref=e31]: Cell 2
+              - row [ref=e32]:
+                - cell [ref=e33]:
+                  - paragraph [ref=e34]
+                - cell [ref=e35]:
+                  - paragraph [ref=e36]
+              - row "weather-1762641925916" [ref=e37]:
+                - cell "weather-1762641925916" [ref=e38]:
+                  - paragraph [ref=e39]: weather-1762641925916
+                - cell [ref=e40]:
+                  - paragraph [ref=e41]
+              - row [ref=e42]:
+                - cell [ref=e43]:
+                  - paragraph [ref=e44]
+                - cell [ref=e45]:
+                  - paragraph [ref=e46]
+              - row [ref=e47]:
+                - cell [ref=e48]:
+                  - paragraph [ref=e49]
+                - cell [ref=e50]:
+                  - paragraph [ref=e51]
+              - row [ref=e52]:
+                - cell [ref=e53]:
+                  - paragraph [ref=e54]
+                - cell [ref=e55]:
+                  - paragraph [ref=e56]
+              - row [ref=e57]:
+                - cell [ref=e58]:
+                  - paragraph [ref=e59]
+                - cell [ref=e60]:
+                  - paragraph [ref=e61]
+              - row [ref=e62]:
+                - cell [ref=e63]:
+                  - paragraph [ref=e64]
+                - cell [ref=e65]:
+                  - paragraph [ref=e66]
+          - paragraph [ref=e67]
+        - generic [ref=e68]:
+          - button "Process Events" [ref=e69]
+          - button "Refresh Events" [ref=e70]
+        - generic [ref=e71]:
+          - heading "Events (0):" [level=3] [ref=e72]
+          - paragraph [ref=e73]: No events yet
+  - generic [ref=e78] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e79]:
+      - img [ref=e80]
+    - generic [ref=e83]:
+      - button "Open issues overlay" [ref=e84]:
+        - generic [ref=e85]:
+          - generic [ref=e86]: "1"
+          - generic [ref=e87]: "2"
+        - generic [ref=e88]:
+          - text: Issue
+          - generic [ref=e89]: s
+      - button "Collapse issues badge" [ref=e90]:
+        - img [ref=e91]
+  - alert [ref=e93]
+```

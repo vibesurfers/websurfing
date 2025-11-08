@@ -1,9 +1,27 @@
-import { TiptapTable } from "@/components/tiptap-table";
 import { HydrateClient } from "@/trpc/server";
 import { auth, signIn, signOut } from "@/server/auth";
+import { SheetManager } from "@/components/sheet-manager";
+import { headers } from "next/headers";
 
 export default async function Home() {
-  const session = await auth();
+  let session = await auth();
+
+  // Check for bypass userId in headers (for testing)
+  const headersList = await headers();
+  const bypassUserId = headersList.get('x-bypass-user-id');
+
+  if (bypassUserId && process.env.NODE_ENV === 'development') {
+    // Create mock session for testing
+    session = {
+      user: {
+        id: bypassUserId,
+        name: 'Test User',
+        email: 'test@example.com',
+      },
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+    };
+    console.log('Page: Using bypass session for testing:', bypassUserId);
+  }
 
   if (!session?.user) {
     return (
@@ -42,9 +60,6 @@ export default async function Home() {
     <HydrateClient>
       <main className="container mx-auto p-8 min-h-screen bg-white">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Event Queue Test - Tiptap Table
-          </h1>
           <div className="flex items-center gap-4">
             <span className="text-gray-600">
               Welcome, {session.user.name}
@@ -64,7 +79,7 @@ export default async function Home() {
             </form>
           </div>
         </div>
-        <TiptapTable />
+        <SheetManager />
       </main>
     </HydrateClient>
   );

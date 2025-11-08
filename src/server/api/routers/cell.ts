@@ -16,12 +16,12 @@ export const cellRouter = createTRPCRouter({
 
       // 1. Update/insert cell
       await ctx.db.insert(cells).values({
-        userId,
+        userid: userId,
         rowIndex: input.rowIndex,
         colIndex: input.colIndex,
         content: input.content,
       }).onConflictDoUpdate({
-        target: [cells.userId, cells.rowIndex, cells.colIndex],
+        target: [cells.userid, cells.rowIndex, cells.colIndex],
         set: {
           content: input.content,
           updatedAt: new Date(),
@@ -30,7 +30,7 @@ export const cellRouter = createTRPCRouter({
 
       // 2. Add event to queue
       await ctx.db.insert(eventQueue).values({
-        userId,
+        userid: userId,
         eventType: 'cell_update',
         payload: input,
         status: 'pending',
@@ -46,7 +46,7 @@ export const cellRouter = createTRPCRouter({
       const events = await ctx.db
         .select()
         .from(eventQueue)
-        .where(eq(eventQueue.userId, userId))
+        .where(eq(eventQueue.userid, userId))
         .orderBy(eventQueue.createdAt);
 
       console.log('Fetched events for user:', userId, events.length);
@@ -59,7 +59,7 @@ export const cellRouter = createTRPCRouter({
       const cellData = await ctx.db
         .select()
         .from(cells)
-        .where(eq(cells.userId, userId))
+        .where(eq(cells.userid, userId))
         .orderBy(cells.rowIndex, cells.colIndex);
 
       return cellData;
