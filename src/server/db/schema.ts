@@ -162,3 +162,36 @@ export const sheetUpdates = createTable(
     index("sheet_updates_position_idx").on(t.rowindex, t.colindex),
   ]
 );
+
+export const geminiUsageLog = createTable(
+  "gemini_usage_log",
+  (d) => ({
+    id: d.uuid().primaryKey().defaultRandom(),
+    userId: d
+      .varchar({ length: 255 })
+      .references(() => users.id),
+    operatorName: d.varchar({ length: 100 }).notNull(), // e.g., 'google_search', 'url_context'
+    model: d.varchar({ length: 100 }).notNull(), // e.g., 'gemini-2.5-flash'
+    promptTokens: d.integer().notNull().default(0),
+    outputTokens: d.integer().notNull().default(0),
+    totalTokens: d.integer().notNull().default(0),
+    estimatedCost: d.numeric({ precision: 10, scale: 6 }).notNull().default("0"), // USD
+    eventId: d.uuid(), // Reference to event_queue if applicable
+    requestData: d.jsonb(), // Store request details for debugging
+    responseData: d.jsonb(), // Store response metadata
+    status: d.varchar({ length: 20 }).notNull().default('success'), // 'success', 'error'
+    errorMessage: d.text(),
+    durationMs: d.integer(), // Request duration in milliseconds
+    createdAt: d.timestamp({ withTimezone: true }).defaultNow(),
+  }),
+  (t) => [
+    index("gemini_usage_user_idx").on(t.userId),
+    index("gemini_usage_operator_idx").on(t.operatorName),
+    index("gemini_usage_created_idx").on(t.createdAt),
+    index("gemini_usage_event_idx").on(t.eventId),
+  ]
+);
+
+export const geminiUsageLogRelations = relations(geminiUsageLog, ({ one }) => ({
+  user: one(users, { fields: [geminiUsageLog.userId], references: [users.id] }),
+}));
