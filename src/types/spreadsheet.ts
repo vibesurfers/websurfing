@@ -199,6 +199,194 @@ export interface CellEditEvent {
 }
 
 /**
+ * Input payload received by the server when an automation updates a cell
+ *
+ * This is sent from automated processes (Robot Agents, formulas, data imports, etc.)
+ * after an automation task completes and needs to update cell content.
+ */
+export interface RobotUpdateCellInput {
+  /**
+   * UUID of the spreadsheet containing the cell
+   */
+  spreadsheetId: string;
+
+  /**
+   * Zero-indexed row position of the cell
+   */
+  rowIndex: number;
+
+  /**
+   * UUID of the column containing the cell
+   */
+  columnId: string;
+
+  /**
+   * New content to be stored in the cell
+   */
+  content: string;
+
+  /**
+   * Type of automation that performed the update
+   * @example 'formula', 'api_import', 'batch_update', 'scheduled_task'
+   */
+  automationType: AutomationType;
+
+  /**
+   * Unique identifier for the automation job/task
+   * Used to track which automation performed the update
+   */
+  automationJobId: string;
+
+  /**
+   * Optional metadata about the automation
+   */
+  metadata?: RobotUpdateMetadata;
+
+  /**
+   * Confidence score for the automated update (0-1)
+   * Used by AI/ML automations to indicate certainty
+   * @default 1.0
+   */
+  confidence?: number;
+}
+
+/**
+ * Types of automations that can update cells
+ */
+export type AutomationType =
+  | 'formula'           // Spreadsheet formula (SUM, AVG, etc.)
+  | 'api_import'        // Data fetched from external API
+  | 'batch_update'      // Bulk data update operation
+  | 'scheduled_task'    // Cron/scheduled automation
+  | 'webhook'           // Webhook-triggered update
+  | 'ai_agent'          // AI/ML agent update
+  | 'data_transform'    // Data transformation pipeline
+  | 'validation'        // Automated validation/correction
+  | 'sync'              // External system synchronization
+  | 'custom';           // Custom automation type
+
+/**
+ * Metadata for robot/automated cell updates
+ */
+export interface RobotUpdateMetadata {
+  /**
+   * Human-readable description of what the automation did
+   */
+  description?: string;
+
+  /**
+   * Source of the data (URL, API endpoint, etc.)
+   */
+  source?: string;
+
+  /**
+   * Parameters used by the automation
+   */
+  parameters?: Record<string, unknown>;
+
+  /**
+   * Duration of the automation task in milliseconds
+   */
+  durationMs?: number;
+
+  /**
+   * Number of retries attempted (if any)
+   */
+  retryCount?: number;
+
+  /**
+   * Timestamp when the automation started
+   */
+  startedAt?: Date;
+
+  /**
+   * Timestamp when the automation completed
+   */
+  completedAt?: Date;
+
+  /**
+   * Any warnings generated during automation
+   */
+  warnings?: string[];
+}
+
+/**
+ * Response returned by the server after a robot updates a cell
+ */
+export interface RobotUpdateCellResponse extends UpdateCellResponse {
+  /**
+   * UUID of the robot input event logged to the database
+   */
+  robotEventId: string;
+
+  /**
+   * Type of automation that performed the update
+   */
+  automationType: AutomationType;
+
+  /**
+   * Job ID of the automation
+   */
+  automationJobId: string;
+}
+
+/**
+ * Robot input event logged to the database for audit trail
+ * Stored in the robot_input_events table
+ */
+export interface RobotInputEvent {
+  /**
+   * UUID of the robot input event
+   */
+  id: string;
+
+  /**
+   * UUID of the cell that was updated
+   */
+  cellId: string;
+
+  /**
+   * Type of automation
+   */
+  automationType: AutomationType;
+
+  /**
+   * Job ID of the automation
+   */
+  automationJobId: string;
+
+  /**
+   * Content before the automation update
+   */
+  previousContent: string | null;
+
+  /**
+   * Content after the automation update
+   */
+  newContent: string;
+
+  /**
+   * Confidence score (0-1)
+   */
+  confidence: number;
+
+  /**
+   * Metadata about the automation
+   */
+  metadata?: RobotUpdateMetadata;
+
+  /**
+   * Timestamp when the automation completed and updated the cell
+   */
+  completedAt: Date;
+
+  /**
+   * Reference to the user who triggered the automation (if applicable)
+   */
+  triggeredBy?: string;
+}
+
+/**
  * Input payload for creating a new spreadsheet
  */
 export interface CreateSpreadsheetInput {
