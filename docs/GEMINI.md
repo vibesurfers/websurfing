@@ -50,11 +50,37 @@ gcloud --version
 
 ### 2. Authenticate with ADC
 
+**Option A: Personal Authentication (Individual Developers)**
+
 ```bash
 gcloud auth application-default login
 ```
 
-This opens a browser for authentication and saves credentials to `~/.config/gcloud/application_default_credentials.json`.
+Each team member runs this on their machine after being granted access to the GCP project.
+
+**Option B: Service Account (Team Sharing)**
+
+For team development, use a shared service account:
+
+```bash
+# Project owner creates service account once:
+gcloud iam service-accounts create gemini-dev \
+    --project=vibesurfers-websurfing
+
+gcloud projects add-iam-policy-binding vibesurfers-websurfing \
+    --member="serviceAccount:gemini-dev@vibesurfers-websurfing.iam.gserviceaccount.com" \
+    --role="roles/aiplatform.user"
+
+gcloud iam service-accounts keys create gemini-dev-key.json \
+    --iam-account=gemini-dev@vibesurfers-websurfing.iam.gserviceaccount.com
+
+# Share gemini-dev-key.json with team via secure channel
+```
+
+Team members add to their `.env`:
+```bash
+GOOGLE_APPLICATION_CREDENTIALS="./gemini-dev-key.json"
+```
 
 ### 3. Configure Environment
 
