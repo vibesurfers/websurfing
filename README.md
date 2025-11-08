@@ -1,3 +1,26 @@
+```mermaidjs
+
+graph TB
+ UI[User Inputs] --> SE[Spreadsheet Editor]
+    SE --> ES[Events Stream]
+    ES --> TUE((Type User Event))
+    TUE -->|Event Type| AQ[Action Queue]
+    AQ -->|Operator Triggers| OC[Operator Controller]
+    OC -->|Operator Actions| OQ((Operator Queue))
+    OQ --> R[Results]
+    R --> SUC[Spreadsheet Updates Controller]
+    SUC --> SE
+    OQ -.-> AQ
+
+    classDef default fill:#fff,stroke:#333,stroke-width:2px
+    classDef circular fill:#fff,stroke:#333,stroke-width:2px,rx:50
+
+    class TUE,OQ circular
+```
+
+
+-- BELOW THE BOILERPLATE WE USED
+
 # Create T3 App
 
 This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
