@@ -14,21 +14,23 @@ export const cellRouter = createTRPCRouter({
       const userId = ctx.session.user.id;
       console.log('Updating cell for user:', userId, input);
 
-      // 1. Update/insert cell (temporarily without userId until DB migration)
+      // 1. Update/insert cell
       await ctx.db.insert(cells).values({
+        userid: userId,
         rowIndex: input.rowIndex,
         colIndex: input.colIndex,
         content: input.content,
       }).onConflictDoUpdate({
-        target: [cells.rowIndex, cells.colIndex],
+        target: [cells.userid, cells.rowIndex, cells.colIndex],
         set: {
           content: input.content,
           updatedAt: new Date(),
         }
       });
 
-      // 2. Add event to queue (temporarily without userId until DB migration)
+      // 2. Add event to queue
       await ctx.db.insert(eventQueue).values({
+        userid: userId,
         eventType: 'cell_update',
         payload: input,
         status: 'pending',
@@ -40,22 +42,24 @@ export const cellRouter = createTRPCRouter({
 
   getEvents: protectedProcedure
     .query(async ({ ctx }) => {
-      // Temporarily fetch all events until DB migration completes
+      const userId = ctx.session.user.id;
       const events = await ctx.db
         .select()
         .from(eventQueue)
+        .where(eq(eventQueue.userid, userId))
         .orderBy(eventQueue.createdAt);
 
-      console.log('Fetched events:', events.length);
+      console.log('Fetched events for user:', userId, events.length);
       return events;
     }),
 
   getCells: protectedProcedure
     .query(async ({ ctx }) => {
-      // Temporarily fetch all cells until DB migration completes
+      const userId = ctx.session.user.id;
       const cellData = await ctx.db
         .select()
         .from(cells)
+        .where(eq(cells.userid, userId))
         .orderBy(cells.rowIndex, cells.colIndex);
 
       return cellData;

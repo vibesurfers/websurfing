@@ -9,11 +9,14 @@ export class SheetUpdater {
     try {
       // Get pending events with row locking to prevent double processing
       const pendingEvents = await db.transaction(async (tx) => {
-        // Select pending events with FOR UPDATE to lock them (temporarily without userId filter)
+        // Select pending events with FOR UPDATE to lock them
         const events = await tx
           .select()
           .from(eventQueue)
-          .where(eq(eventQueue.status, 'pending'))
+          .where(and(
+            eq(eventQueue.userid, userId),
+            eq(eventQueue.status, 'pending')
+          ))
           .orderBy(eventQueue.createdAt)
           .limit(10) // Process max 10 events at once
           .for('update');
@@ -50,10 +53,10 @@ export class SheetUpdater {
 
             appliedUpdates.push({
               id: newUpdate.id,
-              rowIndex: newUpdate.rowIndex,
-              colIndex: newUpdate.colIndex,
+              rowIndex: newUpdate.rowindex,
+              colIndex: newUpdate.colindex,
               content: newUpdate.content,
-              updateType: newUpdate.updateType,
+              updateType: newUpdate.updatetype,
             });
 
             console.log(`Created sheet update from event ${event.id}: (${payload.rowIndex}, ${payload.colIndex}) → (${payload.rowIndex}, ${payload.colIndex + 1}) = "${payload.content}"`);
@@ -79,24 +82,28 @@ export class SheetUpdater {
         }
       }
 
-      // Now apply all the pending sheet updates (temporarily without userId filter)
+      // Now apply all the pending sheet updates
       const pendingSheetUpdates = await db
         .select()
         .from(sheetUpdates)
-        .where(isNull(sheetUpdates.appliedAt))
-        .orderBy(sheetUpdates.createdAt);
+        .where(and(
+          eq(sheetUpdates.userid, userId),
+          isNull(sheetUpdates.appliedat)
+        ))
+        .orderBy(sheetUpdates.createdat);
 
       console.log(`Applying ${pendingSheetUpdates.length} sheet updates`);
 
       for (const update of pendingSheetUpdates) {
         try {
-          // Apply the update to the cells table (temporarily without userId)
+          // Apply the update to the cells table
           await db.insert(cells).values({
-            rowIndex: update.rowIndex,
-            colIndex: update.colIndex,
+            userid: update.userid,
+            rowIndex: update.rowindex,
+            colIndex: update.colindex,
             content: update.content,
           }).onConflictDoUpdate({
-            target: [cells.rowIndex, cells.colIndex],
+            target: [cells.rowIndex, cells.colIndex], // Use existing constraint
             set: {
               content: update.content,
               updatedAt: new Date(),
@@ -106,10 +113,10 @@ export class SheetUpdater {
           // Mark the update as applied
           await db
             .update(sheetUpdates)
-            .set({ appliedAt: new Date() })
+            .set({ appliedat: new Date() })
             .where(eq(sheetUpdates.id, update.id));
 
-          console.log(`Applied sheet update ${update.id}: (${update.rowIndex}, ${update.colIndex}) = "${update.content}"`);
+          console.log(`Applied sheet update ${update.id}: (${update.rowindex}, ${update.colindex}) = "${update.content}"`);
 
         } catch (error) {
           console.error(`Failed to apply sheet update ${update.id}:`, error);
@@ -136,11 +143,11 @@ export class SheetUpdater {
   async createSheetUpdate(userId: string, rowIndex: number, colIndex: number, content: string, updateType = 'ai_response') {
     try {
       const newUpdate = await db.insert(sheetUpdates).values({
-        // userId, // Temporarily removed - DB doesn't have this column yet
-        rowIndex,
-        colIndex,
+        userid: userId,
+        rowindex: rowIndex,
+        colindex: colIndex,
         content,
-        updateType,
+        updatetype: updateType,
       }).returning();
 
       console.log(`Created sheet update: (${rowIndex}, ${colIndex}) = "${content}" [${updateType}]`);

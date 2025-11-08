@@ -7,7 +7,8 @@ import { TableRow } from '@tiptap/extension-table-row'
 import { TableHeader } from '@tiptap/extension-table-header'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { api } from "@/trpc/react"
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useEffect } from 'react'
+import { useSheetUpdates } from "./sheet-manager"
 
 const initialContent = `
   <table>
@@ -25,6 +26,8 @@ const initialContent = `
 `
 
 export function TiptapTable() {
+  const { lastUpdate } = useSheetUpdates()
+
   const updateCell = api.cell.updateCell.useMutation({
     onError: (error) => {
       console.error('Failed to update cell:', error.message);
@@ -34,7 +37,7 @@ export function TiptapTable() {
     }
   })
   const { data: events, refetch, error: eventsError } = api.cell.getEvents.useQuery(undefined, {
-    refetchInterval: 2000, // Poll every 2 seconds
+    refetchInterval: false, // Disable polling - we use the 5-second timer instead
     retry: (failureCount, error) => {
       // Don't retry if unauthorized
       if (error.data?.code === 'UNAUTHORIZED') return false;
@@ -42,6 +45,13 @@ export function TiptapTable() {
     },
     refetchOnWindowFocus: false,
   })
+
+  // Refresh events when sheet updates happen
+  useEffect(() => {
+    if (lastUpdate) {
+      void refetch()
+    }
+  }, [lastUpdate, refetch])
 
   // Debounce mechanism - only fire events after user stops typing
   const debounceRefs = useRef<Map<string, NodeJS.Timeout>>(new Map())
