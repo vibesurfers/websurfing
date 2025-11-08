@@ -1,5 +1,7 @@
 {
-  "id": "318cf6bd-9ee7-431f-84e3-3ada429288bf",
+
+  "id": "667a6011-2ceb-47f3-93bb-f7643fceb3f8",
+
   "prevId": "b59c71a9-a9ee-4a96-9ea2-ea58714f4536",
   "version": "7",
   "dialect": "postgresql",
@@ -131,6 +133,12 @@
           "primaryKey": true,
           "notNull": true,
           "default": "gen_random_uuid()"
+        },
+        "userId": {
+          "name": "userId",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
         },
         "rowIndex": {
           "name": "rowIndex",
