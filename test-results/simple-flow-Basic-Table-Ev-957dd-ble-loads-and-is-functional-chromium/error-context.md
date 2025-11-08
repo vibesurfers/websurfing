@@ -8,9 +8,9 @@
       - textbox [active] [ref=e7]:
         - table [ref=e9]:
           - rowgroup [ref=e13]:
-            - row "weather NYC Cell 2" [ref=e14]:
-              - cell "weather NYC" [ref=e15]:
-                - paragraph [ref=e16]: weather NYC
+            - row "Cell 1 Cell 2" [ref=e14]:
+              - cell "Cell 1" [ref=e15]:
+                - paragraph [ref=e16]: Cell 1
               - cell "Cell 2" [ref=e17]:
                 - paragraph [ref=e18]: Cell 2
             - row [ref=e19]:
@@ -53,37 +53,37 @@
         - button "Process Events" [ref=e56]
         - button "Refresh Events" [ref=e57]
       - generic [ref=e58]:
-        - heading "Events (125):" [level=3] [ref=e59]
+        - heading "Events (131):" [level=3] [ref=e59]
         - generic [ref=e60]:
           - generic [ref=e61]:
             - strong [ref=e62]: cell_update
             - text: "- pending"
-          - generic [ref=e63]: "{\"content\":\"babanamasnamns\",\"colIndex\":0,\"rowIndex\":1}"
-          - generic [ref=e64]: 11/8/2025, 1:19:53 PM
+          - generic [ref=e63]: "{\"content\":\"test search query\",\"colIndex\":0,\"rowIndex\":0}"
+          - generic [ref=e64]: 11/8/2025, 1:22:41 PM
         - generic [ref=e65]:
           - generic [ref=e66]:
             - strong [ref=e67]: cell_update
             - text: "- pending"
-          - generic [ref=e68]: "{\"content\":\"jj\",\"colIndex\":0,\"rowIndex\":5}"
-          - generic [ref=e69]: 11/8/2025, 1:19:53 PM
+          - generic [ref=e68]: "{\"content\":\"test content\",\"colIndex\":0,\"rowIndex\":0}"
+          - generic [ref=e69]: 11/8/2025, 1:22:41 PM
         - generic [ref=e70]:
           - generic [ref=e71]:
             - strong [ref=e72]: cell_update
             - text: "- pending"
-          - generic [ref=e73]: "{\"content\":\"lklkl\",\"colIndex\":0,\"rowIndex\":6}"
-          - generic [ref=e74]: 11/8/2025, 1:19:53 PM
+          - generic [ref=e73]: "{\"content\":\"weather NYC\",\"colIndex\":0,\"rowIndex\":0}"
+          - generic [ref=e74]: 11/8/2025, 1:22:41 PM
         - generic [ref=e75]:
           - generic [ref=e76]:
             - strong [ref=e77]: cell_update
             - text: "- pending"
-          - generic [ref=e78]: "{\"content\":\"kjkjkj\",\"colIndex\":0,\"rowIndex\":4}"
-          - generic [ref=e79]: 11/8/2025, 1:19:53 PM
+          - generic [ref=e78]: "{\"content\":\"weather-1762636960308\",\"colIndex\":0,\"rowIndex\":0}"
+          - generic [ref=e79]: 11/8/2025, 1:22:42 PM
         - generic [ref=e80]:
           - generic [ref=e81]:
             - strong [ref=e82]: cell_update
             - text: "- pending"
-          - generic [ref=e83]: "{\"content\":\"lklklk\",\"colIndex\":0,\"rowIndex\":6}"
-          - generic [ref=e84]: 11/8/2025, 1:19:53 PM
+          - generic [ref=e83]: "{\"content\":\"second query\",\"colIndex\":1,\"rowIndex\":0}"
+          - generic [ref=e84]: 11/8/2025, 1:22:42 PM
   - button "Open Next.js Dev Tools" [ref=e90] [cursor=pointer]:
     - img [ref=e91]
   - alert [ref=e94]

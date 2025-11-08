@@ -7,6 +7,7 @@ import { TableRow } from '@tiptap/extension-table-row'
 import { TableHeader } from '@tiptap/extension-table-header'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { api } from "@/trpc/react"
+import { useCallback, useRef } from 'react'
 
 const initialContent = `
   <table>
@@ -28,6 +29,27 @@ export function TiptapTable() {
   const { data: events, refetch } = api.cell.getEvents.useQuery(undefined, {
     refetchInterval: 2000, // Poll every 2 seconds
   })
+
+  // Debounce mechanism - only fire events after user stops typing
+  const debounceRef = useRef<NodeJS.Timeout>()
+  const lastContentRef = useRef<string>('')
+
+  const debouncedCellUpdate = useCallback((content: string, rowIndex: number, colIndex: number) => {
+    // Clear existing timeout
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+    }
+
+    // Set new timeout
+    debounceRef.current = setTimeout(() => {
+      console.log(`Debounced cell update at (${rowIndex}, ${colIndex}): "${content}"`)
+      updateCell.mutate({
+        rowIndex,
+        colIndex,
+        content,
+      })
+    }, 1000) // Wait 1 second after user stops typing
+  }, [updateCell])
 
   const editor = useEditor({
     extensions: [
@@ -60,11 +82,8 @@ export function TiptapTable() {
           if (content && content !== 'Cell 1' && content !== 'Cell 2' && content !== '') {
             console.log(`Cell changed at (${rowIndex}, ${colIndex}): "${content}"`)
 
-            updateCell.mutate({
-              rowIndex,
-              colIndex,
-              content,
-            })
+            // Use debounced update instead of direct mutation
+            debouncedCellUpdate(content, rowIndex, colIndex)
           }
         })
       })

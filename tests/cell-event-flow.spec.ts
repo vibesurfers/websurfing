@@ -23,7 +23,7 @@ test.describe('Tiptap Table Event Flow', () => {
     await expect(page.locator('button:has-text("Process Events")')).toBeVisible();
 
     // Check that events section is present
-    await expect(page.locator('text=Events')).toBeVisible();
+    await expect(page.locator('h3').filter({ hasText: 'Events' })).toBeVisible();
   });
 
   test('cell edit creates event in queue', async ({ page }) => {
