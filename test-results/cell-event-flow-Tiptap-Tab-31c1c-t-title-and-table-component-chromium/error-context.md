@@ -1,0 +1,58 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - heading "Event Queue Test - Tiptap Table" [level=1] [ref=e3]
+    - generic [ref=e4]:
+      - textbox [ref=e7]:
+        - table [ref=e9]:
+          - rowgroup [ref=e13]:
+            - row "Cell 1 Cell 2" [ref=e14]:
+              - cell "Cell 1" [ref=e15]:
+                - paragraph [ref=e16]: Cell 1
+              - cell "Cell 2" [ref=e17]:
+                - paragraph [ref=e18]: Cell 2
+            - row [ref=e19]:
+              - cell [ref=e20]:
+                - paragraph [ref=e21]
+              - cell [ref=e22]:
+                - paragraph [ref=e23]
+            - row [ref=e24]:
+              - cell [ref=e25]:
+                - paragraph [ref=e26]
+              - cell [ref=e27]:
+                - paragraph [ref=e28]
+            - row [ref=e29]:
+              - cell [ref=e30]:
+                - paragraph [ref=e31]
+              - cell [ref=e32]:
+                - paragraph [ref=e33]
+            - row [ref=e34]:
+              - cell [ref=e35]:
+                - paragraph [ref=e36]
+              - cell [ref=e37]:
+                - paragraph [ref=e38]
+            - row [ref=e39]:
+              - cell [ref=e40]:
+                - paragraph [ref=e41]
+              - cell [ref=e42]:
+                - paragraph [ref=e43]
+            - row [ref=e44]:
+              - cell [ref=e45]:
+                - paragraph [ref=e46]
+              - cell [ref=e47]:
+                - paragraph [ref=e48]
+            - row [ref=e49]:
+              - cell [ref=e50]:
+                - paragraph [ref=e51]
+              - cell [ref=e52]:
+                - paragraph [ref=e53]
+      - generic [ref=e54]:
+        - button "Process Events" [ref=e55]
+        - button "Refresh Events" [ref=e56]
+      - heading "Events (0):" [level=3] [ref=e58]
+  - button "Open Next.js Dev Tools" [ref=e64] [cursor=pointer]:
+    - img [ref=e65]
+  - alert [ref=e68]
+```
