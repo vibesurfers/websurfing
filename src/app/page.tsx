@@ -1,6 +1,6 @@
-import { TiptapTable } from "@/components/tiptap-table";
 import { HydrateClient } from "@/trpc/server";
 import { auth, signIn, signOut } from "@/server/auth";
+import { SheetManager } from "@/components/sheet-manager";
 
 export default async function Home() {
   const session = await auth();
@@ -42,9 +42,6 @@ export default async function Home() {
     <HydrateClient>
       <main className="container mx-auto p-8 min-h-screen bg-white">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Event Queue Test - Tiptap Table
-          </h1>
           <div className="flex items-center gap-4">
             <span className="text-gray-600">
               Welcome, {session.user.name}
@@ -64,7 +61,7 @@ export default async function Home() {
             </form>
           </div>
         </div>
-        <TiptapTable />
+        <SheetManager />
       </main>
     </HydrateClient>
   );

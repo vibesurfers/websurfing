@@ -27,7 +27,23 @@ import { db } from "@/server/db";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const session = await auth();
+  let session = await auth();
+
+  // Check for bypass userId in headers (for testing)
+  const bypassUserId = opts.headers.get('x-bypass-user-id');
+
+  if (bypassUserId && process.env.NODE_ENV === 'development') {
+    // Create mock session for testing
+    session = {
+      user: {
+        id: bypassUserId,
+        name: 'Test User',
+        email: 'test@example.com',
+      },
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+    };
+    console.log('tRPC: Using bypass session for testing:', bypassUserId);
+  }
 
   return {
     db,
