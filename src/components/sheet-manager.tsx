@@ -6,7 +6,6 @@ import { useState, useCallback, createContext, useContext, useEffect } from "rea
 import { api } from "@/trpc/react";
 
 interface SheetUpdateContextType {
-  triggerRefresh: () => void;
   lastUpdate: Date | null;
   pendingUpdates: number;
 }
@@ -23,7 +22,6 @@ export function useSheetUpdates() {
 
 export function SheetManager() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [pendingUpdates, setPendingUpdates] = useState(0);
   const [isReady, setIsReady] = useState(false);
 
@@ -138,7 +136,7 @@ export function SheetManager() {
           </div>
         )}
 
-        <TiptapTable key={refreshKey} />
+        <TiptapTable />
       </div>
     </SheetUpdateContext.Provider>
   );
