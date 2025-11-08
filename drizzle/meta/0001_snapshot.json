@@ -1,5 +1,7 @@
 {
+
   "id": "667a6011-2ceb-47f3-93bb-f7643fceb3f8",
+
   "prevId": "b59c71a9-a9ee-4a96-9ea2-ea58714f4536",
   "version": "7",
   "dialect": "postgresql",
@@ -192,45 +194,15 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "cell_user_idx": {
-          "name": "cell_user_idx",
-          "columns": [
-            {
-              "expression": "userId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
-      "foreignKeys": {
-        "websurfing_cell_userId_websurfing_user_id_fk": {
-          "name": "websurfing_cell_userId_websurfing_user_id_fk",
-          "tableFrom": "websurfing_cell",
-          "tableTo": "websurfing_user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "cell_unique_position": {
           "name": "cell_unique_position",
           "nullsNotDistinct": false,
           "columns": [
-            "userId",
             "rowIndex",
             "colIndex"
           ]
@@ -250,12 +222,6 @@
           "primaryKey": true,
           "notNull": true,
           "default": "gen_random_uuid()"
-        },
-        "userId": {
-          "name": "userId",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
         },
         "eventType": {
           "name": "eventType",
@@ -320,9 +286,120 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.websurfing_gemini_usage_log": {
+      "name": "websurfing_gemini_usage_log",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
-        "event_queue_user_idx": {
-          "name": "event_queue_user_idx",
+        "userId": {
+          "name": "userId",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "operatorName": {
+          "name": "operatorName",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model": {
+          "name": "model",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "promptTokens": {
+          "name": "promptTokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "outputTokens": {
+          "name": "outputTokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "totalTokens": {
+          "name": "totalTokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "estimatedCost": {
+          "name": "estimatedCost",
+          "type": "numeric(10, 6)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "eventId": {
+          "name": "eventId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "requestData": {
+          "name": "requestData",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "responseData": {
+          "name": "responseData",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'success'"
+        },
+        "errorMessage": {
+          "name": "errorMessage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "durationMs": {
+          "name": "durationMs",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "gemini_usage_user_idx": {
+          "name": "gemini_usage_user_idx",
           "columns": [
             {
               "expression": "userId",
@@ -335,12 +412,57 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "gemini_usage_operator_idx": {
+          "name": "gemini_usage_operator_idx",
+          "columns": [
+            {
+              "expression": "operatorName",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "gemini_usage_created_idx": {
+          "name": "gemini_usage_created_idx",
+          "columns": [
+            {
+              "expression": "createdAt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "gemini_usage_event_idx": {
+          "name": "gemini_usage_event_idx",
+          "columns": [
+            {
+              "expression": "eventId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
-        "websurfing_event_queue_userId_websurfing_user_id_fk": {
-          "name": "websurfing_event_queue_userId_websurfing_user_id_fk",
-          "tableFrom": "websurfing_event_queue",
+        "websurfing_gemini_usage_log_userId_websurfing_user_id_fk": {
+          "name": "websurfing_gemini_usage_log_userId_websurfing_user_id_fk",
+          "tableFrom": "websurfing_gemini_usage_log",
           "tableTo": "websurfing_user",
           "columnsFrom": [
             "userId"
@@ -501,150 +623,6 @@
         "websurfing_session_userId_websurfing_user_id_fk": {
           "name": "websurfing_session_userId_websurfing_user_id_fk",
           "tableFrom": "websurfing_session",
-          "tableTo": "websurfing_user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.websurfing_sheet_updates": {
-      "name": "websurfing_sheet_updates",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "userId": {
-          "name": "userId",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "rowIndex": {
-          "name": "rowIndex",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "colIndex": {
-          "name": "colIndex",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "content": {
-          "name": "content",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updateType": {
-          "name": "updateType",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        },
-        "appliedAt": {
-          "name": "appliedAt",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "sheet_updates_user_idx": {
-          "name": "sheet_updates_user_idx",
-          "columns": [
-            {
-              "expression": "userId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "sheet_updates_created_idx": {
-          "name": "sheet_updates_created_idx",
-          "columns": [
-            {
-              "expression": "createdAt",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "sheet_updates_applied_idx": {
-          "name": "sheet_updates_applied_idx",
-          "columns": [
-            {
-              "expression": "appliedAt",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "sheet_updates_position_idx": {
-          "name": "sheet_updates_position_idx",
-          "columns": [
-            {
-              "expression": "rowIndex",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "colIndex",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "websurfing_sheet_updates_userId_websurfing_user_id_fk": {
-          "name": "websurfing_sheet_updates_userId_websurfing_user_id_fk",
-          "tableFrom": "websurfing_sheet_updates",
           "tableTo": "websurfing_user",
           "columnsFrom": [
             "userId"
