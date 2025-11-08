@@ -111,6 +111,7 @@ export const cells = createTable(
   "cell",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
+    userId: d.varchar({ length: 255 }).notNull().references(() => users.id),
     rowIndex: d.integer().notNull(),
     colIndex: d.integer().notNull(),
     content: d.text(),
@@ -119,7 +120,8 @@ export const cells = createTable(
   }),
   (t) => [
     index("cell_position_idx").on(t.rowIndex, t.colIndex),
-    unique("cell_unique_position").on(t.rowIndex, t.colIndex),
+    index("cell_user_idx").on(t.userId),
+    unique("cell_unique_position").on(t.userId, t.rowIndex, t.colIndex),
   ]
 );
 
@@ -127,6 +129,7 @@ export const eventQueue = createTable(
   "event_queue",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
+    userId: d.varchar({ length: 255 }).notNull().references(() => users.id),
     eventType: d.varchar({ length: 100 }).notNull(),
     payload: d.jsonb().notNull(),
     status: d.varchar({ length: 20 }).default('pending'),
@@ -136,5 +139,6 @@ export const eventQueue = createTable(
   (t) => [
     index("event_queue_status_idx").on(t.status),
     index("event_queue_created_idx").on(t.createdAt),
+    index("event_queue_user_idx").on(t.userId),
   ]
 );
