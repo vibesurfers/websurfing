@@ -5,14 +5,14 @@
   - main [ref=e2]:
     - heading "Event Queue Test - Tiptap Table" [level=1] [ref=e3]
     - generic [ref=e4]:
-      - textbox [active] [ref=e7]:
+      - textbox [ref=e7]:
         - table [ref=e9]:
           - rowgroup [ref=e13]:
-            - row "first query second query" [ref=e14]:
-              - cell "first query" [ref=e15]:
-                - paragraph [ref=e16]: first query
-              - cell "second query" [ref=e17]:
-                - paragraph [ref=e18]: second query
+            - row "weather-1762636960308 Cell 2" [ref=e14]:
+              - cell "weather-1762636960308" [ref=e15]:
+                - paragraph [ref=e16]: weather-1762636960308
+              - cell "Cell 2" [ref=e17]:
+                - paragraph [ref=e18]: Cell 2
             - row [ref=e19]:
               - cell [ref=e20]:
                 - paragraph [ref=e21]
@@ -51,39 +51,39 @@
         - paragraph [ref=e54]
       - generic [ref=e55]:
         - button "Process Events" [ref=e56]
-        - button "Refresh Events" [ref=e57]
+        - button "Refresh Events" [active] [ref=e57]
       - generic [ref=e58]:
-        - heading "Events (40):" [level=3] [ref=e59]
+        - heading "Events (131):" [level=3] [ref=e59]
         - generic [ref=e60]:
           - generic [ref=e61]:
             - strong [ref=e62]: cell_update
             - text: "- pending"
-          - generic [ref=e63]: "{\"content\":\"test content from tiptap\",\"colIndex\":0,\"rowIndex\":0}"
-          - generic [ref=e64]: 11/8/2025, 1:14:56 PM
+          - generic [ref=e63]: "{\"content\":\"test search query\",\"colIndex\":0,\"rowIndex\":0}"
+          - generic [ref=e64]: 11/8/2025, 1:22:41 PM
         - generic [ref=e65]:
           - generic [ref=e66]:
             - strong [ref=e67]: cell_update
             - text: "- pending"
-          - generic [ref=e68]: "{\"content\":\"test content from tiptap\",\"colIndex\":0,\"rowIndex\":0}"
-          - generic [ref=e69]: 11/8/2025, 1:14:56 PM
+          - generic [ref=e68]: "{\"content\":\"test content\",\"colIndex\":0,\"rowIndex\":0}"
+          - generic [ref=e69]: 11/8/2025, 1:22:41 PM
         - generic [ref=e70]:
           - generic [ref=e71]:
             - strong [ref=e72]: cell_update
             - text: "- pending"
-          - generic [ref=e73]: "{\"content\":\"test content from tiptap\",\"colIndex\":0,\"rowIndex\":0}"
-          - generic [ref=e74]: 11/8/2025, 1:14:57 PM
+          - generic [ref=e73]: "{\"content\":\"weather NYC\",\"colIndex\":0,\"rowIndex\":0}"
+          - generic [ref=e74]: 11/8/2025, 1:22:41 PM
         - generic [ref=e75]:
           - generic [ref=e76]:
             - strong [ref=e77]: cell_update
             - text: "- pending"
-          - generic [ref=e78]: "{\"content\":\"test content from tiptap\",\"colIndex\":0,\"rowIndex\":0}"
-          - generic [ref=e79]: 11/8/2025, 1:14:57 PM
+          - generic [ref=e78]: "{\"content\":\"weather-1762636960308\",\"colIndex\":0,\"rowIndex\":0}"
+          - generic [ref=e79]: 11/8/2025, 1:22:42 PM
         - generic [ref=e80]:
           - generic [ref=e81]:
             - strong [ref=e82]: cell_update
             - text: "- pending"
-          - generic [ref=e83]: "{\"content\":\"test content from tiptap\",\"colIndex\":0,\"rowIndex\":0}"
-          - generic [ref=e84]: 11/8/2025, 1:14:57 PM
+          - generic [ref=e83]: "{\"content\":\"second query\",\"colIndex\":1,\"rowIndex\":0}"
+          - generic [ref=e84]: 11/8/2025, 1:22:42 PM
   - button "Open Next.js Dev Tools" [ref=e90] [cursor=pointer]:
     - img [ref=e91]
   - alert [ref=e94]
