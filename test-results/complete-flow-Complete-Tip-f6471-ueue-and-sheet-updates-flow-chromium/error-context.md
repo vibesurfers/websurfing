@@ -16,9 +16,9 @@
         - textbox [active] [ref=e20]:
           - table [ref=e22]:
             - rowgroup [ref=e26]:
-              - row "Cell 1 Cell 2" [ref=e27]:
-                - cell "Cell 1" [ref=e28]:
-                  - paragraph [ref=e29]: Cell 1
+              - row "test-1762643455055 Cell 2" [ref=e27]:
+                - cell "test-1762643455055" [ref=e28]:
+                  - paragraph [ref=e29]: test-1762643455055
                 - cell "Cell 2" [ref=e30]:
                   - paragraph [ref=e31]: Cell 2
               - row [ref=e32]:
@@ -26,9 +26,9 @@
                   - paragraph [ref=e34]
                 - cell [ref=e35]:
                   - paragraph [ref=e36]
-              - row "weather-1762641925916" [ref=e37]:
-                - cell "weather-1762641925916" [ref=e38]:
-                  - paragraph [ref=e39]: weather-1762641925916
+              - row [ref=e37]:
+                - cell [ref=e38]:
+                  - paragraph [ref=e39]
                 - cell [ref=e40]:
                   - paragraph [ref=e41]
               - row [ref=e42]:
@@ -61,20 +61,32 @@
           - button "Process Events" [ref=e69]
           - button "Refresh Events" [ref=e70]
         - generic [ref=e71]:
-          - heading "Events (0):" [level=3] [ref=e72]
-          - paragraph [ref=e73]: No events yet
-  - generic [ref=e78] [cursor=pointer]:
-    - button "Open Next.js Dev Tools" [ref=e79]:
-      - img [ref=e80]
-    - generic [ref=e83]:
-      - button "Open issues overlay" [ref=e84]:
-        - generic [ref=e85]:
-          - generic [ref=e86]: "1"
-          - generic [ref=e87]: "2"
-        - generic [ref=e88]:
-          - text: Issue
-          - generic [ref=e89]: s
-      - button "Collapse issues badge" [ref=e90]:
-        - img [ref=e91]
-  - alert [ref=e93]
+          - heading "Events (4):" [level=3] [ref=e72]
+          - generic [ref=e73]:
+            - generic [ref=e74]:
+              - strong [ref=e75]: cell_update
+              - text: "- pending"
+            - generic [ref=e76]: "{\"content\":\"test-1762643313924\",\"colIndex\":0,\"rowIndex\":0}"
+            - generic [ref=e77]: 11/8/2025, 3:08:35 PM
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - strong [ref=e80]: cell_update
+              - text: "- completed"
+            - generic [ref=e81]: "{\"content\":\"test-1762643214393\",\"colIndex\":0,\"rowIndex\":0}"
+            - generic [ref=e82]: 11/8/2025, 3:06:55 PM
+          - generic [ref=e83]:
+            - generic [ref=e84]:
+              - strong [ref=e85]: cell_update
+              - text: "- failed"
+            - generic [ref=e86]: "{\"content\":\"assa\",\"colIndex\":0,\"rowIndex\":3}"
+            - generic [ref=e87]: 11/8/2025, 2:58:56 PM
+          - generic [ref=e88]:
+            - generic [ref=e89]:
+              - strong [ref=e90]: cell_update
+              - text: "- failed"
+            - generic [ref=e91]: "{\"content\":\"weather-1762642722602\",\"colIndex\":0,\"rowIndex\":2}"
+            - generic [ref=e92]: 11/8/2025, 2:58:44 PM
+  - button "Open Next.js Dev Tools" [ref=e98] [cursor=pointer]:
+    - img [ref=e99]
+  - alert [ref=e102]
 ```

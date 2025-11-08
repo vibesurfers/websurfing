@@ -30,8 +30,8 @@ test.describe('Complete Tiptap Table Flow', () => {
 
     // Step 2: Verify event was created in the queue
     console.log('Step 2: Verifying event was created');
-    await expect(page.locator('div.bg-white.p-2').filter({ hasText: uniqueContent })).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('div.bg-white.p-2').filter({ hasText: uniqueContent }).filter({ hasText: 'pending' })).toBeVisible();
+    await expect(page.locator('.bg-white.p-2.rounded.mb-2.border').filter({ hasText: uniqueContent })).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.bg-white.p-2.rounded.mb-2.border').filter({ hasText: uniqueContent }).filter({ hasText: 'pending' })).toBeVisible();
 
     // Step 3: Trigger sheet update processing via API with bypass userId
     console.log('Step 3: Triggering sheet update via API');
@@ -52,7 +52,7 @@ test.describe('Complete Tiptap Table Flow', () => {
 
     // Step 5: Verify event was marked as completed
     console.log('Step 5: Verifying event completion');
-    await expect(page.locator('div.bg-white.p-2').filter({ hasText: uniqueContent }).filter({ hasText: 'completed' })).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.bg-white.p-2.rounded.mb-2.border').filter({ hasText: uniqueContent }).filter({ hasText: 'completed' })).toBeVisible({ timeout: 5000 });
 
     // Step 6: CRITICAL TEST - Verify content appears in the cell to the right
     console.log('Step 6: Checking if content was copied to adjacent cell');
