@@ -4,24 +4,37 @@ Test scripts for all 4 Gemini operators + end-to-end pipeline.
 
 ## Setup
 
-### 1. Authenticate
+### Quick Setup (Credentials Already in Repo)
+
+The credentials file is already in `.secrets/gcloud-adc.json`. Just verify your `.env`:
 
 ```bash
-gcloud auth application-default login
-```
-
-### 2. Configure `.env`
-
-```bash
-GOOGLE_CLOUD_PROJECT="your-gcp-project-id"
+GOOGLE_APPLICATION_CREDENTIALS=".secrets/gcloud-adc.json"
+GOOGLE_CLOUD_PROJECT="vibesurfers-websurfing"
 GOOGLE_CLOUD_LOCATION="us-central1"
 ```
 
-### 3. Enable Vertex AI API
+Then run tests:
 
 ```bash
-gcloud services enable aiplatform.googleapis.com --project=your-project-id
+pnpm test:gemini:search
 ```
+
+### Manual Setup (If Generating New Credentials)
+
+```bash
+# 1. Authenticate with your Google account
+gcloud auth application-default login
+
+# 2. Copy credentials to repo
+cp ~/.config/gcloud/application_default_credentials.json .secrets/gcloud-adc.json
+
+# 3. Update .env
+GOOGLE_APPLICATION_CREDENTIALS=".secrets/gcloud-adc.json"
+GOOGLE_CLOUD_PROJECT="vibesurfers-websurfing"
+```
+
+**Note**: `.secrets/` is gitignored - credentials won't be committed.
 
 ## Run Tests
 

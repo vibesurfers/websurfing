@@ -36,6 +36,13 @@ yarn-error.log*
 .env
 .env*.local
 
+# secrets (GCP credentials, API keys, etc.)
+.secrets/
+.secrets
+*.json
+!package.json
+!tsconfig.json
+
 # vercel
 .vercel
 
