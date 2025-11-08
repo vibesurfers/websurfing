@@ -58,38 +58,137 @@ gcloud auth application-default login
 
 Each team member runs this on their machine after being granted access to the GCP project.
 
-**Option B: Service Account (Team Sharing)**
+**Option B: Service Account (If Org Policy Allows)**
 
-For team development, use a shared service account:
+⚠️ **Note**: If your organization has `constraints/iam.disableServiceAccountKeyCreation` enabled, you won't be able to create service account keys. In that case, use **Option A** (personal ADC) for each team member.
+
+If service account key creation is allowed:
 
 ```bash
-# Project owner creates service account once:
+# 1. Create service account
 gcloud iam service-accounts create gemini-dev \
-    --project=vibesurfers-websurfing
+    --description="Shared service account for Gemini development" \
+    --display-name="Gemini Dev Team" \
+    --project=YOUR_PROJECT_ID
 
-gcloud projects add-iam-policy-binding vibesurfers-websurfing \
-    --member="serviceAccount:gemini-dev@vibesurfers-websurfing.iam.gserviceaccount.com" \
+# 2. Grant Vertex AI permissions
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+    --member="serviceAccount:gemini-dev@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
     --role="roles/aiplatform.user"
 
-gcloud iam service-accounts keys create gemini-dev-key.json \
-    --iam-account=gemini-dev@vibesurfers-websurfing.iam.gserviceaccount.com
+# 3. Create key and save to .secrets/ directory
+gcloud iam service-accounts keys create .secrets/gemini-service-account.json \
+    --iam-account=gemini-dev@YOUR_PROJECT_ID.iam.gserviceaccount.com
 
-# Share gemini-dev-key.json with team via secure channel
+# 4. Update .env
+GOOGLE_CREDENTIALS_JSON=<paste JSON from generated file>
 ```
 
-Team members add to their `.env`:
+### Team Sharing (If Service Account Keys Are Blocked)
+
+**If your organization blocks service account key creation:**
+
+**For team members in the same organization:**
+
+1. **Project owner grants access:**
 ```bash
-GOOGLE_APPLICATION_CREDENTIALS="./gemini-dev-key.json"
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+    --member="user:teammate@example.com" \
+    --role="roles/aiplatform.user"
+```
+
+2. **They authenticate and create their own credentials:**
+```bash
+gcloud auth application-default login
+cat ~/.config/gcloud/application_default_credentials.json | jq -c '.'
+```
+
+3. **They add JSON to `.env`:**
+```bash
+GOOGLE_CLOUD_PROJECT="YOUR_PROJECT_ID"
+GOOGLE_CLOUD_LOCATION="us-central1"
+GOOGLE_CREDENTIALS_JSON=<paste the JSON string>
+```
+
+**For team members from external domains (if org policy blocks external users):**
+
+Share your credentials JSON string via secure channel:
+
+1. **Generate JSON string:**
+```bash
+cat .secrets/gcloud-adc.json | jq -c '.'
+```
+
+2. **Send to team**: Share via 1Password, Slack DM, encrypted email
+
+3. **They add to `.env`:**
+```bash
+GOOGLE_CLOUD_PROJECT="YOUR_PROJECT_ID"
+GOOGLE_CLOUD_LOCATION="us-central1"
+GOOGLE_CREDENTIALS_JSON={"account":"","client_id":"...","refresh_token":"...","type":"authorized_user"}
+```
+
+4. **They test**: `pnpm test:gemini:search`
+
+**Benefits:**
+- ✅ No file management needed
+- ✅ Works identically on local and Vercel
+- ✅ Easy to share via password managers
+- ✅ Same config for entire team
+
+### Managing gcloud Accounts
+
+If you need to switch between different Google accounts:
+
+```bash
+# List all authenticated accounts
+gcloud auth list
+
+# Switch active account
+gcloud config set account ACCOUNT@gmail.com
+
+# Login with new account
+gcloud auth login NEW_ACCOUNT@gmail.com
+
+# Update ADC for active account
+gcloud auth application-default login
+
+# Copy new credentials to repo
+cp ~/.config/gcloud/application_default_credentials.json .secrets/gcloud-adc.json
+```
+
+**To logout:**
+
+```bash
+# Revoke specific account
+gcloud auth revoke ACCOUNT@gmail.com
+
+# Revoke all accounts
+gcloud auth revoke --all
+
+# Revoke just ADC
+gcloud auth application-default revoke
 ```
 
 ### 3. Configure Environment
 
-Add to `.env`:
+**Step 1: Get credentials as JSON string**
 
 ```bash
-GOOGLE_CLOUD_PROJECT="your-gcp-project-id"
-GOOGLE_CLOUD_LOCATION="us-central1"
+cat .secrets/gcloud-adc.json | jq -c '.'
 ```
+
+Copy the output (one line of JSON).
+
+**Step 2: Add to `.env`**
+
+```bash
+GOOGLE_CLOUD_PROJECT="YOUR_PROJECT_ID"
+GOOGLE_CLOUD_LOCATION="us-central1"
+GOOGLE_CREDENTIALS_JSON={"account":"","client_id":"...","client_secret":"...","refresh_token":"...","type":"authorized_user","universe_domain":"googleapis.com"}
+```
+
+**Note**: This same setup works for both local development and Vercel deployment!
 
 **Get your project ID:**
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
