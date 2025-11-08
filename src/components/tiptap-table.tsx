@@ -39,7 +39,8 @@ export function TiptapTable() {
       // Don't retry if unauthorized
       if (error.data?.code === 'UNAUTHORIZED') return false;
       return failureCount < 3;
-    }
+    },
+    refetchOnWindowFocus: false,
   })
 
   // Debounce mechanism - only fire events after user stops typing
@@ -222,7 +223,7 @@ export function TiptapTable() {
         {events?.length === 0 && (
           <p className="text-gray-400">No events yet</p>
         )}
-        {events?.slice(-5).map(event => (
+        {events?.slice().reverse().slice(0, 5).map(event => (
           <div key={event.id} className="bg-white p-2 rounded mb-2 border">
             <div className="font-mono text-xs">
               <strong>{event.eventType}</strong> - {event.status}
