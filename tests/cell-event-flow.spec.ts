@@ -42,8 +42,8 @@ test.describe('Tiptap Table Event Flow', () => {
     await firstCell.selectText();
     await firstCell.fill('test search query');
 
-    // Wait a moment for the tRPC mutation to complete
-    await page.waitForTimeout(2000);
+    // Wait for debounce (1s) + mutation + polling interval (2s) = ~3.5s
+    await page.waitForTimeout(3500);
 
     // Check that events count increased
     await expect(page.locator('h3:has-text("Events")')).toContainText('Events (1)');
