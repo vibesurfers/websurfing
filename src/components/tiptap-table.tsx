@@ -25,30 +25,59 @@ const initialContent = `
 `
 
 export function TiptapTable() {
-  const updateCell = api.cell.updateCell.useMutation()
-  const { data: events, refetch } = api.cell.getEvents.useQuery(undefined, {
+  const updateCell = api.cell.updateCell.useMutation({
+    onError: (error) => {
+      console.error('Failed to update cell:', error.message);
+      if (error.data?.code === 'UNAUTHORIZED') {
+        console.error('User not authenticated - please refresh the page');
+      }
+    }
+  })
+  const { data: events, refetch, error: eventsError } = api.cell.getEvents.useQuery(undefined, {
     refetchInterval: 2000, // Poll every 2 seconds
+    retry: (failureCount, error) => {
+      // Don't retry if unauthorized
+      if (error.data?.code === 'UNAUTHORIZED') return false;
+      return failureCount < 3;
+    }
   })
 
   // Debounce mechanism - only fire events after user stops typing
-  const debounceRef = useRef<NodeJS.Timeout>()
-  const lastContentRef = useRef<string>('')
+  const debounceRefs = useRef<Map<string, NodeJS.Timeout>>(new Map())
+  const lastContentRef = useRef<Map<string, string>>(new Map())
 
   const debouncedCellUpdate = useCallback((content: string, rowIndex: number, colIndex: number) => {
-    // Clear existing timeout
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current)
+    const cellKey = `${rowIndex}-${colIndex}`
+
+    // Clear existing timeout for this specific cell
+    const existingTimeout = debounceRefs.current.get(cellKey)
+    if (existingTimeout) {
+      clearTimeout(existingTimeout)
     }
 
-    // Set new timeout
-    debounceRef.current = setTimeout(() => {
-      console.log(`Debounced cell update at (${rowIndex}, ${colIndex}): "${content}"`)
-      updateCell.mutate({
-        rowIndex,
-        colIndex,
-        content,
-      })
+    // Set new timeout for this specific cell
+    const timeout = setTimeout(() => {
+      const lastContent = lastContentRef.current.get(cellKey)
+
+      // Only create event if content has actually changed
+      console.log(`Checking cell update at (${rowIndex}, ${colIndex}): "${content}", last: "${lastContent}"`)
+      if (content && content !== lastContent && content !== 'Cell 1' && content !== 'Cell 2') {
+        console.log(`Creating debounced cell update at (${rowIndex}, ${colIndex}): "${content}"`)
+        lastContentRef.current.set(cellKey, content)
+        updateCell.mutate({
+          rowIndex,
+          colIndex,
+          content,
+        })
+      } else {
+        console.log(`Skipping cell update - filtered out`)
+      }
+
+      // Clean up the timeout reference
+      debounceRefs.current.delete(cellKey)
     }, 1000) // Wait 1 second after user stops typing
+
+    debounceRefs.current.set(cellKey, timeout)
   }, [updateCell])
 
   const editor = useEditor({
@@ -66,7 +95,6 @@ export function TiptapTable() {
     onUpdate: ({ editor }) => {
       // Parse table and extract actual cell contents
       const html = editor.getHTML()
-      console.log('Table updated:', html)
 
       // Parse the HTML to find table cells with content
       const parser = new DOMParser()
@@ -77,14 +105,8 @@ export function TiptapTable() {
         const cells = row.querySelectorAll('td')
         cells.forEach((cell, colIndex) => {
           const content = cell.textContent?.trim() || ''
-
-          // Only create events for cells that have non-empty content and aren't the default
-          if (content && content !== 'Cell 1' && content !== 'Cell 2' && content !== '') {
-            console.log(`Cell changed at (${rowIndex}, ${colIndex}): "${content}"`)
-
-            // Use debounced update instead of direct mutation
-            debouncedCellUpdate(content, rowIndex, colIndex)
-          }
+          // Use debounced update for all content changes
+          debouncedCellUpdate(content, rowIndex, colIndex)
         })
       })
     },
@@ -94,6 +116,18 @@ export function TiptapTable() {
     await fetch('/api/process-events', { method: 'POST' })
     // Refetch events to see results
     void refetch()
+  }
+
+  // Show error state if there's an auth issue
+  if (eventsError?.data?.code === 'UNAUTHORIZED') {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <h3 className="text-red-800 font-semibold">Authentication Required</h3>
+        <p className="text-red-600 mt-2">
+          Please refresh the page to sign in and access the table.
+        </p>
+      </div>
+    );
   }
 
   if (!editor) return null

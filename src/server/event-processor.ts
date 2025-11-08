@@ -21,9 +21,9 @@ export class EventProcessor {
     return { processed: pendingEvents.length };
   }
 
-  private async processEvent(event: { id: string; eventType: string; payload: any }) {
+  private async processEvent(event: { id: string; userId: string; eventType: string; payload: unknown }) {
     try {
-      console.log('Processing event:', event.id, event.eventType);
+      console.log('Processing event:', event.id, event.eventType, 'for user:', event.userId);
 
       // Mock processing based on event type
       if (event.eventType === 'cell_update') {
@@ -32,20 +32,21 @@ export class EventProcessor {
         // Mock "Google search" - just append " (processed by AI)" to content
         const processedContent = `${payload.content} → AI: Weather in NYC is 72°F and sunny`;
 
-        // Update adjacent cell (colIndex + 1)
+        // Update adjacent cell (colIndex + 1) for the same user
         await db.insert(cells).values({
+          userId: event.userId,
           rowIndex: payload.rowIndex,
           colIndex: payload.colIndex + 1,
           content: processedContent,
         }).onConflictDoUpdate({
-          target: [cells.rowIndex, cells.colIndex],
+          target: [cells.userId, cells.rowIndex, cells.colIndex],
           set: {
             content: processedContent,
             updatedAt: new Date(),
           }
         });
 
-        console.log(`Processed cell (${payload.rowIndex}, ${payload.colIndex}) → (${payload.rowIndex}, ${payload.colIndex + 1})`);
+        console.log(`Processed cell for user ${event.userId}: (${payload.rowIndex}, ${payload.colIndex}) → (${payload.rowIndex}, ${payload.colIndex + 1})`);
       }
 
       // Mark event as processed
