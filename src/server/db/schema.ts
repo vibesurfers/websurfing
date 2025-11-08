@@ -107,10 +107,25 @@ export const verificationTokens = createTable(
   (t) => [primaryKey({ columns: [t.identifier, t.token] })]
 );
 
+export const sheets = createTable(
+  "sheet",
+  (d) => ({
+    id: d.uuid().primaryKey().defaultRandom(),
+    userId: d.varchar("userid", { length: 255 }).notNull().references(() => users.id),
+    name: d.varchar({ length: 255 }).notNull().default('Untitled Sheet'),
+    createdAt: d.timestamp("createdAt", { withTimezone: true }).defaultNow(),
+    updatedAt: d.timestamp("updatedAt", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
+  }),
+  (t) => [
+    index("sheet_user_idx").on(t.userId),
+  ]
+);
+
 export const cells = createTable(
   "cell",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
+    sheetId: d.uuid("sheetid").notNull().references(() => sheets.id, { onDelete: 'cascade' }),
     userId: d.varchar("userid", { length: 255 }).notNull().references(() => users.id),
     rowIndex: d.integer("rowIndex").notNull(),
     colIndex: d.integer("colIndex").notNull(),
@@ -119,9 +134,10 @@ export const cells = createTable(
     updatedAt: d.timestamp("updatedAt", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
   }),
   (t) => [
+    index("cell_sheet_idx").on(t.sheetId),
     index("cell_position_idx").on(t.rowIndex, t.colIndex),
     index("cell_user_idx").on(t.userId),
-    unique("cell_unique_position").on(t.userId, t.rowIndex, t.colIndex),
+    unique("cell_unique_position").on(t.sheetId, t.userId, t.rowIndex, t.colIndex),
   ]
 );
 
@@ -129,6 +145,7 @@ export const eventQueue = createTable(
   "event_queue",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
+    sheetId: d.uuid("sheetid").notNull().references(() => sheets.id, { onDelete: 'cascade' }),
     userId: d.varchar("userid", { length: 255 }).notNull().references(() => users.id),
     eventType: d.varchar("eventType", { length: 100 }).notNull(),
     payload: d.jsonb().notNull(),
@@ -137,6 +154,7 @@ export const eventQueue = createTable(
     processedAt: d.timestamp("processedAt", { withTimezone: true }),
   }),
   (t) => [
+    index("event_queue_sheet_idx").on(t.sheetId),
     index("event_queue_status_idx").on(t.status),
     index("event_queue_created_idx").on(t.createdAt),
     index("event_queue_user_idx").on(t.userId),
@@ -147,6 +165,7 @@ export const sheetUpdates = createTable(
   "sheet_updates",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
+    sheetId: d.uuid("sheetid").notNull().references(() => sheets.id, { onDelete: 'cascade' }),
     userId: d.varchar("userid", { length: 255 }).notNull().references(() => users.id),
     rowIndex: d.integer("rowindex").notNull(),
     colIndex: d.integer("colindex").notNull(),
@@ -156,6 +175,7 @@ export const sheetUpdates = createTable(
     appliedAt: d.timestamp("appliedat", { withTimezone: true }),
   }),
   (t) => [
+    index("sheet_updates_sheet_idx").on(t.sheetId),
     index("sheet_updates_user_idx").on(t.userId),
     index("sheet_updates_created_idx").on(t.createdAt),
     index("sheet_updates_applied_idx").on(t.appliedAt),

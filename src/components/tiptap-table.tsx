@@ -12,6 +12,9 @@ import { useSheetUpdates } from "./sheet-manager"
 
 const initialContent = `
   <table>
+    <thead>
+      <tr><th>1</th><th>2</th></tr>
+    </thead>
     <tbody>
       <tr><td>Cell 1</td><td>Cell 2</td></tr>
       <tr><td></td><td></td></tr>
@@ -25,12 +28,26 @@ const initialContent = `
   </table>
 `
 
-export function TiptapTable() {
+interface TiptapTableProps {
+  treatRobotsAsHumans: boolean
+}
+
+export function TiptapTable({ treatRobotsAsHumans }: TiptapTableProps) {
   const { lastUpdate } = useSheetUpdates()
+  const isApplyingRobotUpdates = useRef(false)
 
   const updateCell = api.cell.updateCell.useMutation({
     onError: (error) => {
       console.error('Failed to update cell:', error.message);
+      if (error.data?.code === 'UNAUTHORIZED') {
+        console.error('User not authenticated - please refresh the page');
+      }
+    }
+  })
+
+  const clearCell = api.cell.clearCell.useMutation({
+    onError: (error) => {
+      console.error('Failed to clear cell:', error.message);
       if (error.data?.code === 'UNAUTHORIZED') {
         console.error('User not authenticated - please refresh the page');
       }
@@ -57,20 +74,18 @@ export function TiptapTable() {
     refetchOnWindowFocus: false,
   })
 
-  // Refresh events and cells when sheet updates happen
-  useEffect(() => {
-    if (lastUpdate) {
-      void refetch()
-      void refetchCells()
-    }
-  }, [lastUpdate, refetch, refetchCells])
-
   // Debounce mechanism - only fire events after user stops typing
   const debounceRefs = useRef<Map<string, NodeJS.Timeout>>(new Map())
   const lastContentRef = useRef<Map<string, string>>(new Map())
 
   const debouncedCellUpdate = useCallback((content: string, rowIndex: number, colIndex: number) => {
     const cellKey = `${rowIndex}-${colIndex}`
+
+    // If this is a robot update and we're not treating robots as humans, skip creating event
+    if (isApplyingRobotUpdates.current && !treatRobotsAsHumans) {
+      console.log(`Skipping robot update event for (${rowIndex}, ${colIndex}) - treatRobotsAsHumans is false`)
+      return
+    }
 
     // Clear existing timeout for this specific cell
     const existingTimeout = debounceRefs.current.get(cellKey)
@@ -82,18 +97,31 @@ export function TiptapTable() {
     const timeout = setTimeout(() => {
       const lastContent = lastContentRef.current.get(cellKey)
 
-      // Only create event if content has actually changed
-      console.log(`Checking cell update at (${rowIndex}, ${colIndex}): "${content}", last: "${lastContent}"`)
-      if (content && content !== lastContent && content !== 'Cell 1' && content !== 'Cell 2') {
-        console.log(`Creating debounced cell update at (${rowIndex}, ${colIndex}): "${content}"`)
-        lastContentRef.current.set(cellKey, content)
-        updateCell.mutate({
-          rowIndex,
-          colIndex,
-          content,
-        })
+      // Check if content actually changed
+      if (content !== lastContent && content !== 'Cell 1' && content !== 'Cell 2') {
+
+        // If content is empty, user deleted the cell content
+        if (!content || content === '') {
+          console.log(`User deleted content at (${rowIndex}, ${colIndex})`)
+          lastContentRef.current.set(cellKey, '')
+
+          // Clear the cell and any pending events for it
+          clearCell.mutate({
+            rowIndex,
+            colIndex,
+          })
+        } else {
+          // Normal update with content
+          console.log(`Creating debounced cell update at (${rowIndex}, ${colIndex}): "${content}"`)
+          lastContentRef.current.set(cellKey, content)
+          updateCell.mutate({
+            rowIndex,
+            colIndex,
+            content,
+          })
+        }
       } else {
-        console.log(`Skipping cell update - filtered out`)
+        console.log(`Skipping cell update - no change or filtered`)
       }
 
       // Clean up the timeout reference
@@ -101,7 +129,7 @@ export function TiptapTable() {
     }, 1000) // Wait 1 second after user stops typing
 
     debounceRefs.current.set(cellKey, timeout)
-  }, [updateCell])
+  }, [updateCell, clearCell, treatRobotsAsHumans])
 
   const editor = useEditor({
     extensions: [
@@ -135,10 +163,116 @@ export function TiptapTable() {
     },
   })
 
+  // Refresh events and cells when sheet updates happen
+  // AND update the editor content with new cell data
+  useEffect(() => {
+    if (lastUpdate) {
+      void refetch()
+      void refetchCells()
+    }
+  }, [lastUpdate, refetch, refetchCells])
+
+  // Apply cell updates to the editor when cells change
+  useEffect(() => {
+    if (!editor || !cells || cells.length === 0) return
+
+    // Mark that we're applying robot updates
+    isApplyingRobotUpdates.current = true
+
+    // Parse current HTML and update only the cells that have new data from DB
+    const html = editor.getHTML()
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(html, 'text/html')
+    const table = doc.querySelector('table')
+    if (!table) {
+      isApplyingRobotUpdates.current = false
+      return
+    }
+
+    // Find max dimensions needed
+    let maxRow = 0
+    let maxCol = 0
+    cells.forEach(cell => {
+      maxRow = Math.max(maxRow, cell.rowIndex)
+      maxCol = Math.max(maxCol, cell.colIndex)
+    })
+
+    const tbody = table.querySelector('tbody') || table
+    const rows = tbody.querySelectorAll('tr')
+
+    // Add rows if needed
+    while (tbody.children.length <= maxRow) {
+      const newRow = doc.createElement('tr')
+      // Add cells to match existing column count
+      const colCount = rows[0]?.children.length || 2
+      for (let i = 0; i < colCount; i++) {
+        const newCell = doc.createElement('td')
+        newRow.appendChild(newCell)
+      }
+      tbody.appendChild(newRow)
+    }
+
+    // Add columns if needed
+    const thead = table.querySelector('thead')
+    const headerRow = thead?.querySelector('tr')
+    const allRows = tbody.querySelectorAll('tr')
+    allRows.forEach(row => {
+      while (row.children.length <= maxCol) {
+        const newCell = doc.createElement('td')
+        row.appendChild(newCell)
+      }
+    })
+
+    // Update header row with column numbers
+    if (headerRow) {
+      while (headerRow.children.length <= maxCol) {
+        const newHeader = doc.createElement('th')
+        newHeader.textContent = String(headerRow.children.length + 1)
+        headerRow.appendChild(newHeader)
+      }
+    }
+
+    // Update cell contents from database
+    let hasChanges = false
+    cells.forEach(cell => {
+      const row = tbody.children[cell.rowIndex] as HTMLTableRowElement
+      if (row && row.children[cell.colIndex]) {
+        const td = row.children[cell.colIndex] as HTMLTableCellElement
+        const currentContent = td.textContent?.trim() || ''
+
+        // Only update if this cell has new content from the database
+        // and it's different from what's currently shown
+        if (cell.content && cell.content !== currentContent) {
+          // Check if this is a recently user-edited cell (within last 3 seconds)
+          const cellKey = `${cell.rowIndex}-${cell.colIndex}`
+          const lastEdit = lastContentRef.current.get(cellKey)
+
+          // Skip if user just edited this cell
+          if (lastEdit === cell.content || lastEdit === currentContent) {
+            return
+          }
+
+          td.textContent = cell.content
+          hasChanges = true
+        }
+      }
+    })
+
+    // Apply changes back to editor if any cells were updated
+    if (hasChanges) {
+      const newHtml = table.outerHTML
+      editor.commands.setContent(newHtml, false)
+    }
+
+    // Done applying robot updates
+    isApplyingRobotUpdates.current = false
+  }, [cells, editor])
+
   const triggerProcessing = async () => {
-    await fetch('/api/process-events', { method: 'POST' })
-    // Refetch events to see results
+    await fetch('/api/update-sheet', { method: 'POST' })
+    // Refetch events and cells to see results
     void refetch()
+    void refetchCells()
   }
 
   // Show error state if there's an auth issue

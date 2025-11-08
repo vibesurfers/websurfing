@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { sheetUpdates, cells, eventQueue } from "@/server/db/schema";
+import { sheetUpdates, cells, eventQueue, sheets } from "@/server/db/schema";
 import { eq, and, isNull, inArray } from "drizzle-orm";
 
 export class SheetUpdater {
@@ -7,9 +7,17 @@ export class SheetUpdater {
     console.log('Updating sheet for user:', userId);
 
     try {
+      const userSheet = await db.select().from(sheets).where(eq(sheets.userId, userId)).limit(1);
+      if (!userSheet[0]) {
+        console.log('No sheet found for user:', userId);
+        return { success: false, error: 'No sheet found', appliedUpdates: [], totalApplied: 0 };
+      }
+      const sheetId = userSheet[0].id;
+
       // Get pending events with row locking to prevent double processing
       const pendingEvents = await db.transaction(async (tx) => {
         // Select pending events with FOR UPDATE to lock them
+        // Exclude cancelled events
         const events = await tx
           .select()
           .from(eventQueue)
@@ -44,6 +52,7 @@ export class SheetUpdater {
 
             // Create a sheet update to put the same content in the cell to the right
             const newUpdate = await this.createSheetUpdate(
+              sheetId,
               userId,
               payload.rowIndex,
               payload.colIndex + 1, // Cell to the right
@@ -98,12 +107,13 @@ export class SheetUpdater {
         try {
           // Apply the update to the cells table
           await db.insert(cells).values({
+            sheetId: update.sheetId,
             userId: update.userId,
             rowIndex: update.rowIndex,
             colIndex: update.colIndex,
             content: update.content,
           }).onConflictDoUpdate({
-            target: [cells.userId, cells.rowIndex, cells.colIndex],
+            target: [cells.sheetId, cells.userId, cells.rowIndex, cells.colIndex],
             set: {
               content: update.content,
               updatedAt: new Date(),
@@ -140,9 +150,10 @@ export class SheetUpdater {
     }
   }
 
-  async createSheetUpdate(userId: string, rowIndex: number, colIndex: number, content: string, updateType = 'ai_response') {
+  async createSheetUpdate(sheetId: string, userId: string, rowIndex: number, colIndex: number, content: string, updateType = 'ai_response') {
     try {
       const newUpdate = await db.insert(sheetUpdates).values({
+        sheetId: sheetId,
         userId: userId,
         rowIndex: rowIndex,
         colIndex: colIndex,

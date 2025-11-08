@@ -24,6 +24,7 @@ export function SheetManager() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [pendingUpdates, setPendingUpdates] = useState(0);
   const [isReady, setIsReady] = useState(false);
+  const [treatRobotsAsHumans, setTreatRobotsAsHumans] = useState(true);
 
   // Test authentication by trying to fetch events once
   const { error: authError, isLoading } = api.cell.getEvents.useQuery(undefined, {
@@ -119,6 +120,8 @@ export function SheetManager() {
               intervalMs={5000}
               onTick={handleUpdateTick}
               label="Next update"
+              treatRobotsAsHumans={treatRobotsAsHumans}
+              onToggleRobotMode={() => setTreatRobotsAsHumans(!treatRobotsAsHumans)}
             />
           </div>
         </div>
@@ -129,7 +132,7 @@ export function SheetManager() {
           </div>
         )}
 
-        <TiptapTable />
+        <TiptapTable treatRobotsAsHumans={treatRobotsAsHumans} />
       </div>
     </SheetUpdateContext.Provider>
   );
