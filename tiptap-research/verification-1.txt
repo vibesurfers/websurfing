@@ -1,0 +1,18 @@
+Key findings:
+
+1. Comprehensive Tiptap Tables Documentation covering table implementation in web applications
+2. Two main ways to import table dependencies:
+   - TableKit (recommended, bundled extension)
+   - Individual table extensions for granular control
+3. Detailed configuration options for tables, including:
+   - Resizing
+   - Custom HTML attributes
+   - Cell and header styling
+4. Extensive API for table operations:
+   - Row/column insertion and deletion
+   - Cell merging and splitting
+   - Header toggling
+5. Styling examples with CSS for different table themes
+6. Advanced features like custom cell attributes and event handling
+
+The document provides a comprehensive, code-rich guide to implementing tables in Tiptap editors.
