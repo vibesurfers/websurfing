@@ -7,6 +7,7 @@ import {
   columnManagerTool,
   rowManagerTool,
   sheetConfigTool,
+  csvAnalyzerTool,
   googleSearchTool,
   googleMapsTool,
 } from "../tools";
@@ -68,6 +69,15 @@ export const spreadsheetAgent = new Agent({
    - Set operatorType: "google_search", "url_context", "structured_output"
    - Set custom prompts: e.g., "Extract only the phone number"
    - Update column settings when user asks to change AI behavior
+
+7. **CSV Import**
+   - When user uploads a CSV file, use csvAnalyzerTool to analyze it
+   - Present: filename, row count, column count, sample rows
+   - Show column mapping (CSV headers → suggested sheet columns)
+   - List any warnings (empty columns, large file, etc.)
+   - After user confirms, use columnManagerTool to create columns (if needed)
+   - Then use sheetWriterTool mode='execute' to import all rows
+   - Report progress for large files
 
 ## Workflow for "find X in Y" queries:
 
@@ -161,6 +171,7 @@ You: "Creating 20 rows now! ✨"
     columnManagerTool,
     rowManagerTool,
     sheetConfigTool,
+    csvAnalyzerTool,
     googleSearchTool,
     googleMapsTool,
   },
