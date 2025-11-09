@@ -15,6 +15,13 @@
       "when": 1762639081915,
       "tag": "0001_remarkable_banshee",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1762662345648,
+      "tag": "0002_lovely_gateway",
+      "breakpoints": true
     }
   ]
 }
