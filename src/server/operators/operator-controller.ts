@@ -14,7 +14,7 @@ import { AcademicPDFSearchOperator } from "./academic-search-operator";
 import type { BaseOperator, OperatorName } from "@/types/operators";
 import { db } from "@/server/db";
 import { eventQueue } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { ColumnAwareWrapper } from "./column-aware-wrapper";
 
 /**
@@ -628,9 +628,9 @@ export class OperatorController {
    */
   private async incrementRetryCount(eventId: string): Promise<void> {
     try {
-      const currentCount = await this.getRetryCount(eventId);
+      // Use atomic SQL increment to avoid race conditions
       await db.update(eventQueue)
-        .set({ retryCount: currentCount + 1 })
+        .set({ retryCount: sql`${eventQueue.retryCount} + 1` })
         .where(eq(eventQueue.id, eventId));
     } catch (error) {
       console.error(`[OperatorController] Error incrementing retry count for ${eventId}:`, error);

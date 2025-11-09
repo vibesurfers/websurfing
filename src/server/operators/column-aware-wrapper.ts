@@ -24,31 +24,26 @@ export class ColumnAwareWrapper {
     operatorName?: string,
     message?: string
   ): Promise<void> {
-    await db.insert(cellProcessingStatus).values({
-      sheetId: ctx.sheetId,
-      userId,
-      rowIndex: ctx.rowIndex,
-      colIndex,
-      status,
-      operatorName: operatorName ?? null,
-      statusMessage: message ?? null,
-    }).onConflictDoNothing();
-
-    // Update if exists
-    await db.update(cellProcessingStatus)
-      .set({
+    // Use proper upsert to avoid race conditions
+    await db.insert(cellProcessingStatus)
+      .values({
+        sheetId: ctx.sheetId,
+        userId,
+        rowIndex: ctx.rowIndex,
+        colIndex,
         status,
         operatorName: operatorName ?? null,
         statusMessage: message ?? null,
-        updatedAt: new Date(),
       })
-      .where(
-        and(
-          eq(cellProcessingStatus.sheetId, ctx.sheetId),
-          eq(cellProcessingStatus.rowIndex, ctx.rowIndex),
-          eq(cellProcessingStatus.colIndex, colIndex)
-        )
-      );
+      .onConflictDoUpdate({
+        target: [cellProcessingStatus.sheetId, cellProcessingStatus.rowIndex, cellProcessingStatus.colIndex],
+        set: {
+          status,
+          operatorName: operatorName ?? null,
+          statusMessage: message ?? null,
+          updatedAt: new Date(),
+        }
+      });
   }
   /**
    * Build contextual prompt including template goal, columns, and row data

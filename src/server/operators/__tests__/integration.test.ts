@@ -128,7 +128,7 @@ describe("Operator Consistency Integration Tests", () => {
         };
 
         const result = ResultValidator.validate(input, column);
-        expect(result.valid).toBe(shouldBeValid, description);
+        expect(result.valid).toBe(shouldBeValid);
       });
     });
   });
@@ -211,7 +211,6 @@ describe("Operator Consistency Integration Tests", () => {
       // First validation - should fail
       const initialValidation = ResultValidator.validate(poorOutput, ceoColumn);
       expect(initialValidation.valid).toBe(false);
-      expect(initialValidation.needsRetry).toBe(undefined); // This property doesn't exist on validation result
       expect(initialValidation.suggestions.length).toBeGreaterThan(0);
 
       // Generate improvement prompt

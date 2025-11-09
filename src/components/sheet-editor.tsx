@@ -36,13 +36,14 @@ export function SheetEditor({ sheetId, showTemplatePrompt }: SheetEditorProps) {
   const [pendingUpdates, setPendingUpdates] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [treatRobotsAsHumans, setTreatRobotsAsHumans] = useState(true);
+  const [showTemplatePromptBanner, setShowTemplatePromptBanner] = useState(showTemplatePrompt);
   const [agentSidebarOpen, setAgentSidebarOpen] = useState(() => {
-    // Load from localStorage
+    // Load from localStorage, default to true on first load
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('agentSidebarOpen');
-      return saved === 'true';
+      return saved !== null ? saved === 'true' : true;
     }
-    return false;
+    return true;
   });
 
   // Persist sidebar state to localStorage

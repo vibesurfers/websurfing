@@ -69,6 +69,7 @@
     "@eslint/eslintrc": "^3.3.1",
     "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4.0.15",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.14.10",
     "@types/papaparse": "^5.5.0",
     "@types/react": "^19.0.0",
