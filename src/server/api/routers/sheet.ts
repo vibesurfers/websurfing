@@ -26,6 +26,12 @@ export const sheetRouter = createTRPCRouter({
           title: z.string().min(1).max(255),
           position: z.number().int().min(0),
           dataType: z.enum(['text', 'array', 'url', 'number']).default('text'),
+          operatorType: z.string().optional().nullable(),
+          operatorConfig: z.any().optional().nullable(),
+          prompt: z.string().optional().nullable(),
+          dependencies: z.array(z.number()).optional().nullable(),
+          isRequired: z.boolean().optional().nullable(),
+          defaultValue: z.string().optional().nullable(),
         })).optional(),
       })
     )
@@ -51,6 +57,12 @@ export const sheetRouter = createTRPCRouter({
             title: col.title,
             position: col.position,
             dataType: col.dataType as 'text' | 'array' | 'url' | 'number',
+            operatorType: col.operatorType,
+            operatorConfig: col.operatorConfig,
+            prompt: col.prompt,
+            dependencies: col.dependencies,
+            isRequired: col.isRequired,
+            defaultValue: col.defaultValue,
           }));
           isAutonomous = dbTemplate.isAutonomous || false;
         }
@@ -80,6 +92,12 @@ export const sheetRouter = createTRPCRouter({
             title: col.title,
             position: col.position,
             dataType: col.dataType,
+            operatorType: col.operatorType || null,
+            operatorConfig: col.operatorConfig || null,
+            prompt: col.prompt || null,
+            dependencies: col.dependencies || null,
+            isRequired: col.isRequired || false,
+            defaultValue: col.defaultValue || null,
           }))
         );
       }

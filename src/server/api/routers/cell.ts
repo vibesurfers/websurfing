@@ -13,6 +13,14 @@ export const cellRouter = createTRPCRouter({
     }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
+
+      // Skip if content is empty or whitespace-only
+      const trimmedContent = input.content.trim();
+      if (!trimmedContent) {
+        console.log(`Skipping empty cell update at (${input.rowIndex}, ${input.colIndex})`);
+        return { success: true, skipped: true };
+      }
+
       console.log('Updating cell for user:', userId, input);
 
       let sheetId = input.sheetId;
@@ -233,5 +241,92 @@ export const cellRouter = createTRPCRouter({
 
       console.log(`Cleared cells to the right of column ${input.startColIndex} in row ${input.rowIndex}`);
       return { success: true };
+    }),
+
+  /**
+   * Reprocess all rows for a specific column
+   * Creates events to re-fill the column using operators
+   */
+  reprocessColumn: protectedProcedure
+    .input(z.object({
+      sheetId: z.string().uuid(),
+      colIndex: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      console.log(`Reprocessing column ${input.colIndex} for sheet ${input.sheetId}`);
+
+      // Get all rows that have REAL content in the FIRST column (skip empty/null rows)
+      const allFirstColumnCells = await ctx.db
+        .select({ rowIndex: cells.rowIndex, content: cells.content })
+        .from(cells)
+        .where(and(
+          eq(cells.sheetId, input.sheetId),
+          eq(cells.colIndex, 0) // First column
+        ))
+        .orderBy(cells.rowIndex);
+
+      // Filter for rows with actual meaningful content
+      const rowsWithData = allFirstColumnCells.filter(cell => {
+        const content = cell.content?.trim() || '';
+        // Skip if empty, null, or JSON null objects
+        if (!content || content === 'null' || content === '{}' || content === '[]') {
+          return false;
+        }
+        // Skip if it's a JSON object with null value
+        if (content.includes('"null"') || content.includes(':null')) {
+          return false;
+        }
+        return true;
+      });
+
+      console.log(`Found ${rowsWithData.length} rows with real data to reprocess (out of ${allFirstColumnCells.length} total)`);
+
+      // Clear existing content in this column
+      await ctx.db
+        .delete(cells)
+        .where(and(
+          eq(cells.sheetId, input.sheetId),
+          eq(cells.colIndex, input.colIndex)
+        ));
+
+      // Create events for the PREVIOUS column (which will trigger filling THIS column)
+      const prevColIndex = input.colIndex - 1;
+      if (prevColIndex < 0) {
+        return {
+          success: false,
+          error: "Cannot reprocess first column (no previous column to trigger from)",
+        };
+      }
+
+      const eventsToCreate = rowsWithData.map(row => ({
+        sheetId: input.sheetId,
+        userId,
+        eventType: "robot_cell_update" as const,
+        payload: {
+          spreadsheetId: input.sheetId,
+          rowIndex: row.rowIndex,
+          colIndex: prevColIndex,
+          content: "reprocess_trigger",
+        },
+        status: "pending" as const,
+      }));
+
+      // Only insert events if there are any to create
+      if (eventsToCreate.length > 0) {
+        await ctx.db.insert(eventQueue).values(eventsToCreate);
+        console.log(`Created ${eventsToCreate.length} events to reprocess column ${input.colIndex}`);
+      } else {
+        console.log(`No events to create - no rows with data found for column ${input.colIndex}`);
+      }
+
+      return {
+        success: true,
+        eventsCreated: eventsToCreate.length,
+        message: eventsToCreate.length > 0
+          ? `Queued ${eventsToCreate.length} rows for reprocessing`
+          : "No rows with data found to reprocess",
+      };
     }),
 });

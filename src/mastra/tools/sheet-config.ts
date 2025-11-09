@@ -170,16 +170,106 @@ export const sheetConfigTool = createTool({
           };
         }
 
-        case "update_column_prompt":
-        case "update_column_operator": {
-          // These require templateColumns - not yet fully implemented
-          console.log(`[Sheet Config] ${action} not yet fully implemented`);
+        case "update_column_prompt": {
+          const { columnId, columnTitle, columnPrompt } = context;
+
+          if (!columnId && !columnTitle) {
+            return {
+              success: false,
+              action,
+              error: "Either columnId or columnTitle is required",
+            };
+          }
+
+          // Find column
+          let targetColumn;
+          if (columnId) {
+            [targetColumn] = await db
+              .select()
+              .from(columns)
+              .where(and(eq(columns.id, columnId), eq(columns.sheetId, sheetId)))
+              .limit(1);
+          } else if (columnTitle) {
+            [targetColumn] = await db
+              .select()
+              .from(columns)
+              .where(and(eq(columns.title, columnTitle), eq(columns.sheetId, sheetId)))
+              .limit(1);
+          }
+
+          if (!targetColumn) {
+            return {
+              success: false,
+              action,
+              error: `Column not found: ${columnId || columnTitle}`,
+            };
+          }
+
+          // Update prompt
+          await db
+            .update(columns)
+            .set({ prompt: columnPrompt })
+            .where(eq(columns.id, targetColumn.id));
+
+          console.log(`[Sheet Config] Updated prompt for column "${targetColumn.title}"`);
 
           return {
-            success: false,
-            action,
-            error: `${action} requires templateColumns table integration (Phase 8)`,
-            message: "Column operator configuration coming soon!",
+            success: true,
+            action: "update_column_prompt",
+            message: `Updated prompt for column "${targetColumn.title}"`,
+          };
+        }
+
+        case "update_column_operator": {
+          const { columnId, columnTitle, operatorType, operatorConfig } = context;
+
+          if (!columnId && !columnTitle) {
+            return {
+              success: false,
+              action,
+              error: "Either columnId or columnTitle is required",
+            };
+          }
+
+          // Find column
+          let targetColumn;
+          if (columnId) {
+            [targetColumn] = await db
+              .select()
+              .from(columns)
+              .where(and(eq(columns.id, columnId), eq(columns.sheetId, sheetId)))
+              .limit(1);
+          } else if (columnTitle) {
+            [targetColumn] = await db
+              .select()
+              .from(columns)
+              .where(and(eq(columns.title, columnTitle), eq(columns.sheetId, sheetId)))
+              .limit(1);
+          }
+
+          if (!targetColumn) {
+            return {
+              success: false,
+              action,
+              error: `Column not found: ${columnId || columnTitle}`,
+            };
+          }
+
+          // Update operator config
+          await db
+            .update(columns)
+            .set({
+              operatorType: operatorType || targetColumn.operatorType,
+              operatorConfig: operatorConfig || targetColumn.operatorConfig,
+            })
+            .where(eq(columns.id, targetColumn.id));
+
+          console.log(`[Sheet Config] Updated operator config for column "${targetColumn.title}"`);
+
+          return {
+            success: true,
+            action: "update_column_operator",
+            message: `Updated operator configuration for column "${targetColumn.title}"`,
           };
         }
 

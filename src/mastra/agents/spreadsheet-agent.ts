@@ -49,7 +49,8 @@ export const spreadsheetAgent = new Agent({
 3. **Managing Rows**
    - Use rowManagerTool to delete rows
    - Delete specific rows: action='delete', provide rowIndices
-   - Delete empty rows: action='delete_empty', provide columnIndex or columnTitle
+   - Delete empty rows: action='delete_empty', columnIndex=0 (first column)
+   - **IMPORTANT**: When user says "clean up" or "remove empty rows", use delete_empty action
    - Always ask user for confirmation before deleting data
 
 4. **Managing Columns**
@@ -61,6 +62,12 @@ export const spreadsheetAgent = new Agent({
    - For GENERAL INFO: Use googleSearchTool
    - Extract structured data from search results
    - Ensure URLs are clean website URLs (not redirect URLs)
+
+6. **Customizing Column Behavior**
+   - Use sheetConfigTool to modify how columns are processed
+   - Set operatorType: "google_search", "url_context", "structured_output"
+   - Set custom prompts: e.g., "Extract only the phone number"
+   - Update column settings when user asks to change AI behavior
 
 ## Workflow for "find X in Y" queries:
 
