@@ -55,13 +55,13 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const accounts = createTable(
   "account",
   (d) => ({
-    userId: d
+    user_id: d
       .varchar({ length: 255 })
       .notNull()
       .references(() => users.id),
     type: d.varchar({ length: 255 }).$type<AdapterAccount["type"]>().notNull(),
     provider: d.varchar({ length: 255 }).notNull(),
-    providerAccountId: d.varchar({ length: 255 }).notNull(),
+    provider_account_id: d.varchar({ length: 255 }).notNull(),
     refresh_token: d.text(),
     access_token: d.text(),
     expires_at: d.integer(),
@@ -71,30 +71,30 @@ export const accounts = createTable(
     session_state: d.varchar({ length: 255 }),
   }),
   (t) => [
-    primaryKey({ columns: [t.provider, t.providerAccountId] }),
-    index("account_user_id_idx").on(t.userId),
+    primaryKey({ columns: [t.provider, t.provider_account_id] }),
+    index("account_user_id_idx").on(t.user_id),
   ]
 );
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
-  user: one(users, { fields: [accounts.userId], references: [users.id] }),
+  user: one(users, { fields: [accounts.user_id], references: [users.id] }),
 }));
 
 export const sessions = createTable(
   "session",
   (d) => ({
-    sessionToken: d.varchar({ length: 255 }).notNull().primaryKey(),
-    userId: d
+    session_token: d.varchar({ length: 255 }).notNull().primaryKey(),
+    user_id: d
       .varchar({ length: 255 })
       .notNull()
       .references(() => users.id),
     expires: d.timestamp({ mode: "date", withTimezone: true }).notNull(),
   }),
-  (t) => [index("t_user_id_idx").on(t.userId)]
+  (t) => [index("t_user_id_idx").on(t.user_id)]
 );
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
-  user: one(users, { fields: [sessions.userId], references: [users.id] }),
+  user: one(users, { fields: [sessions.user_id], references: [users.id] }),
 }));
 
 export const verificationTokens = createTable(
@@ -111,19 +111,19 @@ export const sheets = createTable(
   "sheet",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    userId: d.varchar({ length: 255 }).notNull().references(() => users.id),
+    user_id: d.varchar({ length: 255 }).notNull().references(() => users.id),
     name: d.varchar({ length: 255 }).notNull().default('Untitled Sheet'),
-    templateType: d.varchar({ length: 50 }),
-    templateId: d.uuid().references(() => templates.id),
-    isAutonomous: d.boolean().default(false),
-    webhookUrl: d.varchar({ length: 500 }),
-    webhookEvents: d.jsonb(), // Array of event types: ['row_complete', 'sheet_complete', 'error']
-    createdAt: d.timestamp({ withTimezone: true }).defaultNow(),
-    updatedAt: d.timestamp({ withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
+    template_type: d.varchar({ length: 50 }),
+    template_id: d.uuid().references(() => templates.id),
+    is_autonomous: d.boolean().default(false),
+    webhook_url: d.varchar({ length: 500 }),
+    webhook_events: d.jsonb(), // Array of event types: ['row_complete', 'sheet_complete', 'error']
+    created_at: d.timestamp({ withTimezone: true }).defaultNow(),
+    updated_at: d.timestamp({ withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
   }),
   (t) => [
-    index("sheet_user_idx").on(t.userId),
-    index("sheet_template_idx").on(t.templateId),
+    index("sheet_user_idx").on(t.user_id),
+    index("sheet_template_idx").on(t.template_id),
   ]
 );
 
@@ -131,19 +131,19 @@ export const cells = createTable(
   "cell",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    sheetId: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
-    userId: d.varchar({ length: 255 }).notNull().references(() => users.id),
-    rowIndex: d.integer().notNull(),
-    colIndex: d.integer().notNull(),
+    sheet_id: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
+    user_id: d.varchar({ length: 255 }).notNull().references(() => users.id),
+    row_index: d.integer().notNull(),
+    col_index: d.integer().notNull(),
     content: d.text(),
-    createdAt: d.timestamp({ withTimezone: true }).defaultNow(),
-    updatedAt: d.timestamp({ withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
+    created_at: d.timestamp({ withTimezone: true }).defaultNow(),
+    updated_at: d.timestamp({ withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
   }),
   (t) => [
-    index("cell_sheet_idx").on(t.sheetId),
-    index("cell_position_idx").on(t.rowIndex, t.colIndex),
-    index("cell_user_idx").on(t.userId),
-    unique("cell_unique_position").on(t.sheetId, t.userId, t.rowIndex, t.colIndex),
+    index("cell_sheet_idx").on(t.sheet_id),
+    index("cell_position_idx").on(t.row_index, t.col_index),
+    index("cell_user_idx").on(t.user_id),
+    unique("cell_unique_position").on(t.sheet_id, t.user_id, t.row_index, t.col_index),
   ]
 );
 
@@ -151,21 +151,21 @@ export const eventQueue = createTable(
   "event_queue",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    sheetId: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
-    userId: d.varchar({ length: 255 }).notNull().references(() => users.id),
-    eventType: d.varchar({ length: 100 }).notNull(),
+    sheet_id: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
+    user_id: d.varchar({ length: 255 }).notNull().references(() => users.id),
+    event_type: d.varchar({ length: 100 }).notNull(),
     payload: d.jsonb().notNull(),
     status: d.varchar({ length: 20 }).default('pending'), // 'pending', 'processing', 'completed', 'failed', 'awaiting_clarification'
-    retryCount: d.integer().default(0),
-    lastError: d.text(),
-    createdAt: d.timestamp({ withTimezone: true }).defaultNow(),
-    processedAt: d.timestamp({ withTimezone: true }),
+    retry_count: d.integer().default(0),
+    last_error: d.text(),
+    created_at: d.timestamp({ withTimezone: true }).defaultNow(),
+    processed_at: d.timestamp({ withTimezone: true }),
   }),
   (t) => [
-    index("event_queue_sheet_idx").on(t.sheetId),
+    index("event_queue_sheet_idx").on(t.sheet_id),
     index("event_queue_status_idx").on(t.status),
-    index("event_queue_created_idx").on(t.createdAt),
-    index("event_queue_user_idx").on(t.userId),
+    index("event_queue_created_idx").on(t.created_at),
+    index("event_queue_user_idx").on(t.user_id),
   ]
 );
 
@@ -173,21 +173,21 @@ export const sheetUpdates = createTable(
   "sheet_updates",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    sheetId: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
-    userId: d.varchar({ length: 255 }).notNull().references(() => users.id),
-    rowIndex: d.integer().notNull(),
-    colIndex: d.integer().notNull(),
+    sheet_id: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
+    user_id: d.varchar({ length: 255 }).notNull().references(() => users.id),
+    row_index: d.integer().notNull(),
+    col_index: d.integer().notNull(),
     content: d.text(),
-    updateType: d.varchar({ length: 50 }).notNull(), // 'user_edit', 'ai_response', 'auto_copy'
-    createdAt: d.timestamp({ withTimezone: true }).defaultNow(),
-    appliedAt: d.timestamp({ withTimezone: true }),
+    update_type: d.varchar({ length: 50 }).notNull(), // 'user_edit', 'ai_response', 'auto_copy'
+    created_at: d.timestamp({ withTimezone: true }).defaultNow(),
+    applied_at: d.timestamp({ withTimezone: true }),
   }),
   (t) => [
-    index("sheet_updates_sheet_idx").on(t.sheetId),
-    index("sheet_updates_user_idx").on(t.userId),
-    index("sheet_updates_created_idx").on(t.createdAt),
-    index("sheet_updates_applied_idx").on(t.appliedAt),
-    index("sheet_updates_position_idx").on(t.rowIndex, t.colIndex),
+    index("sheet_updates_sheet_idx").on(t.sheet_id),
+    index("sheet_updates_user_idx").on(t.user_id),
+    index("sheet_updates_created_idx").on(t.created_at),
+    index("sheet_updates_applied_idx").on(t.applied_at),
+    index("sheet_updates_position_idx").on(t.row_index, t.col_index),
   ]
 );
 
@@ -224,19 +224,19 @@ export const cellProcessingStatus = createTable(
   "cell_processing_status",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    sheetId: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
-    userId: d.varchar({ length: 255 }).notNull().references(() => users.id),
-    rowIndex: d.integer().notNull(),
-    colIndex: d.integer().notNull(),
+    sheet_id: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
+    user_id: d.varchar({ length: 255 }).notNull().references(() => users.id),
+    row_index: d.integer().notNull(),
+    col_index: d.integer().notNull(),
     status: d.varchar({ length: 20 }).notNull().default('idle'), // 'idle', 'processing', 'completed', 'error'
-    operatorName: d.varchar({ length: 100 }), // 'google_search', 'url_context', etc.
-    statusMessage: d.varchar({ length: 255 }), // "Searching Google...", "Analyzing URL..."
-    updatedAt: d.timestamp({ withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
+    operator_name: d.varchar({ length: 100 }), // 'google_search', 'url_context', etc.
+    status_message: d.varchar({ length: 255 }), // "Searching Google...", "Analyzing URL..."
+    updated_at: d.timestamp({ withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
   }),
   (t) => [
-    index("cell_status_sheet_idx").on(t.sheetId),
-    index("cell_status_position_idx").on(t.sheetId, t.rowIndex, t.colIndex),
-    index("cell_status_updated_idx").on(t.updatedAt),
+    index("cell_status_sheet_idx").on(t.sheet_id),
+    index("cell_status_position_idx").on(t.sheet_id, t.row_index, t.col_index),
+    index("cell_status_updated_idx").on(t.updated_at),
   ]
 );
 
@@ -248,26 +248,26 @@ export const columns = createTable(
   "column",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    sheetId: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
+    sheet_id: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
     title: d.varchar({ length: 255 }).notNull(),
     position: d.integer().notNull(),
-    dataType: d.varchar({ length: 50 }).default('text'),
+    data_type: d.varchar({ length: 50 }).default('text'),
     // Operator configuration (per-sheet customization)
-    operatorType: d.varchar({ length: 50 }), // 'google_search', 'url_context', 'structured_output', 'function_calling'
-    operatorConfig: d.jsonb(), // Operator-specific settings
+    operator_type: d.varchar({ length: 50 }), // 'google_search', 'url_context', 'structured_output', 'function_calling'
+    operator_config: d.jsonb(), // Operator-specific settings
     prompt: d.text(), // Custom prompt for this column's operator
     // Advanced configuration (matching templateColumns)
     dependencies: d.jsonb(), // Array of column positions this depends on [0, 1, 2]
-    validationRules: d.jsonb(), // JSON schema for validation
-    isRequired: d.boolean().default(false), // Whether column must have value
-    defaultValue: d.text(), // Default value if operator returns empty
-    createdAt: d.timestamp({ withTimezone: true }).defaultNow(),
-    updatedAt: d.timestamp({ withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
+    validation_rules: d.jsonb(), // JSON schema for validation
+    is_required: d.boolean().default(false), // Whether column must have value
+    default_value: d.text(), // Default value if operator returns empty
+    created_at: d.timestamp({ withTimezone: true }).defaultNow(),
+    updated_at: d.timestamp({ withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
   }),
   (t) => [
-    index("column_sheet_idx").on(t.sheetId),
-    index("column_position_idx").on(t.sheetId, t.position),
-    unique("column_unique_position").on(t.sheetId, t.position),
+    index("column_sheet_idx").on(t.sheet_id),
+    index("column_position_idx").on(t.sheet_id, t.position),
+    unique("column_unique_position").on(t.sheet_id, t.position),
   ]
 );
 
@@ -387,8 +387,8 @@ export const clarificationPromptsRelations = relations(clarificationPrompts, ({ 
 
 // Add relations to existing sheets table
 export const sheetsRelations = relations(sheets, ({ one, many }) => ({
-  user: one(users, { fields: [sheets.userId], references: [users.id] }),
-  template: one(templates, { fields: [sheets.templateId], references: [templates.id] }),
+  user: one(users, { fields: [sheets.user_id], references: [users.id] }),
+  template: one(templates, { fields: [sheets.template_id], references: [templates.id] }),
   cells: many(cells),
   columns: many(columns),
   events: many(eventQueue),

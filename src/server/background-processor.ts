@@ -58,10 +58,10 @@ class BackgroundEventProcessor {
     const sheetGroups = new Map<string, typeof pendingEvents>();
 
     for (const event of pendingEvents) {
-      if (!sheetGroups.has(event.sheetId)) {
-        sheetGroups.set(event.sheetId, []);
+      if (!sheetGroups.has(event.sheet_id)) {
+        sheetGroups.set(event.sheet_id, []);
       }
-      sheetGroups.get(event.sheetId)!.push(event);
+      sheetGroups.get(event.sheet_id)!.push(event);
     }
 
     const processingPromises: Promise<unknown>[] = [];
@@ -74,7 +74,7 @@ class BackgroundEventProcessor {
 
       this.processingSheets.add(sheetId);
 
-      const userId = events[0]!.userId;
+      const userId = events[0]!.user_id;
 
       const promise = this.sheetUpdater
         .updateSheet(userId, sheetId)

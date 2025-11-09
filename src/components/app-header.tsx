@@ -10,11 +10,11 @@ interface AppHeaderProps {
   selectedSheetId: string | null;
   onSelectSheet: (sheetId: string) => void;
   pendingUpdates?: number;
-  onRefreshEvents?: () => void;
-  onDownloadCSV?: () => void;
+  refreshEventsCallback?: (() => void) | null;
+  downloadCSVCallback?: (() => void) | null;
 }
 
-export function AppHeader({ selectedSheetId, onSelectSheet, pendingUpdates, onRefreshEvents, onDownloadCSV }: AppHeaderProps) {
+export function AppHeader({ selectedSheetId, onSelectSheet, pendingUpdates, refreshEventsCallback, downloadCSVCallback }: AppHeaderProps) {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -94,20 +94,20 @@ export function AppHeader({ selectedSheetId, onSelectSheet, pendingUpdates, onRe
         {/* Right side - Action buttons */}
         <div className="flex items-center gap-3">
           <Button
-            onClick={onRefreshEvents || undefined}
+            onClick={refreshEventsCallback || undefined}
             variant="secondary"
             className="flex items-center gap-2 h-10"
-            disabled={!onRefreshEvents}
+            disabled={!refreshEventsCallback}
           >
             <RefreshCw className="h-4 w-4" />
             Refresh Events
           </Button>
 
           <Button
-            onClick={onDownloadCSV || undefined}
+            onClick={downloadCSVCallback || undefined}
             variant="outline"
             className="bg-green-50 hover:bg-green-100 border-green-300 text-green-700 h-10"
-            disabled={!onDownloadCSV}
+            disabled={!downloadCSVCallback}
           >
             <Download className="h-4 w-4 mr-2" />
             Download CSV

@@ -1,7 +1,7 @@
 import { HydrateClient } from "@/trpc/server";
 import { auth, signIn, signOut } from "@/server/auth";
 import { SheetEditor } from "@/components/sheet-editor";
-import { AppLayout } from "@/components/layout/app-layout";
+import { SheetPageWrapper } from "./sheet-page-wrapper";
 import { headers } from "next/headers";
 import Image from "next/image";
 
@@ -85,15 +85,14 @@ export default async function SheetPage({ params }: SheetPageProps) {
 
   return (
     <HydrateClient>
-      <AppLayout
+      <SheetPageWrapper
+        sheetId={id}
         user={session.user}
         onSignOut={async () => {
           "use server";
           await signOut();
         }}
-      >
-        <SheetEditor sheetId={id} />
-      </AppLayout>
+      />
     </HydrateClient>
   );
 }

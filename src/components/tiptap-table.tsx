@@ -437,7 +437,27 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId, onUpdateTick, onTogg
           const editorRect = editorElement.getBoundingClientRect();
           const relativeTop = rect.top - editorRect.top;
 
-          buttonElement.style.top = `${relativeTop + (rect.height - 40) / 2}px`;
+          // Position button to exactly match the row position and height
+          buttonElement.style.top = `${relativeTop}px`;
+          buttonElement.style.height = `${rect.height}px`;
+
+          // Sync hover effects between table row and buttons
+          const syncHover = () => {
+            const isRowHovered = row.matches(':hover');
+            if (isRowHovered) {
+              buttonElement.style.backgroundColor = '#f9fafb';
+            } else {
+              buttonElement.style.backgroundColor = 'white';
+            }
+          };
+
+          // Remove old listeners
+          row.removeEventListener('mouseenter', syncHover);
+          row.removeEventListener('mouseleave', syncHover);
+
+          // Add new listeners
+          row.addEventListener('mouseenter', syncHover);
+          row.addEventListener('mouseleave', syncHover);
         }
       });
     };
@@ -906,12 +926,12 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId, onUpdateTick, onTogg
                   style={{
                     position: 'absolute',
                     right: '-80px',
-                    width: '60px',
+                    width: '80px',
                     height: '40px',
-                    display: 'flex', // Always visible
+                    display: 'flex',
                     alignItems: 'center',
-                    gap: '4px',
-                    padding: '2px',
+                    justifyContent: 'center',
+                    gap: '2px',
                     backgroundColor: 'white',
                     zIndex: 1000,
                   }}
@@ -926,9 +946,9 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId, onUpdateTick, onTogg
                         deleteRow.mutate({ sheetId, rowIndex });
                       }
                     }}
-                    className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors flex items-center justify-center"
+                    className="flex-1 h-full text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center"
                     title="Delete row"
-                    style={{ fontSize: '12px', minWidth: '24px', height: '24px' }}
+                    style={{ fontSize: '14px' }}
                   >
                     🗑️
                   </button>
@@ -942,12 +962,12 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId, onUpdateTick, onTogg
                         alert(`Row ${rowIndex + 1} is empty. Add some content first to refresh the row.`);
                       }
                     }}
-                    className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors flex items-center justify-center"
+                    className="flex-1 h-full text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center"
                     title="Refresh / Reprocess row"
-                    style={{ fontSize: '12px', minWidth: '24px', height: '24px' }}
+                    style={{ fontSize: '14px' }}
                     disabled={!rowHasData}
                   >
-                    <RefreshCw className="h-3 w-3" />
+                    <RefreshCw className="h-4 w-4" />
                   </button>
                 </div>
               );
@@ -993,6 +1013,10 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId, onUpdateTick, onTogg
             overflow: visible;
             white-space: normal;
             z-index: 10;
+            background-color: #f9fafb;
+          }
+
+          .ProseMirror tr:hover + .row-actions {
             background-color: #f9fafb;
           }
 

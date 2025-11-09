@@ -24,11 +24,11 @@ export class SheetUpdater {
           .select()
           .from(eventQueue)
           .where(and(
-            eq(eventQueue.sheetId, sheetId),
-            eq(eventQueue.userId, userId),
+            eq(eventQueue.sheet_id, sheetId),
+            eq(eventQueue.user_id, userId),
             eq(eventQueue.status, 'pending')
           ))
-          .orderBy(eventQueue.createdAt)
+          .orderBy(eventQueue.created_at)
           .limit(10) // Process max 10 events at once
           .for('update');
 
@@ -58,7 +58,7 @@ export class SheetUpdater {
       }
 
       // Fetch columns for this sheet
-      const sheetColumns = await db.select().from(columns).where(eq(columns.sheetId, sheetId)).orderBy(columns.position);
+      const sheetColumns = await db.select().from(columns).where(eq(columns.sheet_id, sheetId)).orderBy(columns.position);
 
       for (const event of pendingEvents) {
         try {
@@ -75,7 +75,7 @@ export class SheetUpdater {
                 .update(eventQueue)
                 .set({
                   status: 'completed',
-                  processedAt: new Date()
+                  processed_at: new Date()
                 })
                 .where(eq(eventQueue.id, event.id));
               console.log(`Successfully marked event ${event.id} as completed`);
@@ -88,14 +88,14 @@ export class SheetUpdater {
           // Fetch existing row data
           const rowCells = await db.select().from(cells).where(
             and(
-              eq(cells.sheetId, sheetId),
-              eq(cells.rowIndex, rowIndex)
+              eq(cells.sheet_id, sheetId),
+              eq(cells.row_index, rowIndex)
             )
           );
 
           const rowData: Record<number, string> = {};
           rowCells.forEach(cell => {
-            rowData[cell.colIndex] = cell.content ?? '';
+            rowData[cell.col_index] = cell.content ?? '';
           });
 
           // Build sheet context
@@ -118,13 +118,13 @@ export class SheetUpdater {
               id: col.id,
               title: col.title || '',
               position: col.position,
-              dataType: col.dataType ?? 'text',
-              operatorType: col.operatorType || null,
-              operatorConfig: col.operatorConfig || null,
+              dataType: col.data_type ?? 'text',
+              operatorType: col.operator_type || null,
+              operatorConfig: col.operator_config || null,
               prompt: col.prompt || null,
               dependencies: col.dependencies as number[] | null || null,
-              isRequired: col.isRequired ?? null,
-              defaultValue: col.defaultValue || null,
+              isRequired: col.is_required ?? null,
+              defaultValue: col.default_value || null,
             })),
             rowIndex,
             currentColumnIndex: colIndex,
@@ -133,10 +133,10 @@ export class SheetUpdater {
 
           // Dispatch event to operator controller with context
           const baseEvent: BaseEvent = {
-            userId: event.userId,
+            userId: event.user_id,
             eventId: event.id,
-            eventType: event.eventType as any,
-            timestamp: event.createdAt ?? new Date(),
+            eventType: event.event_type as any,
+            timestamp: event.created_at ?? new Date(),
             data: event.payload,
             sheetContext,
           };
@@ -154,7 +154,7 @@ export class SheetUpdater {
             .update(eventQueue)
             .set({
               status: 'failed',
-              lastError: error instanceof Error ? error.message : String(error),
+              last_error: error instanceof Error ? error.message : String(error),
             })
             .where(eq(eventQueue.id, event.id));
         }
@@ -165,11 +165,11 @@ export class SheetUpdater {
         .select()
         .from(sheetUpdates)
         .where(and(
-          eq(sheetUpdates.sheetId, sheetId),
-          eq(sheetUpdates.userId, userId),
-          isNull(sheetUpdates.appliedAt)
+          eq(sheetUpdates.sheet_id, sheetId),
+          eq(sheetUpdates.user_id, userId),
+          isNull(sheetUpdates.applied_at)
         ))
-        .orderBy(sheetUpdates.createdAt);
+        .orderBy(sheetUpdates.created_at);
 
       console.log(`Applying ${pendingSheetUpdates.length} sheet updates`);
 
@@ -177,26 +177,26 @@ export class SheetUpdater {
         try {
           // Apply the update to the cells table
           await db.insert(cells).values({
-            sheetId: update.sheetId,
-            userId: update.userId,
-            rowIndex: update.rowIndex,
-            colIndex: update.colIndex,
+            sheet_id: update.sheet_id,
+            user_id: update.user_id,
+            row_index: update.row_index,
+            col_index: update.col_index,
             content: update.content,
           }).onConflictDoUpdate({
-            target: [cells.sheetId, cells.userId, cells.rowIndex, cells.colIndex],
+            target: [cells.sheet_id, cells.user_id, cells.row_index, cells.col_index],
             set: {
               content: update.content,
-              updatedAt: new Date(),
+              updated_at: new Date(),
             }
           });
 
           // Mark the update as applied
           await db
             .update(sheetUpdates)
-            .set({ appliedAt: new Date() })
+            .set({ applied_at: new Date() })
             .where(eq(sheetUpdates.id, update.id));
 
-          console.log(`Applied sheet update ${update.id}: (${update.rowIndex}, ${update.colIndex}) = "${update.content}"`);
+          console.log(`Applied sheet update ${update.id}: (${update.row_index}, ${update.col_index}) = "${update.content}"`);
 
         } catch (error) {
           console.error(`Failed to apply sheet update ${update.id}:`, error);
@@ -223,12 +223,12 @@ export class SheetUpdater {
   async createSheetUpdate(sheetId: string, userId: string, rowIndex: number, colIndex: number, content: string, updateType = 'ai_response') {
     try {
       const newUpdate = await db.insert(sheetUpdates).values({
-        sheetId: sheetId,
-        userId: userId,
-        rowIndex: rowIndex,
-        colIndex: colIndex,
+        sheet_id: sheetId,
+        user_id: userId,
+        row_index: rowIndex,
+        col_index: colIndex,
         content,
-        updateType: updateType,
+        update_type: updateType,
       }).returning();
 
       console.log(`Created sheet update: (${rowIndex}, ${colIndex}) = "${content}" [${updateType}]`);

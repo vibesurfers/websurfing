@@ -91,7 +91,7 @@ export function TemplateGalleryCard({
         </div>
 
         <div className="flex items-center justify-between pt-2">
-          {usageCount !== undefined && (
+          {usageCount !== undefined && usageCount > 0 && (
             <p className="text-xs text-muted-foreground">
               {usageCount} {usageCount === 1 ? 'use' : 'uses'}
             </p>

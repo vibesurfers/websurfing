@@ -2,7 +2,6 @@
 
 import { TiptapTable } from "@/components/tiptap-table";
 import { CountdownTimer } from "@/components/countdown-timer";
-import { AppHeader } from "@/components/app-header";
 import { useState, useCallback, createContext, useContext, useEffect } from "react";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
@@ -26,9 +25,17 @@ export function useSheetUpdates() {
 
 interface SheetEditorProps {
   sheetId: string;
+  onPendingUpdatesChange?: (count: number) => void;
+  onRefreshEventsCallback?: (callback: (() => void) | null) => void;
+  onDownloadCSVCallback?: (callback: (() => void) | null) => void;
 }
 
-export function SheetEditor({ sheetId }: SheetEditorProps) {
+export function SheetEditor({
+  sheetId,
+  onPendingUpdatesChange,
+  onRefreshEventsCallback,
+  onDownloadCSVCallback
+}: SheetEditorProps) {
   const router = useRouter();
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [pendingUpdates, setPendingUpdates] = useState(0);
@@ -56,9 +63,20 @@ export function SheetEditor({ sheetId }: SheetEditorProps) {
     }
   }, [isLoading, authError]);
 
-  const handleSelectSheet = useCallback((newSheetId: string) => {
-    router.push(`/sheets/${newSheetId}`);
-  }, [router]);
+  // Notify parent of pending updates changes
+  useEffect(() => {
+    onPendingUpdatesChange?.(pendingUpdates);
+  }, [pendingUpdates, onPendingUpdatesChange]);
+
+  // Notify parent of callback changes
+  useEffect(() => {
+    onRefreshEventsCallback?.(refreshEventsCallback);
+  }, [refreshEventsCallback, onRefreshEventsCallback]);
+
+  useEffect(() => {
+    onDownloadCSVCallback?.(downloadCSVCallback);
+  }, [downloadCSVCallback, onDownloadCSVCallback]);
+
 
   const handleUpdateTick = useCallback(async () => {
     if (!sheetId) return;
@@ -121,33 +139,23 @@ export function SheetEditor({ sheetId }: SheetEditorProps) {
 
   return (
     <SheetUpdateContext.Provider value={{ lastUpdate, pendingUpdates, selectedSheetId: sheetId }}>
-      <div className="min-h-screen bg-white">
-        <AppHeader
-          selectedSheetId={sheetId}
-          onSelectSheet={handleSelectSheet}
-          pendingUpdates={pendingUpdates}
-          onRefreshEvents={refreshEventsCallback}
-          onDownloadCSV={downloadCSVCallback}
-        />
+      <div className="w-full px-8 py-8">
+        <div className="space-y-6">
+          {lastUpdate && (
+            <div className="text-sm text-gray-500">
+              Last update: {lastUpdate.toLocaleTimeString()}
+            </div>
+          )}
 
-        <main className="w-full px-8 py-8">
-          <div className="space-y-6">
-            {lastUpdate && (
-              <div className="text-sm text-gray-500">
-                Last update: {lastUpdate.toLocaleTimeString()}
-              </div>
-            )}
-
-            <TiptapTable
-              treatRobotsAsHumans={treatRobotsAsHumans}
-              sheetId={sheetId}
-              onUpdateTick={handleUpdateTick}
-              onToggleRobotMode={() => setTreatRobotsAsHumans(!treatRobotsAsHumans)}
-              onRefreshEvents={setRefreshEventsCallback}
-              onDownloadCSV={setDownloadCSVCallback}
-            />
-          </div>
-        </main>
+          <TiptapTable
+            treatRobotsAsHumans={treatRobotsAsHumans}
+            sheetId={sheetId}
+            onUpdateTick={handleUpdateTick}
+            onToggleRobotMode={() => setTreatRobotsAsHumans(!treatRobotsAsHumans)}
+            onRefreshEvents={setRefreshEventsCallback}
+            onDownloadCSV={setDownloadCSVCallback}
+          />
+        </div>
       </div>
     </SheetUpdateContext.Provider>
   );

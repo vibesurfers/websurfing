@@ -1,6 +1,7 @@
 "use client";
 
-import { Home, FileText, LogOut } from "lucide-react";
+import { Home, FileText, LogOut, Plus } from "lucide-react";
+import { api } from "@/trpc/react";
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +24,7 @@ import {
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface AppSidebarProps {
   user?: {
@@ -31,6 +33,8 @@ interface AppSidebarProps {
     image?: string | null;
   };
   onSignOut?: () => void;
+  selectedSheetId?: string | null;
+  onSelectSheet?: (sheetId: string) => void;
 }
 
 const navigationItems = [
@@ -46,8 +50,10 @@ const navigationItems = [
   },
 ];
 
-export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
+export function AppSidebar({ user, onSignOut, selectedSheetId, onSelectSheet }: AppSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { data: sheets } = api.sheet.list.useQuery();
 
   const getUserInitials = () => {
     if (!user?.name) return "U";
@@ -69,10 +75,72 @@ export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
             height={32}
             className="rounded"
           />
+          <span className="font-semibold text-lg text-foreground">
+            VibeSurfing
+          </span>
         </div>
       </SidebarHeader>
 
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/welcome">
+                    <Plus className="w-4 h-4" />
+                    <span>New Sheet</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/templates/new">
+                    <Plus className="w-4 h-4" />
+                    <span>New Template</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Most Recent Sheets</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {sheets && sheets.length > 0 ? (
+                sheets
+                  .sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime())
+                  .slice(0, 5)
+                  .map((sheet) => {
+                  const isActive = selectedSheetId === sheet.id;
+                  return (
+                    <SidebarMenuItem key={sheet.id}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                      >
+                        <Link href={`/sheets/${sheet.id}`}>
+                          <FileText className="w-4 h-4" />
+                          <span className="truncate">{sheet.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })
+              ) : (
+                <SidebarMenuItem>
+                  <div className="px-2 py-1 text-sm text-muted-foreground">
+                    No sheets yet
+                  </div>
+                </SidebarMenuItem>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
