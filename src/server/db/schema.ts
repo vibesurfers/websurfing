@@ -252,6 +252,10 @@ export const columns = createTable(
     title: d.varchar({ length: 255 }).notNull(),
     position: d.integer().notNull(),
     dataType: d.varchar({ length: 50 }).default('text'),
+    // Operator configuration (per-sheet customization)
+    operatorType: d.varchar({ length: 50 }), // 'google_search', 'url_context', 'structured_output', 'function_calling'
+    operatorConfig: d.jsonb(), // Operator-specific settings
+    prompt: d.text(), // Custom prompt for this column's operator
     maxLength: d.integer(), // Maximum character length
     minLength: d.integer(), // Minimum character length
     required: d.boolean().default(false), // Whether field is required

@@ -271,7 +271,13 @@ export function AgentChat({ sheetId }: AgentChatProps) {
             onClick={() => setInput("remove rows with empty first column")}
             className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
           >
-            🗑️ Clean empty
+            🗑️ Clean empty rows
+          </button>
+          <button
+            onClick={() => setInput("clean up all empty and null values")}
+            className="text-xs px-3 py-1 bg-white border border-red-300 rounded-full hover:bg-red-50 transition-colors text-red-700"
+          >
+            🧹 Deep clean
           </button>
         </div>
       </div>

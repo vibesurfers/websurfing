@@ -29,6 +29,9 @@ export interface SheetContext {
     title: string;
     position: number;
     dataType: string;
+    operatorType?: string | null;
+    operatorConfig?: any;
+    prompt?: string | null;
     maxLength?: number;
     minLength?: number;
     required?: boolean;
@@ -264,9 +267,24 @@ export class OperatorController {
   /**
    * Select appropriate operator based on event type and data
    *
-   * This implements the hardcoded processing directions from the architecture
+   * Priority:
+   * 1. Column-specific operatorType (if configured)
+   * 2. Hardcoded detection logic (fallback)
    */
   private selectOperator(eventType: EventType, data: unknown, sheetContext?: SheetContext): OperatorName {
+    // Check if we have sheet context with column config
+    if (sheetContext) {
+      const nextColIndex = sheetContext.currentColumnIndex + 1;
+      const nextColumn = sheetContext.columns[nextColIndex];
+
+      // If column has explicit operator type configured, use it!
+      if (nextColumn?.operatorType) {
+        console.log(`[OperatorController] Using configured operator: ${nextColumn.operatorType} for column "${nextColumn.title}"`);
+        return nextColumn.operatorType as OperatorName;
+      }
+    }
+
+    // Fallback to content-based detection
     switch (eventType) {
       case "user_cell_edit":
       case "robot_cell_update": {
@@ -435,9 +453,16 @@ export class OperatorController {
           const ctx = event.sheetContext;
           const nextCol = ctx.columns[ctx.currentColumnIndex + 1];
           if (nextCol) {
-            const contextPrompt = ColumnAwareWrapper.buildContextualPromptWithFormat(ctx, nextCol.title, operatorName);
-            prompt = contextPrompt + (prompt ? `\n\nAdditional instructions: ${prompt}` : '');
+            const contextPrompt = ColumnAwareWrapper.buildContextualPrompt(ctx, nextCol.title);
+
+            // Use column's custom prompt if configured
+            const customPrompt = nextCol.prompt || prompt;
+            prompt = contextPrompt + (customPrompt ? `\n\nAdditional instructions: ${customPrompt}` : '');
+
             console.log('[OperatorController] Context-aware structured output prompt:\n', prompt);
+            if (nextCol.prompt) {
+              console.log('[OperatorController] Using custom column prompt:', nextCol.prompt);
+            }
             console.log('[OperatorController] Raw data for processing:\n', rawData);
           }
         }
