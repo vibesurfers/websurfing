@@ -37,17 +37,23 @@ export function SheetManager() {
 
   useEffect(() => {
     const sheetIdFromUrl = searchParams.get('sheetId');
+    const justCreatedSheet = sessionStorage.getItem('justCreatedSheet');
 
     if (sheetIdFromUrl) {
       if (sheets && sheets.some(s => s.id === sheetIdFromUrl)) {
         if (selectedSheetId !== sheetIdFromUrl) {
-          console.log('Setting selectedSheetId from URL:', sheetIdFromUrl);
+          console.log('[SheetManager] Setting selectedSheetId from URL:', sheetIdFromUrl);
           setSelectedSheetId(sheetIdFromUrl);
+
+          // Clear the flag if this is the sheet we just created
+          if (justCreatedSheet === sheetIdFromUrl) {
+            sessionStorage.removeItem('justCreatedSheet');
+          }
         }
       }
-    } else if (sheets && sheets.length > 0 && !selectedSheetId) {
+    } else if (sheets && sheets.length > 0 && !selectedSheetId && !justCreatedSheet) {
       const firstSheet = sheets[0].id;
-      console.log('Auto-selecting first sheet:', firstSheet);
+      console.log('[SheetManager] Auto-selecting first sheet:', firstSheet);
       setSelectedSheetId(firstSheet);
       router.replace(`/?sheetId=${firstSheet}`);
     }

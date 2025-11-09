@@ -221,6 +221,42 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     }
   }, [lastUpdate, refetch, refetchCells])
 
+  // Ensure table has correct column count whenever columnCount changes
+  useEffect(() => {
+    if (!editor) return
+
+    const html = editor.getHTML()
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(html, 'text/html')
+    const table = doc.querySelector('table')
+    if (!table) return
+
+    const tbody = table.querySelector('tbody') || table
+    const allRows = tbody.querySelectorAll('tr')
+
+    let hasChanges = false
+    allRows.forEach(row => {
+      // Add columns if needed
+      while (row.children.length < columnCount) {
+        const newCell = doc.createElement('td')
+        row.appendChild(newCell)
+        hasChanges = true
+      }
+      // Remove extra columns if any
+      while (row.children.length > columnCount) {
+        row.removeChild(row.lastChild!)
+        hasChanges = true
+      }
+    })
+
+    if (hasChanges) {
+      isApplyingRobotUpdates.current = true
+      const newHtml = table.outerHTML
+      editor.commands.setContent(newHtml, false)
+      isApplyingRobotUpdates.current = false
+    }
+  }, [columnCount, editor])
+
   // Clear editor and refetch when sheet changes
   useEffect(() => {
     if (!editor) return
@@ -273,21 +309,25 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     // Add rows if needed
     while (tbody.children.length <= maxRow) {
       const newRow = doc.createElement('tr')
-      // Add cells to match existing column count
-      const colCount = rows[0]?.children.length || 2
-      for (let i = 0; i < colCount; i++) {
+      // Add cells to match the required column count
+      for (let i = 0; i < columnCount; i++) {
         const newCell = doc.createElement('td')
         newRow.appendChild(newCell)
       }
       tbody.appendChild(newRow)
     }
 
-    // Add columns if needed
+    // Ensure all rows have exactly columnCount cells
     const allRows = tbody.querySelectorAll('tr')
     allRows.forEach(row => {
-      while (row.children.length <= maxCol) {
+      // Add columns if needed
+      while (row.children.length < columnCount) {
         const newCell = doc.createElement('td')
         row.appendChild(newCell)
+      }
+      // Remove extra columns if any
+      while (row.children.length > columnCount) {
+        row.removeChild(row.lastChild!)
       }
     })
 
@@ -333,6 +373,52 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     void refetch()
     void refetchCells()
   }
+
+  const downloadCSV = useCallback(() => {
+    const csvRows: string[] = []
+
+    // Add header row
+    if (columnTitles.length > 0) {
+      const headerRow = columnTitles.map(title => `"${title.replace(/"/g, '""')}"`).join(',')
+      csvRows.push(headerRow)
+    } else {
+      const headerRow = Array.from({ length: columnCount }, (_, i) => `"Column ${i + 1}"`).join(',')
+      csvRows.push(headerRow)
+    }
+
+    // Parse table and extract cell data
+    if (editor) {
+      const html = editor.getHTML()
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(html, 'text/html')
+      const tbody = doc.querySelector('tbody')
+
+      if (tbody) {
+        const rows = tbody.querySelectorAll('tr')
+        rows.forEach((row) => {
+          const cells = row.querySelectorAll('td')
+          const rowData = Array.from(cells).map(cell => {
+            const content = cell.textContent?.trim() || ''
+            return `"${content.replace(/"/g, '""')}"`
+          })
+          csvRows.push(rowData.join(','))
+        })
+      }
+    }
+
+    // Create CSV blob and download
+    const csvContent = csvRows.join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+
+    link.setAttribute('href', url)
+    link.setAttribute('download', `sheet-${sheetId}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }, [editor, columnTitles, columnCount, sheetId])
 
   // Show error state if there's an auth issue
   if (eventsError?.data?.code === 'UNAUTHORIZED') {
@@ -460,6 +546,12 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
         >
           Refresh Events
+        </button>
+        <button
+          onClick={downloadCSV}
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+        >
+          Download as CSV
         </button>
       </div>
 

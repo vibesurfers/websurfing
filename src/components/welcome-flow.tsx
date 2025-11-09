@@ -34,6 +34,9 @@ export function WelcomeFlow() {
       console.log('[WelcomeFlow] Created sheet with ID:', newSheet.id);
       console.log('[WelcomeFlow] Navigating to:', `/?sheetId=${newSheet.id}`);
 
+      // Add a flag to sessionStorage to prevent auto-navigation
+      sessionStorage.setItem('justCreatedSheet', newSheet.id);
+
       // Use window.location to force navigation
       window.location.href = `/?sheetId=${newSheet.id}`;
     } catch (error) {
