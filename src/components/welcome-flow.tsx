@@ -31,14 +31,12 @@ export function WelcomeFlow() {
         templateType,
       });
 
-      console.log('[WelcomeFlow] Created sheet with ID:', newSheet.id);
-      console.log('[WelcomeFlow] Navigating to:', `/?sheetId=${newSheet.id}`);
+      if (newSheet) {
+        console.log('[WelcomeFlow] Created sheet with ID:', newSheet.id);
+        console.log('[WelcomeFlow] Navigating to:', `/sheets/${newSheet.id}`);
 
-      // Add a flag to sessionStorage to prevent auto-navigation
-      sessionStorage.setItem('justCreatedSheet', newSheet.id);
-
-      // Use window.location to force navigation
-      window.location.href = `/?sheetId=${newSheet.id}`;
+        router.push(`/sheets/${newSheet.id}`);
+      }
     } catch (error) {
       console.error('Error in handleTemplateSelect:', error);
       setIsCreating(false);
@@ -46,7 +44,7 @@ export function WelcomeFlow() {
   };
 
   const handleSelectExistingSheet = (sheetId: string) => {
-    router.push(`/?sheetId=${sheetId}`);
+    router.push(`/sheets/${sheetId}`);
   };
 
   return (
@@ -148,7 +146,7 @@ export function WelcomeFlow() {
                         </p>
                       </div>
                       <div className="text-xs text-gray-400">
-                        {new Date(sheet.createdAt).toLocaleDateString()}
+                        {sheet.createdAt ? new Date(sheet.createdAt).toLocaleDateString() : ''}
                       </div>
                     </div>
                   </button>

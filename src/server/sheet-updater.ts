@@ -37,7 +37,7 @@ export class SheetUpdater {
 
       console.log(`Found ${pendingEvents.length} pending events`);
 
-      const appliedUpdates = [];
+      const appliedUpdates: any[] = [];
 
       for (const event of pendingEvents) {
         try {

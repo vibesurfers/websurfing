@@ -40,7 +40,7 @@ export function SheetManager() {
     const justCreatedSheet = sessionStorage.getItem('justCreatedSheet');
 
     if (sheetIdFromUrl) {
-      if (sheets && sheets.some(s => s.id === sheetIdFromUrl)) {
+      if (sheets?.some(s => s.id === sheetIdFromUrl)) {
         if (selectedSheetId !== sheetIdFromUrl) {
           console.log('[SheetManager] Setting selectedSheetId from URL:', sheetIdFromUrl);
           setSelectedSheetId(sheetIdFromUrl);
@@ -52,7 +52,7 @@ export function SheetManager() {
         }
       }
     } else if (sheets && sheets.length > 0 && !selectedSheetId && !justCreatedSheet) {
-      const firstSheet = sheets[0].id;
+      const firstSheet = sheets[0]!.id;
       console.log('[SheetManager] Auto-selecting first sheet:', firstSheet);
       setSelectedSheetId(firstSheet);
       router.replace(`/?sheetId=${firstSheet}`);

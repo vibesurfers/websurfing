@@ -7,8 +7,23 @@ import { TableRow } from '@tiptap/extension-table-row'
 import { TableHeader } from '@tiptap/extension-table-header'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { api } from "@/trpc/react"
-import { useCallback, useRef, useEffect, useState } from 'react'
-import { useSheetUpdates } from "./sheet-manager"
+import { useCallback, useRef, useEffect, useState, useContext, createContext } from 'react'
+
+interface SheetUpdateContextType {
+  lastUpdate: Date | null;
+  pendingUpdates: number;
+  selectedSheetId: string | null;
+}
+
+const SheetUpdateContext = createContext<SheetUpdateContextType | null>(null);
+
+function useSheetUpdates() {
+  const context = useContext(SheetUpdateContext);
+  if (!context) {
+    return { lastUpdate: null, pendingUpdates: 0, selectedSheetId: null };
+  }
+  return context;
+}
 
 const initialContent = `
   <table>
@@ -252,7 +267,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     if (hasChanges) {
       isApplyingRobotUpdates.current = true
       const newHtml = table.outerHTML
-      editor.commands.setContent(newHtml, false)
+      editor.commands.setContent(newHtml)
       isApplyingRobotUpdates.current = false
     }
   }, [columnCount, editor])
@@ -360,7 +375,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     // Apply changes back to editor if any cells were updated
     if (hasChanges) {
       const newHtml = table.outerHTML
-      editor.commands.setContent(newHtml, false)
+      editor.commands.setContent(newHtml)
     }
 
     // Done applying robot updates

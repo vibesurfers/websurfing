@@ -16,7 +16,9 @@ export function SheetSelector({ selectedSheetId, onSelectSheet }: SheetSelectorP
   const createSheet = api.sheet.create.useMutation({
     onSuccess: (newSheet) => {
       void refetch();
-      onSelectSheet(newSheet.id);
+      if (newSheet) {
+        onSelectSheet(newSheet.id);
+      }
       setIsCreating(false);
       setNewSheetName("");
     },
@@ -46,7 +48,7 @@ export function SheetSelector({ selectedSheetId, onSelectSheet }: SheetSelectorP
     <div className="flex items-center gap-2">
       <span className="text-sm text-gray-600">Sheet:</span>
       <select
-        value={selectedSheetId || ""}
+        value={selectedSheetId ?? ""}
         onChange={(e) => onSelectSheet(e.target.value)}
         className="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       >

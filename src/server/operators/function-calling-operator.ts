@@ -54,7 +54,7 @@ export class FunctionCallingOperator
       const response = await client.models.generateContent({
         model: DEFAULT_MODEL,
         contents: input.prompt,
-        config,
+        config: config as any,
       });
 
       // Extract function calls from response
