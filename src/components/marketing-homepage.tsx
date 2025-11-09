@@ -98,7 +98,7 @@ B2: {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
               <button
-                onClick={() => router.push('/welcome')}
+                onClick={() => setShowSignIn(true)}
                 className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-bold rounded-lg transition-all shadow-2xl shadow-cyan-500/50 hover:shadow-cyan-400/60 text-lg"
                 data-testid="hero-start-surfing-btn"
               >
