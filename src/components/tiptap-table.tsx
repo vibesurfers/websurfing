@@ -50,12 +50,15 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   const isApplyingRobotUpdates = useRef(false)
   const [columnCount, setColumnCount] = useState(2)
   const [columnTitles, setColumnTitles] = useState<string[]>([])
+  const [processingRows, setProcessingRows] = useState<Set<number>>(new Set())
 
   const utils = api.useUtils()
 
   const updateCell = api.cell.updateCell.useMutation({
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       void utils.cell.getEvents.invalidate({ sheetId });
+      // Mark this row as processing
+      setProcessingRows(prev => new Set(prev).add(variables.rowIndex));
     },
     onError: (error) => {
       console.error('Failed to update cell:', error.message);
@@ -399,6 +402,32 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
 
     console.log(`[TiptapTable] Updated ${updatedCount} cells out of ${cells.length} total`)
 
+    // Check which rows are complete (all columns filled)
+    const rowCompletionMap = new Map<number, boolean>();
+    cells.forEach(cell => {
+      if (!rowCompletionMap.has(cell.rowIndex)) {
+        rowCompletionMap.set(cell.rowIndex, true);
+      }
+    });
+
+    // Check if all columns are filled for each row
+    rowCompletionMap.forEach((_complete, rowIndex) => {
+      const rowCells = cells.filter(c => c.rowIndex === rowIndex);
+      const allFilled = rowCells.length === columnCount && rowCells.every(c => c.content && c.content.trim());
+      rowCompletionMap.set(rowIndex, allFilled);
+    });
+
+    // Remove completed rows from processing set
+    setProcessingRows(prev => {
+      const newSet = new Set(prev);
+      rowCompletionMap.forEach((isComplete, rowIndex) => {
+        if (isComplete) {
+          newSet.delete(rowIndex);
+        }
+      });
+      return newSet;
+    });
+
     // Apply changes back to editor if any cells were updated
     if (hasChanges) {
       console.log('[TiptapTable] Updating editor with new cell content');
@@ -411,6 +440,24 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     // Done applying robot updates
     isApplyingRobotUpdates.current = false
   }, [cells, editor, columnCount])
+
+  // Apply processing state to rows
+  useEffect(() => {
+    if (!editor) return;
+
+    const editorElement = editor.view.dom;
+    const tbody = editorElement.querySelector('tbody');
+    if (!tbody) return;
+
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach((row, index) => {
+      if (processingRows.has(index)) {
+        row.classList.add('processing-row');
+      } else {
+        row.classList.remove('processing-row');
+      }
+    });
+  }, [editor, processingRows]);
 
   const triggerProcessing = async () => {
     await fetch('/api/update-sheet', { method: 'POST' })
@@ -481,6 +528,35 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
 
   return (
     <div className="space-y-4">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes spin-loader {
+          to { transform: rotate(360deg); }
+        }
+
+        .processing-row {
+          opacity: 0.5;
+          position: relative;
+        }
+
+        .processing-row td {
+          position: relative;
+        }
+
+        .processing-row td::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 16px;
+          height: 16px;
+          margin: -8px 0 0 -8px;
+          border: 2px solid #e5e7eb;
+          border-top-color: #3b82f6;
+          border-radius: 50%;
+          animation: spin-loader 0.6s linear infinite;
+          z-index: 10;
+        }
+      `}} />
       <div className="border rounded p-4">
         <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
           <thead>
@@ -518,7 +594,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           </thead>
         </table>
         <EditorContent editor={editor} />
-        <style jsx global>{`
+        <style dangerouslySetInnerHTML={{ __html: `
           .ProseMirror table {
             border-collapse: collapse;
             table-layout: fixed;
@@ -576,7 +652,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           .ProseMirror {
             outline: none;
           }
-        `}</style>
+        `}} />
       </div>
 
       <div className="flex gap-2">
