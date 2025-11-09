@@ -31,6 +31,7 @@ export interface SheetContext {
     operatorConfig?: any;
     prompt?: string | null;
     dependencies?: number[] | null;
+    validationRules?: any;
     isRequired?: boolean | null;
     defaultValue?: string | null;
   }>;

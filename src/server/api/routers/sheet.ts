@@ -30,6 +30,7 @@ export const sheetRouter = createTRPCRouter({
           operatorConfig: z.any().optional().nullable(),
           prompt: z.string().optional().nullable(),
           dependencies: z.array(z.number()).optional().nullable(),
+          validationRules: z.any().optional().nullable(),
           isRequired: z.boolean().optional().nullable(),
           defaultValue: z.string().optional().nullable(),
         })).optional(),
@@ -60,7 +61,8 @@ export const sheetRouter = createTRPCRouter({
             operatorType: col.operatorType,
             operatorConfig: col.operatorConfig,
             prompt: col.prompt,
-            dependencies: col.dependencies,
+            dependencies: (col.dependencies as number[] | null) || null,
+            validationRules: col.validationRules,
             isRequired: col.isRequired,
             defaultValue: col.defaultValue,
           }));
@@ -96,6 +98,7 @@ export const sheetRouter = createTRPCRouter({
             operatorConfig: col.operatorConfig || null,
             prompt: col.prompt || null,
             dependencies: col.dependencies || null,
+            validationRules: col.validationRules || null,
             isRequired: col.isRequired || false,
             defaultValue: col.defaultValue || null,
           }))

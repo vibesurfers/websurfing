@@ -33,6 +33,10 @@ export default function TemplatesPage() {
 
   const createSheet = api.sheet.create.useMutation({
     onSuccess: (sheet) => {
+      if (!sheet) {
+        alert('Failed to create sheet: No sheet returned');
+        return;
+      }
       router.push(`/sheets/${sheet.id}`);
     },
     onError: (error) => {

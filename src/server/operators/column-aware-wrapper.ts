@@ -37,7 +37,7 @@ export class ColumnAwareWrapper {
       ))
       .limit(1);
 
-    if (existing.length > 0) {
+    if (existing.length > 0 && existing[0]) {
       // Update existing record
       await db
         .update(cellProcessingStatus)
@@ -113,15 +113,18 @@ export class ColumnAwareWrapper {
 
     // Add format constraints if we have column information
     if (targetColumnInfo && operatorName) {
+      // Parse validation rules from JSON field
+      const validationMetadata = ResultValidator.parseValidationRules(targetColumnInfo.validationRules);
+
       const validatedColumn: ValidatedColumn = {
         id: targetColumnInfo.id,
         title: targetColumnInfo.title,
         dataType: (targetColumnInfo.dataType as ColumnDataType) || ColumnDataType.LONG_TEXT,
-        required: false,
-        maxLength: targetColumnInfo.maxLength || undefined,
-        minLength: targetColumnInfo.minLength || undefined,
-        examples: targetColumnInfo.examples as string[] || undefined,
-        description: targetColumnInfo.description || undefined
+        required: targetColumnInfo.isRequired || false,
+        maxLength: validationMetadata.maxLength,
+        minLength: validationMetadata.minLength,
+        examples: validationMetadata.examples,
+        description: validationMetadata.description || targetColumnInfo.prompt || undefined
       };
 
       // Check operator compatibility
@@ -254,7 +257,7 @@ export class ColumnAwareWrapper {
         .for('update') // 🔒 Lock the status record
         .limit(1);
 
-      if (existingStatus.length > 0) {
+      if (existingStatus.length > 0 && existingStatus[0]) {
         const status = existingStatus[0];
 
         // Check if another operator is currently processing this cell
@@ -354,22 +357,29 @@ export class ColumnAwareWrapper {
         content = output.summary || output.extractedText || '';
         break;
       case 'structured_output':
-        // Convert structured data to string (or extract specific field)
+        // Convert structured data to JSON string
         if (output.structuredData && typeof output.structuredData === 'object') {
-          // Try to extract a meaningful single value
           const data = output.structuredData;
-          let value = Object.values(data)[0];
 
-          // Clean the value
-          if (typeof value === 'string') {
-            content = value;
-          } else if (value !== null && value !== undefined) {
-            content = String(value);
+          // If it's an array or complex object, stringify it
+          if (Array.isArray(data) || Object.keys(data).length > 1) {
+            content = JSON.stringify(data, null, 2); // Pretty print with 2-space indent
           } else {
-            content = JSON.stringify(data);
+            // For single-field objects, try to extract the value intelligently
+            const values = Object.values(data);
+            const firstValue = values[0];
+
+            if (typeof firstValue === 'string') {
+              content = firstValue;
+            } else if (firstValue !== null && firstValue !== undefined && typeof firstValue !== 'object') {
+              content = String(firstValue);
+            } else {
+              // Complex value, stringify it
+              content = JSON.stringify(data, null, 2);
+            }
           }
         } else {
-          content = JSON.stringify(output.structuredData || output);
+          content = JSON.stringify(output.structuredData || output, null, 2);
         }
         break;
       default:
@@ -389,15 +399,18 @@ export class ColumnAwareWrapper {
     }
 
     // Validate content before writing
+    // Parse validation rules from JSON field
+    const validationMetadata = ResultValidator.parseValidationRules(targetColumn.validationRules);
+
     const validatedColumn: ValidatedColumn = {
       id: targetColumn.id,
       title: targetColumn.title,
       dataType: (targetColumn.dataType as ColumnDataType) || ColumnDataType.LONG_TEXT,
-      required: false, // Default to optional for now
-      maxLength: targetColumn.maxLength || undefined,
-      minLength: targetColumn.minLength || undefined,
-      examples: targetColumn.examples as string[] || undefined,
-      description: targetColumn.description || undefined
+      required: targetColumn.isRequired || false,
+      maxLength: validationMetadata.maxLength,
+      minLength: validationMetadata.minLength,
+      examples: validationMetadata.examples,
+      description: validationMetadata.description || targetColumn.prompt || undefined
     };
 
     const validation = ResultValidator.validate(content, validatedColumn);
@@ -591,7 +604,7 @@ export class ColumnAwareWrapper {
       ))
       .limit(1);
 
-    if (existing.length > 0) {
+    if (existing.length > 0 && existing[0]) {
       // Update existing record
       await tx
         .update(cellProcessingStatus)
