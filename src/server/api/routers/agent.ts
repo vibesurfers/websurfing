@@ -80,4 +80,68 @@ User message: ${input.message}`;
         threadId: input.threadId || null,
       };
     }),
+
+  /**
+   * Upload CSV data for import
+   */
+  uploadCSV: protectedProcedure
+    .input(
+      z.object({
+        sheetId: z.string().uuid(),
+        csvData: z.object({
+          filename: z.string(),
+          headers: z.array(z.string()),
+          rows: z.array(z.record(z.string(), z.string())),
+        }),
+        threadId: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const agent = getSpreadsheetAgent();
+
+        if (!agent) {
+          throw new Error("Spreadsheet agent not available");
+        }
+
+        console.log("[Agent] CSV Upload:", input.csvData.filename);
+        console.log("[Agent] Rows:", input.csvData.rows.length);
+        console.log("[Agent] Headers:", input.csvData.headers.join(", "));
+
+        // Generate thread ID
+        const threadId = input.threadId || `csv-${input.sheetId}-${Date.now()}`;
+        const resourceId = input.sheetId;
+
+        // Build context message with CSV data
+        const contextMessage = `Sheet ID: ${input.sheetId}
+User ID: ${ctx.session.user.id}
+
+User uploaded CSV file: ${input.csvData.filename}
+Headers: ${input.csvData.headers.join(", ")}
+Total rows: ${input.csvData.rows.length}
+Sample rows (first 5):
+${JSON.stringify(input.csvData.rows.slice(0, 5), null, 2)}
+
+Please analyze this CSV and present an import preview to the user.`;
+
+        // Call the agent
+        const response = await agent.generate(contextMessage, {
+          threadId,
+          resourceId,
+        });
+
+        console.log("[Agent] CSV Analysis Response:", response.text);
+
+        return {
+          success: true,
+          response: response.text,
+          threadId,
+        };
+      } catch (error) {
+        console.error("[Agent] CSV Upload error:", error);
+        throw new Error(
+          `CSV upload failed: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
+      }
+    }),
 });

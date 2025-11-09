@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Upload } from "lucide-react";
 import { api } from "@/trpc/react";
 import { PreviewCard } from "./preview-card";
 import { useQueryClient } from "@tanstack/react-query";
+import Papa from "papaparse";
 
 interface AgentChatProps {
   sheetId: string;
@@ -68,7 +69,9 @@ export function AgentChat({ sheetId }: AgentChatProps) {
     }
     return null;
   });
+  const [isUploadingCSV, setIsUploadingCSV] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Persist conversation to localStorage
   useEffect(() => {
@@ -121,10 +124,112 @@ export function AgentChat({ sheetId }: AgentChatProps) {
     },
   });
 
+  // tRPC mutation for CSV upload
+  const uploadCSVMutation = api.agent.uploadCSV.useMutation({
+    onSuccess: (data) => {
+      // Add agent's CSV analysis response
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "agent",
+          content: data.response,
+          timestamp: new Date(),
+        },
+      ]);
+
+      if (data.threadId && !threadId) {
+        setThreadId(data.threadId);
+      }
+
+      setIsUploadingCSV(false);
+
+      // Invalidate queries
+      void queryClient.invalidateQueries({
+        queryKey: [["cell", "getCells"], { input: { sheetId }, type: "query" }],
+      });
+    },
+    onError: (error) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "system",
+          content: `CSV Upload Error: ${error.message}`,
+          timestamp: new Date(),
+        },
+      ]);
+      setIsUploadingCSV(false);
+    },
+  });
+
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, chatMutation.isPending]);
+  }, [messages, chatMutation.isPending, isUploadingCSV]);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.name.endsWith('.csv')) {
+      alert('Please upload a CSV file');
+      return;
+    }
+
+    // Validate file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      alert('File too large. Maximum size is 50MB');
+      return;
+    }
+
+    setIsUploadingCSV(true);
+
+    // Add user message about upload
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: `Uploading CSV: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`,
+        timestamp: new Date(),
+      },
+    ]);
+
+    // Parse CSV client-side
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        console.log('[CSV Upload] Parsed:', results.data.length, 'rows');
+
+        // Upload to agent
+        await uploadCSVMutation.mutateAsync({
+          sheetId,
+          csvData: {
+            filename: file.name,
+            headers: results.meta.fields || [],
+            rows: results.data as Record<string, string>[],
+          },
+          threadId: threadId || undefined,
+        });
+
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      },
+      error: (error) => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "system",
+            content: `CSV parsing failed: ${error.message}`,
+            timestamp: new Date(),
+          },
+        ]);
+        setIsUploadingCSV(false);
+      },
+    });
+  };
 
   const handleSend = async () => {
     if (!input.trim() || chatMutation.isPending) return;
@@ -243,6 +348,34 @@ export function AgentChat({ sheetId }: AgentChatProps) {
       <div className="border-t border-gray-200 p-3 bg-gray-50">
         <p className="text-xs font-semibold text-gray-600 mb-2">Quick Actions:</p>
         <div className="flex flex-wrap gap-2">
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+
+          {/* CSV Upload Button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploadingCSV || chatMutation.isPending}
+            className="text-xs px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 rounded-full hover:from-green-600 hover:to-emerald-600 transition-all disabled:from-gray-300 disabled:to-gray-300 font-medium"
+          >
+            {isUploadingCSV ? (
+              <>
+                <Loader2 className="inline w-3 h-3 mr-1 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Upload className="inline w-3 h-3 mr-1" />
+                📁 Upload CSV
+              </>
+            )}
+          </button>
+
           <button
             onClick={() => setInput("find top 20 pizzas in SF")}
             className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
