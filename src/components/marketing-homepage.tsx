@@ -497,6 +497,9 @@ B2: {
           </div>
         </div>
       </footer>
+
+      {/* Sign In Modal */}
+      <SignInModal isOpen={showSignIn} onClose={() => setShowSignIn(false)} />
     </div>
   );
 }
