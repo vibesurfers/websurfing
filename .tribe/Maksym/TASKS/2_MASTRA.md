@@ -4,3 +4,8 @@
 - [] create a function/mcp/tool that will add rows to spreadsheets
 - [] add a tool that will find new 
 - []
+
+## FUN
+
+catch a wave and vibe surf.
+then, just code.
