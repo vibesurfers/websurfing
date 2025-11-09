@@ -113,6 +113,8 @@ export const sheets = createTable(
     id: d.uuid().primaryKey().defaultRandom(),
     userId: d.varchar("userid", { length: 255 }).notNull().references(() => users.id),
     name: d.varchar({ length: 255 }).notNull().default('Untitled Sheet'),
+    templateType: d.varchar("templatetype", { length: 50 }),
+    isAutonomous: d.boolean("isautonomous").default(false),
     createdAt: d.timestamp("createdAt", { withTimezone: true }).defaultNow(),
     updatedAt: d.timestamp("updatedAt", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
   }),
@@ -215,3 +217,21 @@ export const geminiUsageLog = createTable(
 export const geminiUsageLogRelations = relations(geminiUsageLog, ({ one }) => ({
   user: one(users, { fields: [geminiUsageLog.userId], references: [users.id] }),
 }));
+
+export const columns = createTable(
+  "column",
+  (d) => ({
+    id: d.uuid().primaryKey().defaultRandom(),
+    sheetId: d.uuid("sheetid").notNull().references(() => sheets.id, { onDelete: 'cascade' }),
+    title: d.varchar({ length: 255 }).notNull(),
+    position: d.integer().notNull(),
+    dataType: d.varchar("datatype", { length: 50 }).default('text'),
+    createdAt: d.timestamp("createdat", { withTimezone: true }).defaultNow(),
+    updatedAt: d.timestamp("updatedat", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
+  }),
+  (t) => [
+    index("column_sheet_idx").on(t.sheetId),
+    index("column_position_idx").on(t.sheetId, t.position),
+    unique("column_unique_position").on(t.sheetId, t.position),
+  ]
+);

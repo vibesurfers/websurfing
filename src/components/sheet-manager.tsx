@@ -151,7 +151,7 @@ export function SheetManager() {
           <div className="flex items-center gap-4">
             <SheetSelector
               selectedSheetId={selectedSheetId}
-              onSelectSheet={setSelectedSheetId}
+              onSelectSheet={handleSelectSheet}
             />
             {pendingUpdates > 0 && (
               <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded">

@@ -111,7 +111,7 @@ export const cellRouter = createTRPCRouter({
         .orderBy(eventQueue.createdAt)
         .limit(100);
 
-      console.log('Fetched events for user:', userId, events.length);
+      console.log(`[getEvents] Fetched ${events.length} events for user:${userId}, sheetId:${sheetId}`);
       return events;
     }),
 

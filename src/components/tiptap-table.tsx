@@ -80,6 +80,12 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     }
   )
 
+  useEffect(() => {
+    if (events) {
+      console.log(`[TiptapTable] Received ${events.length} events for sheetId: ${sheetId}`)
+    }
+  }, [events, sheetId])
+
   // Debounce mechanism - only fire events after user stops typing
   const debounceRefs = useRef<Map<string, NodeJS.Timeout>>(new Map())
   const lastContentRef = useRef<Map<string, string>>(new Map())
@@ -87,16 +93,18 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   const debouncedCellUpdate = useCallback((content: string, rowIndex: number, colIndex: number) => {
     const cellKey = `${rowIndex}-${colIndex}`
 
-    // If this is a robot update and we're not treating robots as humans, skip creating event
-    if (isApplyingRobotUpdates.current && !treatRobotsAsHumans) {
-      console.log(`Skipping robot update event for (${rowIndex}, ${colIndex}) - treatRobotsAsHumans is false`)
-      return
-    }
-
     // Clear existing timeout for this specific cell
     const existingTimeout = debounceRefs.current.get(cellKey)
     if (existingTimeout) {
       clearTimeout(existingTimeout)
+    }
+
+    // If this is a robot update and we're not treating robots as humans, skip creating event
+    // But still update the content tracking so we know what's in the cell
+    if (isApplyingRobotUpdates.current && !treatRobotsAsHumans) {
+      console.log(`Skipping robot update event for (${rowIndex}, ${colIndex}) - treatRobotsAsHumans is false`)
+      lastContentRef.current.set(cellKey, content)
+      return
     }
 
     // Set new timeout for this specific cell
@@ -119,7 +127,8 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           })
         } else {
           // Normal update with content
-          console.log(`Creating debounced cell update at (${rowIndex}, ${colIndex}): "${content}"`)
+          const updateSource = isApplyingRobotUpdates.current ? 'robot' : 'user'
+          console.log(`Creating ${updateSource} cell update event at (${rowIndex}, ${colIndex}): "${content}"`)
           lastContentRef.current.set(cellKey, content)
           updateCell.mutate({
             sheetId,
@@ -191,6 +200,8 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   // Clear editor and refetch when sheet changes
   useEffect(() => {
     if (!editor) return
+
+    console.log(`[TiptapTable] Sheet changed to: ${sheetId}, clearing editor and refetching data`)
 
     // Reset editor to initial empty state
     editor.commands.setContent(initialContent)
