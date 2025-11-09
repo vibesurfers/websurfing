@@ -29,6 +29,13 @@
       "when": 1762662614121,
       "tag": "0003_certain_gideon",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1762664330557,
+      "tag": "0004_swift_jubilee",
+      "breakpoints": true
     }
   ]
 }

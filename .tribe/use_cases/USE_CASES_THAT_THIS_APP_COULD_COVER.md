@@ -28,3 +28,7 @@ finished table could send the notification.
 we need an interface that will somehow add configs. then something to convert configs into spreadsheets. this should be connected with @schema.ts.
 
 see /sheets/[id]/page.tsx to understand more.
+
+example:
+
+`input website urls. those are company website urls. companies are dev shops (it outsourcing companies). we want to use search to find their webiste. then use search again to query for location/offices realted pages, ultimately we need to extract if they mention on the website if they have at leas 1 remote branch. use search -> search -> url context and then extract json`
