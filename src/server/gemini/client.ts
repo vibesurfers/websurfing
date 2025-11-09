@@ -37,15 +37,39 @@ export function getGeminiClient(): GoogleGenAI {
       );
     }
 
-    // Initialize with Vertex AI using Application Default Credentials (ADC)
-    // No API key needed - ADC is used automatically
-    geminiClient = new GoogleGenAI({
-      vertexai: true,
-      project: project,
-      location: location,
-    });
+    // Check for credentials in environment variable (Vercel deployment)
+    const credsJson = process.env.GOOGLE_CREDENTIALS_JSON;
 
-    console.log(`[Gemini Client] Initialized with Vertex AI (project: ${project}, location: ${location})`);
+    if (credsJson) {
+      // Parse JSON credentials from environment variable
+      try {
+        const credentials = JSON.parse(credsJson);
+        geminiClient = new GoogleGenAI({
+          vertexai: true,
+          project: project,
+          location: location,
+          googleAuthOptions: {
+            credentials: credentials,
+          },
+        });
+        console.log(`[Gemini Client] Initialized with Vertex AI using JSON credentials from env`);
+      } catch (error) {
+        throw new Error(
+          `Failed to parse GOOGLE_CREDENTIALS_JSON: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    } else {
+      // Use GOOGLE_APPLICATION_CREDENTIALS file or system ADC (local development)
+      // This will look for:
+      // 1. GOOGLE_APPLICATION_CREDENTIALS env var pointing to file
+      // 2. ~/.config/gcloud/application_default_credentials.json
+      geminiClient = new GoogleGenAI({
+        vertexai: true,
+        project: project,
+        location: location,
+      });
+      console.log(`[Gemini Client] Initialized with Vertex AI using ADC (project: ${project}, location: ${location})`);
+    }
   }
 
   return geminiClient;
