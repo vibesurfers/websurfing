@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { getGeminiClient } from "../gemini/client";
 import { DEFAULT_GENERATION_CONFIG, GEMINI_MODELS } from "../gemini/config";
 
@@ -111,18 +112,19 @@ Generate a complete, ready-to-use template that:
 Think step-by-step about the data flow from left to right.`;
 
   try {
+    // Convert Zod schema to JSON Schema for Gemini API
+    const jsonSchema = zodToJsonSchema(templateConfigSchema);
+
+    // Combine system instruction and prompt
+    const fullPrompt = systemInstruction + "\n\n" + prompt;
+
     const result = await client.models.generateContent({
-      model: GEMINI_MODELS.FLASH_2_0,
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: systemInstruction + "\n\n" + prompt }],
-        },
-      ],
+      model: GEMINI_MODELS.FLASH, // Use gemini-2.5-flash
+      contents: fullPrompt,
       config: {
-        ...DEFAULT_GENERATION_CONFIG,
         responseMimeType: "application/json",
-        responseSchema: templateConfigSchema,
+        responseJsonSchema: jsonSchema,
+        ...DEFAULT_GENERATION_CONFIG,
       },
     });
 
@@ -188,18 +190,19 @@ User feedback: ${userFeedback}
 Update the template based on this feedback. Return the complete updated configuration.`;
 
   try {
+    // Convert Zod schema to JSON Schema for Gemini API
+    const jsonSchema = zodToJsonSchema(templateConfigSchema);
+
+    // Combine system instruction and prompt
+    const fullPrompt = systemInstruction + "\n\n" + prompt;
+
     const result = await client.models.generateContent({
-      model: GEMINI_MODELS.FLASH_2_0,
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: systemInstruction + "\n\n" + prompt }],
-        },
-      ],
+      model: GEMINI_MODELS.FLASH, // Use gemini-2.5-flash
+      contents: fullPrompt,
       config: {
-        ...DEFAULT_GENERATION_CONFIG,
         responseMimeType: "application/json",
-        responseSchema: templateConfigSchema,
+        responseJsonSchema: jsonSchema,
+        ...DEFAULT_GENERATION_CONFIG,
       },
     });
 
@@ -253,18 +256,16 @@ Consider:
 Provide 2-5 concrete, actionable suggestions.`;
 
   try {
+    // Convert Zod schema to JSON Schema for Gemini API
+    const jsonSchema = zodToJsonSchema(suggestionSchema);
+
     const result = await client.models.generateContent({
-      model: GEMINI_MODELS.FLASH_2_0,
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: prompt }],
-        },
-      ],
+      model: GEMINI_MODELS.FLASH, // Use gemini-2.5-flash
+      contents: prompt,
       config: {
-        ...DEFAULT_GENERATION_CONFIG,
         responseMimeType: "application/json",
-        responseSchema: suggestionSchema,
+        responseJsonSchema: jsonSchema,
+        ...DEFAULT_GENERATION_CONFIG,
       },
     });
 

@@ -78,6 +78,26 @@ export function WelcomeFlow() {
         </div>
 
         <div className="space-y-6">
+          {/* Custom Template Builder CTA */}
+          <div className="border-2 border-purple-300 rounded-xl p-6 bg-gradient-to-br from-purple-50 to-pink-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+                  ✨ Create Custom Template
+                </h2>
+                <p className="text-gray-600 mb-0">
+                  Chat with AI to design your own workflow or build visually
+                </p>
+              </div>
+              <button
+                onClick={() => router.push('/templates/new')}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-md hover:shadow-lg"
+              >
+                Build Template →
+              </button>
+            </div>
+          </div>
+
           <div className="border-2 border-cyan-200 rounded-xl p-6 hover:border-cyan-400 transition-colors bg-gradient-to-br from-white to-cyan-50/30">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">
               🏄 Catch a Wave - Start a New Webset

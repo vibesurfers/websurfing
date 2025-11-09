@@ -22,6 +22,13 @@
       "when": 1762662345648,
       "tag": "0002_lovely_gateway",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1762662614121,
+      "tag": "0003_certain_gideon",
+      "breakpoints": true
     }
   ]
 }

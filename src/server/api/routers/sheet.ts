@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { sheets, columns } from "@/server/db/schema";
+import { sheets, columns, templates } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { getTemplate, type TemplateType } from "@/server/templates/column-templates";
 
@@ -21,6 +21,7 @@ export const sheetRouter = createTRPCRouter({
       z.object({
         name: z.string().min(1).max(255),
         templateType: z.enum(['lucky', 'marketing', 'scientific']).optional(),
+        templateId: z.string().uuid().optional(),
         columns: z.array(z.object({
           title: z.string().min(1).max(255),
           position: z.number().int().min(0),
@@ -34,7 +35,28 @@ export const sheetRouter = createTRPCRouter({
       let columnsToCreate = input.columns;
       let isAutonomous = false;
 
-      if (input.templateType && !input.columns) {
+      // Load columns from database template if templateId is provided
+      if (input.templateId) {
+        const dbTemplate = await ctx.db.query.templates.findFirst({
+          where: eq(templates.id, input.templateId),
+          with: {
+            columns: {
+              orderBy: (cols, { asc }) => [asc(cols.position)],
+            },
+          },
+        });
+
+        if (dbTemplate) {
+          columnsToCreate = dbTemplate.columns.map((col) => ({
+            title: col.title,
+            position: col.position,
+            dataType: col.dataType as 'text' | 'array' | 'url' | 'number',
+          }));
+          isAutonomous = dbTemplate.isAutonomous || false;
+        }
+      }
+      // Fallback to old hardcoded templates
+      else if (input.templateType && !input.columns) {
         const template = getTemplate(input.templateType as TemplateType);
         columnsToCreate = template.columns;
         isAutonomous = template.isAutonomous;
@@ -46,6 +68,7 @@ export const sheetRouter = createTRPCRouter({
           userId,
           name: input.name,
           templateType: input.templateType ?? null,
+          templateId: input.templateId ?? null,
           isAutonomous,
         })
         .returning();

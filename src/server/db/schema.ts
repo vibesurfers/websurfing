@@ -111,11 +111,11 @@ export const sheets = createTable(
   "sheet",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    userId: d.varchar({ length: 255 }).notNull().references(() => users.id),
+    userId: d.varchar("userid", { length: 255 }).notNull().references(() => users.id),
     name: d.varchar({ length: 255 }).notNull().default('Untitled Sheet'),
-    templateType: d.varchar({ length: 50 }),
+    templateType: d.varchar("templatetype", { length: 50 }),
     templateId: d.uuid().references(() => templates.id),
-    isAutonomous: d.boolean().default(false),
+    isAutonomous: d.boolean("isautonomous").default(false),
     webhookUrl: d.varchar({ length: 500 }),
     webhookEvents: d.jsonb(), // Array of event types: ['row_complete', 'sheet_complete', 'error']
     createdAt: d.timestamp("createdAt", { withTimezone: true }).defaultNow(),
@@ -131,8 +131,8 @@ export const cells = createTable(
   "cell",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    sheetId: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
-    userId: d.varchar({ length: 255 }).notNull().references(() => users.id),
+    sheetId: d.uuid("sheetid").notNull().references(() => sheets.id, { onDelete: 'cascade' }),
+    userId: d.varchar("userid", { length: 255 }).notNull().references(() => users.id),
     rowIndex: d.integer("rowIndex").notNull(),
     colIndex: d.integer("colIndex").notNull(),
     content: d.text(),
@@ -151,13 +151,13 @@ export const eventQueue = createTable(
   "event_queue",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    sheetId: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
-    userId: d.varchar({ length: 255 }).notNull().references(() => users.id),
+    sheetId: d.uuid("sheetid").notNull().references(() => sheets.id, { onDelete: 'cascade' }),
+    userId: d.varchar("userid", { length: 255 }).notNull().references(() => users.id),
     eventType: d.varchar("eventType", { length: 100 }).notNull(),
     payload: d.jsonb().notNull(),
     status: d.varchar({ length: 20 }).default('pending'), // 'pending', 'processing', 'completed', 'failed', 'awaiting_clarification'
-    retryCount: d.integer().default(0),
-    lastError: d.text(),
+    retryCount: d.integer("retrycount").default(0),
+    lastError: d.text("lasterror"),
     createdAt: d.timestamp("createdAt", { withTimezone: true }).defaultNow(),
     processedAt: d.timestamp("processedAt", { withTimezone: true }),
   }),
@@ -173,14 +173,14 @@ export const sheetUpdates = createTable(
   "sheet_updates",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    sheetId: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
-    userId: d.varchar({ length: 255 }).notNull().references(() => users.id),
-    rowIndex: d.integer().notNull(),
-    colIndex: d.integer().notNull(),
+    sheetId: d.uuid("sheetid").notNull().references(() => sheets.id, { onDelete: 'cascade' }),
+    userId: d.varchar("userid", { length: 255 }).notNull().references(() => users.id),
+    rowIndex: d.integer("rowindex").notNull(),
+    colIndex: d.integer("colindex").notNull(),
     content: d.text(),
-    updateType: d.varchar({ length: 50 }).notNull(), // 'user_edit', 'ai_response', 'auto_copy'
-    createdAt: d.timestamp({ withTimezone: true }).defaultNow(),
-    appliedAt: d.timestamp({ withTimezone: true }),
+    updateType: d.varchar("updatetype", { length: 50 }).notNull(), // 'user_edit', 'ai_response', 'auto_copy'
+    createdAt: d.timestamp("createdat", { withTimezone: true }).defaultNow(),
+    appliedAt: d.timestamp("appliedat", { withTimezone: true }),
   }),
   (t) => [
     index("sheet_updates_sheet_idx").on(t.sheetId),
@@ -224,14 +224,14 @@ export const cellProcessingStatus = createTable(
   "cell_processing_status",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    sheetId: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
-    userId: d.varchar({ length: 255 }).notNull().references(() => users.id),
-    rowIndex: d.integer().notNull(),
-    colIndex: d.integer().notNull(),
+    sheetId: d.uuid("sheetid").notNull().references(() => sheets.id, { onDelete: 'cascade' }),
+    userId: d.varchar("userid", { length: 255 }).notNull().references(() => users.id),
+    rowIndex: d.integer("rowindex").notNull(),
+    colIndex: d.integer("colindex").notNull(),
     status: d.varchar({ length: 20 }).notNull().default('idle'), // 'idle', 'processing', 'completed', 'error'
-    operatorName: d.varchar({ length: 100 }), // 'google_search', 'url_context', etc.
-    statusMessage: d.varchar({ length: 255 }), // "Searching Google...", "Analyzing URL..."
-    updatedAt: d.timestamp({ withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
+    operatorName: d.varchar("operatorname", { length: 100 }), // 'google_search', 'url_context', etc.
+    statusMessage: d.varchar("statusmessage", { length: 255 }), // "Searching Google...", "Analyzing URL..."
+    updatedAt: d.timestamp("updatedat", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
   }),
   (t) => [
     index("cell_status_sheet_idx").on(t.sheetId),
@@ -248,12 +248,12 @@ export const columns = createTable(
   "column",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    sheetId: d.uuid().notNull().references(() => sheets.id, { onDelete: 'cascade' }),
+    sheetId: d.uuid("sheetid").notNull().references(() => sheets.id, { onDelete: 'cascade' }),
     title: d.varchar({ length: 255 }).notNull(),
     position: d.integer().notNull(),
-    dataType: d.varchar({ length: 50 }).default('text'),
-    createdAt: d.timestamp({ withTimezone: true }).defaultNow(),
-    updatedAt: d.timestamp({ withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
+    dataType: d.varchar("datatype", { length: 50 }).default('text'),
+    createdAt: d.timestamp("createdat", { withTimezone: true }).defaultNow(),
+    updatedAt: d.timestamp("updatedat", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
   }),
   (t) => [
     index("column_sheet_idx").on(t.sheetId),
