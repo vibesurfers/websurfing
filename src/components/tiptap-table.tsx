@@ -7,14 +7,11 @@ import { TableRow } from '@tiptap/extension-table-row'
 import { TableHeader } from '@tiptap/extension-table-header'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { api } from "@/trpc/react"
-import { useCallback, useRef, useEffect } from 'react'
+import { useCallback, useRef, useEffect, useState } from 'react'
 import { useSheetUpdates } from "./sheet-manager"
 
 const initialContent = `
   <table>
-    <thead>
-      <tr><th>1</th><th>2</th></tr>
-    </thead>
     <tbody>
       <tr><td>Cell 1</td><td>Cell 2</td></tr>
       <tr><td></td><td></td></tr>
@@ -36,6 +33,7 @@ interface TiptapTableProps {
 export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) {
   const { lastUpdate } = useSheetUpdates()
   const isApplyingRobotUpdates = useRef(false)
+  const [columnCount, setColumnCount] = useState(2)
 
   const utils = api.useUtils()
 
@@ -115,6 +113,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
 
           // Clear the cell and any pending events for it
           clearCell.mutate({
+            sheetId,
             rowIndex,
             colIndex,
           })
@@ -123,6 +122,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           console.log(`Creating debounced cell update at (${rowIndex}, ${colIndex}): "${content}"`)
           lastContentRef.current.set(cellKey, content)
           updateCell.mutate({
+            sheetId,
             rowIndex,
             colIndex,
             content,
@@ -137,7 +137,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     }, 1000) // Wait 1 second after user stops typing
 
     debounceRefs.current.set(cellKey, timeout)
-  }, [updateCell, clearCell, treatRobotsAsHumans])
+  }, [updateCell, clearCell, treatRobotsAsHumans, sheetId])
 
   const editor = useEditor({
     extensions: [
@@ -163,6 +163,12 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
 
       const rows = tbody.querySelectorAll('tr')
 
+      // Update column count based on first row
+      if (rows[0]) {
+        const cellCount = rows[0].querySelectorAll('td').length
+        setColumnCount(cellCount)
+      }
+
       rows.forEach((row, rowIndex) => {
         const cells = row.querySelectorAll('td')
         cells.forEach((cell, colIndex) => {
@@ -175,13 +181,31 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   })
 
   // Refresh events and cells when sheet updates happen
-  // AND update the editor content with new cell data
   useEffect(() => {
     if (lastUpdate) {
       void refetch()
       void refetchCells()
     }
   }, [lastUpdate, refetch, refetchCells])
+
+  // Clear editor and refetch when sheet changes
+  useEffect(() => {
+    if (!editor) return
+
+    // Reset editor to initial empty state
+    editor.commands.setContent(initialContent)
+
+    // Clear tracking refs
+    lastContentRef.current.clear()
+    debounceRefs.current.forEach(timeout => clearTimeout(timeout))
+    debounceRefs.current.clear()
+
+    // Invalidate and refetch queries for new sheet
+    void utils.cell.getCells.invalidate({ sheetId })
+    void utils.cell.getEvents.invalidate({ sheetId })
+    void refetchCells()
+    void refetch()
+  }, [sheetId, editor, utils, refetchCells, refetch])
 
   // Apply cell updates to the editor when cells change
   useEffect(() => {
@@ -224,8 +248,6 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     }
 
     // Add columns if needed
-    const thead = table.querySelector('thead')
-    const headerRow = thead?.querySelector('tr')
     const allRows = tbody.querySelectorAll('tr')
     allRows.forEach(row => {
       while (row.children.length <= maxCol) {
@@ -233,15 +255,6 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
         row.appendChild(newCell)
       }
     })
-
-    // Update header row with column numbers
-    if (headerRow) {
-      while (headerRow.children.length <= maxCol) {
-        const newHeader = doc.createElement('th')
-        newHeader.textContent = String(headerRow.children.length + 1)
-        headerRow.appendChild(newHeader)
-      }
-    }
 
     // Update cell contents from database
     let hasChanges = false
@@ -303,6 +316,21 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   return (
     <div className="space-y-4">
       <div className="border rounded p-4">
+        <div className="flex" style={{ width: '100%' }}>
+          {Array.from({ length: columnCount }, (_, i) => (
+            <div
+              key={i}
+              className="bg-gray-100 border border-gray-300 text-center font-semibold text-xs text-gray-700"
+              style={{
+                flex: '1 1 0',
+                padding: '4px 12px',
+                minWidth: '1em'
+              }}
+            >
+              {i + 1}
+            </div>
+          ))}
+        </div>
         <EditorContent editor={editor} />
         <style jsx global>{`
           .ProseMirror table {
@@ -313,8 +341,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
             overflow: hidden;
           }
 
-          .ProseMirror td,
-          .ProseMirror th {
+          .ProseMirror td {
             min-width: 1em;
             border: 1px solid #d1d5db;
             padding: 8px 12px;
@@ -324,30 +351,19 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
             min-height: 40px;
           }
 
-          .ProseMirror th {
-            background-color: #f3f4f6;
-            font-weight: 600;
-            text-align: center;
-            color: #374151;
-          }
-
-          .ProseMirror td:first-child,
-          .ProseMirror th:first-child {
+          .ProseMirror td:first-child {
             border-left: 1px solid #d1d5db;
           }
 
-          .ProseMirror td:last-child,
-          .ProseMirror th:last-child {
+          .ProseMirror td:last-child {
             border-right: 1px solid #d1d5db;
           }
 
-          .ProseMirror tr:first-child td,
-          .ProseMirror tr:first-child th {
+          .ProseMirror tr:first-child td {
             border-top: 1px solid #d1d5db;
           }
 
-          .ProseMirror tr:last-child td,
-          .ProseMirror tr:last-child th {
+          .ProseMirror tr:last-child td {
             border-bottom: 1px solid #d1d5db;
           }
 

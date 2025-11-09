@@ -5,6 +5,7 @@ import { CountdownTimer } from "@/components/countdown-timer";
 import { SheetSelector } from "@/components/sheet-selector";
 import { useState, useCallback, createContext, useContext, useEffect } from "react";
 import { api } from "@/trpc/react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface SheetUpdateContextType {
   lastUpdate: Date | null;
@@ -23,20 +24,40 @@ export function useSheetUpdates() {
 }
 
 export function SheetManager() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [pendingUpdates, setPendingUpdates] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [treatRobotsAsHumans, setTreatRobotsAsHumans] = useState(true);
-  const [selectedSheetId, setSelectedSheetId] = useState<string | null>(null);
+  const [selectedSheetId, setSelectedSheetId] = useState<string | null>(searchParams.get('sheetId'));
 
   const { data: sheets } = api.sheet.list.useQuery();
 
-  // Auto-select first sheet when sheets load
+  // Auto-select first sheet when sheets load or update URL from query param
   useEffect(() => {
-    if (sheets && sheets.length > 0 && !selectedSheetId) {
-      setSelectedSheetId(sheets[0].id);
+    const sheetIdFromUrl = searchParams.get('sheetId');
+
+    if (sheets && sheets.length > 0) {
+      if (sheetIdFromUrl && sheets.some(s => s.id === sheetIdFromUrl)) {
+        // Valid sheet in URL, use it
+        if (selectedSheetId !== sheetIdFromUrl) {
+          setSelectedSheetId(sheetIdFromUrl);
+        }
+      } else if (!selectedSheetId) {
+        // No valid sheet selected, use first one and update URL
+        const firstSheet = sheets[0].id;
+        setSelectedSheetId(firstSheet);
+        router.replace(`/?sheetId=${firstSheet}`);
+      }
     }
-  }, [sheets, selectedSheetId]);
+  }, [sheets, searchParams, selectedSheetId, router]);
+
+  // Update URL when sheet selection changes
+  const handleSelectSheet = useCallback((sheetId: string) => {
+    setSelectedSheetId(sheetId);
+    router.replace(`/?sheetId=${sheetId}`);
+  }, [router]);
 
   // Test authentication by trying to fetch events once
   const { error: authError, isLoading } = api.cell.getEvents.useQuery(
@@ -58,9 +79,11 @@ export function SheetManager() {
   }, [isLoading, authError]);
 
   const handleUpdateTick = useCallback(async () => {
+    if (!selectedSheetId) return;
+
     try {
-      console.log('Triggering sheet update...');
-      const response = await fetch('/api/update-sheet', { method: 'POST' });
+      console.log('Triggering sheet update for sheet:', selectedSheetId);
+      const response = await fetch(`/api/update-sheet?sheetId=${selectedSheetId}`, { method: 'POST' });
       const result = await response.json() as {
         success: boolean;
         totalApplied: number;
@@ -85,7 +108,7 @@ export function SheetManager() {
     } catch (error) {
       console.error('Error updating sheet:', error);
     }
-  }, []);
+  }, [selectedSheetId]);
 
   // Show loading state while checking authentication
   if (!isReady && authError?.data?.code === 'UNAUTHORIZED') {

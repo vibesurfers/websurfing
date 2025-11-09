@@ -3,17 +3,10 @@ import { sheetUpdates, cells, eventQueue, sheets } from "@/server/db/schema";
 import { eq, and, isNull, inArray } from "drizzle-orm";
 
 export class SheetUpdater {
-  async updateSheet(userId: string) {
-    console.log('Updating sheet for user:', userId);
+  async updateSheet(userId: string, sheetId: string) {
+    console.log('Updating sheet for user:', userId, 'sheetId:', sheetId);
 
     try {
-      const userSheet = await db.select().from(sheets).where(eq(sheets.userId, userId)).limit(1);
-      if (!userSheet[0]) {
-        console.log('No sheet found for user:', userId);
-        return { success: false, error: 'No sheet found', appliedUpdates: [], totalApplied: 0 };
-      }
-      const sheetId = userSheet[0].id;
-
       // Get pending events with row locking to prevent double processing
       const pendingEvents = await db.transaction(async (tx) => {
         // Select pending events with FOR UPDATE to lock them
@@ -22,6 +15,7 @@ export class SheetUpdater {
           .select()
           .from(eventQueue)
           .where(and(
+            eq(eventQueue.sheetId, sheetId),
             eq(eventQueue.userId, userId),
             eq(eventQueue.status, 'pending')
           ))
@@ -96,6 +90,7 @@ export class SheetUpdater {
         .select()
         .from(sheetUpdates)
         .where(and(
+          eq(sheetUpdates.sheetId, sheetId),
           eq(sheetUpdates.userId, userId),
           isNull(sheetUpdates.appliedAt)
         ))
