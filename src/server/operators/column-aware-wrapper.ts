@@ -101,10 +101,20 @@ export class ColumnAwareWrapper {
       case 'google_search':
         // Use first search result URL or title
         let url = output.results?.[0]?.url || output.results?.[0]?.title || '';
-        // Resolve redirect URLs to actual destinations
+        // Filter out redirect URLs - if we get one, skip to next result or use title
         if (url && url.includes('vertexaisearch.cloud.google.com/grounding-api-redirect')) {
-          console.log('[ColumnAwareWrapper] Resolving redirect URL...');
-          url = await resolveRedirectUrl(url);
+          console.log('[ColumnAwareWrapper] Skipping redirect URL, trying next result...');
+          // Try other results
+          for (const result of output.results || []) {
+            if (result.url && !result.url.includes('grounding-api-redirect')) {
+              url = result.url;
+              break;
+            }
+          }
+          // If all are redirects, just use the title
+          if (url.includes('grounding-api-redirect')) {
+            url = output.results?.[0]?.title || '';
+          }
         }
         content = url;
         break;
@@ -117,7 +127,16 @@ export class ColumnAwareWrapper {
         if (output.structuredData && typeof output.structuredData === 'object') {
           // Try to extract a meaningful single value
           const data = output.structuredData;
-          content = Object.values(data)[0] as string || JSON.stringify(data);
+          let value = Object.values(data)[0];
+
+          // Clean the value
+          if (typeof value === 'string') {
+            content = value;
+          } else if (value !== null && value !== undefined) {
+            content = String(value);
+          } else {
+            content = JSON.stringify(data);
+          }
         } else {
           content = JSON.stringify(output.structuredData || output);
         }
@@ -130,6 +149,43 @@ export class ColumnAwareWrapper {
       console.log('[ColumnAwareWrapper] No content to write');
       return;
     }
+
+    // Clean the content before saving
+    // 1. Remove ALL surrounding quotes (handle multiple layers)
+    while (content.startsWith('"') && content.endsWith('"') && content.length > 1) {
+      content = content.slice(1, -1);
+    }
+
+    // 2. Filter redirect URLs - NEVER save these to the database
+    if (content.includes('vertexaisearch.cloud.google.com/grounding-api-redirect')) {
+      console.warn('[ColumnAwareWrapper] BLOCKED redirect URL - skipping cell write');
+      console.warn('[ColumnAwareWrapper] Redirect URL:', content.substring(0, 100) + '...');
+
+      // Mark cell as idle since we're not writing
+      await ColumnAwareWrapper.updateCellStatus(
+        ctx,
+        userId,
+        nextColIndex,
+        'error',
+        operatorName,
+        'Redirect URL blocked'
+      );
+
+      return; // Don't write redirect URLs
+    }
+
+    // 3. Validate and normalize URL format if it looks like a URL
+    if (content.startsWith('http://') || content.startsWith('https://')) {
+      try {
+        const urlObj = new URL(content);
+        content = urlObj.toString(); // Normalize URL
+      } catch (e) {
+        console.warn('[ColumnAwareWrapper] Invalid URL format:', content);
+      }
+    }
+
+    // 4. Trim whitespace
+    content = content.trim();
 
     // Write DIRECTLY to cells table for immediate visibility
     await db.insert(cells).values({

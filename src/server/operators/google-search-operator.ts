@@ -9,6 +9,7 @@
 
 import { getGeminiClient } from "@/server/gemini/client";
 import { DEFAULT_MODEL } from "@/server/gemini/config";
+import { resolveRedirectUrl } from "@/server/utils/url-resolver";
 import type {
   GoogleSearchInput,
   GoogleSearchOutput,
@@ -54,9 +55,23 @@ export class GoogleSearchGeminiOperator
         for (let i = 0; i < Math.min(groundingMetadata.groundingChunks.length, maxResults); i++) {
           const chunk = groundingMetadata.groundingChunks[i];
           if (chunk?.web?.uri) {
+            let url = chunk.web.uri;
+
+            // Resolve redirect URLs to actual destinations
+            if (url.includes('vertexaisearch.cloud.google.com/grounding-api-redirect')) {
+              console.log(`[GoogleSearch] Resolving redirect URL for result ${i + 1}...`);
+              try {
+                url = await resolveRedirectUrl(url);
+                console.log(`[GoogleSearch] Resolved to: ${url}`);
+              } catch (error) {
+                console.error(`[GoogleSearch] Failed to resolve redirect:`, error);
+                // Keep original URL if resolution fails
+              }
+            }
+
             results.push({
               title: chunk.web.title ?? "Unknown",
-              url: chunk.web.uri,
+              url, // Use resolved URL
               snippet: this.extractSnippet(
                 response.text ?? "",
                 groundingMetadata,
