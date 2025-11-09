@@ -407,6 +407,7 @@ export default function NewTemplatePage() {
           )}
         </div>
       </div>
+      </div>
     </>
   );
 }

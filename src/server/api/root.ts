@@ -3,6 +3,7 @@ import { cellRouter } from "@/server/api/routers/cell";
 import { sheetRouter } from "@/server/api/routers/sheet";
 import { adminRouter } from "@/server/api/routers/admin";
 import { templateRouter } from "@/server/api/routers/template";
+import { agentRouter } from "@/server/api/routers/agent";
 import { mastraTestRouter } from "@/server/api/routers/mastra-test";
 import { spreadsheetAgentTestRouter } from "@/server/api/routers/spreadsheet-agent-test";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
@@ -18,6 +19,7 @@ export const appRouter = createTRPCRouter({
   sheet: sheetRouter,
   admin: adminRouter,
   template: templateRouter,
+  agent: agentRouter,
   mastraTest: mastraTestRouter,
   spreadsheetAgentTest: spreadsheetAgentTestRouter,
 });

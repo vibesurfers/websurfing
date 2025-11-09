@@ -4,6 +4,7 @@ import { eq, and, isNull, inArray } from "drizzle-orm";
 import { OperatorController } from "@/server/operators/operator-controller";
 import type { BaseEvent, SheetContext } from "@/server/operators/operator-controller";
 import { getTemplate } from "@/server/templates/column-templates";
+import { templates } from "@/server/db/schema";
 
 export class SheetUpdater {
   private operatorController: OperatorController;
@@ -98,11 +99,22 @@ export class SheetUpdater {
           });
 
           // Build sheet context
+          let systemPrompt: string | undefined;
+          try {
+            systemPrompt = sheetData.templateType ? getTemplate(sheetData.templateType as any).systemPrompt : undefined;
+          } catch (error) {
+            // Template not found in hardcoded templates, try loading from database
+            if (sheetData.templateId) {
+              const [template] = await db.select({ systemPrompt: templates.systemPrompt }).from(templates).where(eq(templates.id, sheetData.templateId)).limit(1);
+              systemPrompt = template?.systemPrompt || undefined;
+            }
+          }
+
           const sheetContext: SheetContext = {
             sheetId,
             templateType: sheetData.templateType as any,
-            systemPrompt: sheetData.templateType ? getTemplate(sheetData.templateType as any).systemPrompt : undefined,
-            columns: sheetColumns.map(col => ({ id: col.id, title: col.title, position: col.position, dataType: col.dataType ?? 'text' })),
+            systemPrompt,
+            columns: sheetColumns.map(col => ({ id: col.id, title: col.title || '', position: col.position, dataType: col.dataType ?? 'text' })),
             rowIndex,
             currentColumnIndex: colIndex,
             rowData,
@@ -126,10 +138,13 @@ export class SheetUpdater {
         } catch (error) {
           console.error(`Failed to process event ${event.id}:`, error);
 
-          // Mark event as failed
+          // Mark event as failed with error message
           await db
             .update(eventQueue)
-            .set({ status: 'failed' })
+            .set({
+              status: 'failed',
+              lastError: error instanceof Error ? error.message : String(error),
+            })
             .where(eq(eventQueue.id, event.id));
         }
       }

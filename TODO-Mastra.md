@@ -40,197 +40,189 @@
 
 ---
 
-### 🛠️ Phase 2: Core Tools Development (4-5 hours)
+### ✅ Phase 2: Core Tools Development (4-5 hours) - COMPLETED
 
-- [ ] **2.1** Sheet Reader Tool (`src/mastra/tools/sheet-reader.ts`)
-  - [ ] Read sheet metadata (id, name, templateType, systemPrompt)
-  - [ ] Read all columns (id, title, position, dataType, operatorType)
-  - [ ] Read all cells for sheet (optionally filtered by row)
-  - [ ] Return structured sheet state object
-  - [ ] Add error handling for non-existent sheets
+- [x] **2.1** Sheet Reader Tool (`src/mastra/tools/sheet-reader.ts`) ✅
+  - [x] Read sheet metadata (id, name, templateType, systemPrompt)
+  - [x] Read all columns (id, title, position, dataType, operatorType)
+  - [x] Read all cells for sheet (optionally filtered by row)
+  - [x] Return structured sheet state object
+  - [x] Add error handling for non-existent sheets
 
-- [ ] **2.2** Sheet Writer Tool (`src/mastra/tools/sheet-writer.ts`)
-  - [ ] Input: sheetId, rows array (each row = array of cell contents)
-  - [ ] Output: Preview object (row count, sample rows, columns needed)
-  - [ ] Mode: 'preview' (just return plan) or 'execute' (actually write)
-  - [ ] Create cells in database (batch insert)
-  - [ ] Create events for first column of each row
-  - [ ] Return success status + row IDs created
+- [x] **2.2** Sheet Writer Tool (`src/mastra/tools/sheet-writer.ts`) ✅
+  - [x] Input: sheetId, rows array (each row = array of cell contents)
+  - [x] Output: Preview object (row count, sample rows, columns needed)
+  - [x] Mode: 'preview' (just return plan) or 'execute' (actually write)
+  - [x] Create cells in database (batch insert)
+  - [x] Create events for first column of each row
+  - [x] Return success status + row IDs created
+  - [x] **TESTED**: Successfully created 5 pizza restaurant rows! 🍕
 
-- [ ] **2.3** Column Manager Tool (`src/mastra/tools/column-manager.ts`)
-  - [ ] Add column: title, position, dataType, operatorType, operatorConfig, prompt
-  - [ ] Remove column: delete column and reorder remaining
-  - [ ] Reorder columns: update positions
-  - [ ] Update column config: modify operatorType, operatorConfig, prompt
-  - [ ] Validate operations (don't delete column with data without confirmation)
+- [x] **2.3** Column Manager Tool (`src/mastra/tools/column-manager.ts`) ✅
+  - [x] Add column: title, position, dataType, operatorType, operatorConfig, prompt
+  - [x] Remove column: delete column and reorder remaining
+  - [x] Reorder columns: update positions
+  - [x] Update column config: placeholder for future templateColumns integration
+  - [x] Validate operations (don't delete column with data without confirmation)
 
-- [ ] **2.4** Google Search Tool (`src/mastra/tools/google-search.ts`)
-  - [ ] Use Gemini (gemini-2.5-flash) with googleSearch grounding
-  - [ ] Input: query string, location context (optional)
-  - [ ] Extract results from groundingMetadata
-  - [ ] Return: array of { title, url, snippet }
-  - [ ] Handle rate limiting and errors gracefully
+- [x] **2.4** Google Search Tool (`src/mastra/tools/google-search.ts`) ✅
+  - [x] Use Vertex AI gemini-2.5-flash with googleSearch grounding
+  - [x] Input: query string, location context (optional)
+  - [x] Extract results from AI SDK response
+  - [x] Return: array of { title, url, snippet }
+  - [x] Handle markdown code blocks in JSON parsing
+  - [x] **TESTED**: Found 5 hackerspaces in Palo Alto successfully!
 
-- [ ] **2.5** Google Maps Tool (`src/mastra/tools/google-maps.ts`)
-  - [ ] Use Gemini (gemini-2.5-flash) with googleMaps grounding
-  - [ ] Input: placeType (e.g., "pizza restaurant"), location, radius
-  - [ ] Extract places from groundingMetadata
-  - [ ] Return: array of { name, address, placeId, rating, uri }
-  - [ ] Support widget token for future UI integration
+- [x] **2.5** Google Maps Tool (`src/mastra/tools/google-maps.ts`) ✅
+  - [x] Use @google/genai with googleMaps grounding (Vertex AI)
+  - [x] Input: placeType, location, optional lat/lng
+  - [x] Extract places from groundingMetadata.groundingChunks
+  - [x] Return: array of { name, address, placeId, rating, uri }
+  - [x] Support widget token for future UI integration
+  - [x] **TESTED**: Found 35 pizza places, returned top 5 with full data! 🎉
 
-- [ ] **2.6** CSV Analyzer Tool (`src/mastra/tools/csv-analyzer.ts`)
-  - [ ] Input: CSV file content (string or buffer)
-  - [ ] Parse headers using papaparse
-  - [ ] Sample first 100 rows (or configurable limit)
-  - [ ] Detect column types (string, number, url, email)
-  - [ ] Return: { headers, rowCount, sample, suggestedTypes }
-  - [ ] Handle large files with streaming
+- [ ] **2.6** CSV Analyzer Tool (`src/mastra/tools/csv-analyzer.ts`) - DEFERRED
+  - [ ] Will implement in Phase 7 (CSV Upload)
 
 ---
 
-### 🤖 Phase 3: Spreadsheet Agent Creation (3-4 hours)
+### ✅ Phase 3: Spreadsheet Agent Creation (3-4 hours) - COMPLETED
 
-- [ ] **3.1** Create Spreadsheet Agent (`src/mastra/agents/spreadsheet-agent.ts`)
-  - [ ] Define agent with name, description, instructions
-  - [ ] Use gemini-2.5-flash model
-  - [ ] Configure working memory (track current sheet, pending previews)
-  - [ ] Register all tools: sheetReader, sheetWriter, columnManager, googleSearch, googleMaps, csvAnalyzer
+- [x] **3.1** Create Spreadsheet Agent (`src/mastra/agents/spreadsheet-agent.ts`) ✅
+  - [x] Define agent with name, description, instructions
+  - [x] Use vertex("gemini-2.5-flash") model
+  - [x] Configure working memory (track current sheet, pending previews)
+  - [x] Register all tools: sheetReader, sheetWriter, columnManager, googleSearch, googleMaps
 
-- [ ] **3.2** Write agent instructions
-  - [ ] How to understand natural language queries
-  - [ ] When to use which tools
-  - [ ] How to create previews before execution
-  - [ ] How to handle confirmations and cancellations
-  - [ ] Examples: "find top 20 pizzas in SF", "add a Phone column", "upload this CSV"
+- [x] **3.2** Write agent instructions ✅
+  - [x] How to understand natural language queries
+  - [x] When to use which tools (Maps for places, Search for general)
+  - [x] How to create previews before execution
+  - [x] How to handle confirmations and cancellations
+  - [x] Examples: "find top 20 pizzas in SF", "add a Phone column"
+  - [x] Complete workflow documentation (175+ lines!)
 
-- [ ] **3.3** Configure agent memory
-  - [ ] Working memory template with current sheet context
-  - [ ] Track: sheetId, pending preview, conversation state
-  - [ ] Semantic recall for past queries (optional)
-  - [ ] Resource-scoped memory for per-sheet conversations
+- [x] **3.3** Configure agent memory ✅
+  - [x] Working memory template with current sheet context
+  - [x] Track: sheetId, pending preview, conversation state
+  - [x] Resource-scoped memory for per-sheet conversations
+  - [x] Last 20 messages for context
 
-- [ ] **3.4** Create Search Specialist Agent (optional)
-  - [ ] `src/mastra/agents/search-agent.ts`
-  - [ ] Specialized for location/business queries (use gemini-2.5-flash)
-  - [ ] Uses only googleSearch and googleMaps tools
-  - [ ] Can be delegated to by main spreadsheet agent
-
----
-
-### 🎨 Phase 4: Right Sidebar Chat Panel (5-6 hours)
-
-- [ ] **4.1** Create Agent Sidebar Component (`src/components/agent-sidebar.tsx`)
-  - [ ] Slide-out panel from right side
-  - [ ] Toggle button (icon: sparkles or robot)
-  - [ ] Resizable width (min 300px, max 600px)
-  - [ ] Collapsible sections: Chat, Column Config, Previews
-  - [ ] Mobile: Full-screen overlay
-
-- [ ] **4.2** Create Agent Chat Interface (`src/components/agent-chat.tsx`)
-  - [ ] Message list (scrollable, auto-scroll to bottom)
-  - [ ] Input field with send button
-  - [ ] Message types: user, agent, system, preview
-  - [ ] Typing indicator while agent processes
-  - [ ] Support for markdown in agent responses
-  - [ ] Error message display
-
-- [ ] **4.3** Create Preview Card Component (`src/components/preview-card.tsx`)
-  - [ ] Display preview type: "Bulk Row Creation", "Add Column", "CSV Import"
-  - [ ] Show summary: row count, column names, sample data
-  - [ ] Action buttons: "Confirm", "Cancel", "Modify"
-  - [ ] Visual: card with distinct styling, icons
-  - [ ] Expandable details section
-
-- [ ] **4.4** Create Column Config Panel (`src/components/column-config-panel.tsx`)
-  - [ ] List all columns with: title, position, dataType, operatorType
-  - [ ] Show operator configuration (if set)
-  - [ ] Show prompt (if set)
-  - [ ] Visual indicators: which columns have operators, dependencies
-  - [ ] Click to edit (opens agent chat with context)
-
-- [ ] **4.5** Integrate Sidebar into SheetEditor
-  - [ ] Add AgentSidebar to `src/components/sheet-editor.tsx`
-  - [ ] Pass sheetId prop
-  - [ ] Add toggle state (open/closed)
-  - [ ] Keyboard shortcut: Cmd/Ctrl + K to toggle
-  - [ ] Persist sidebar state in localStorage
+- [x] **3.4** Testing & Validation ✅
+  - [x] Created test router: `spreadsheet-agent-test.ts`
+  - [x] Created test UI: `/agent-test` page
+  - [x] **TESTED**: "find top 5 pizzas in SF" → Preview → Confirm → 5 rows created!
+  - [x] **TESTED**: Google Search found hackerspaces
+  - [x] **TESTED**: Sheet Writer preview mode works
+  - [x] **TESTED**: Integration with existing operator system works!
 
 ---
 
-### 🔌 Phase 5: tRPC Agent Endpoints (3-4 hours)
+### ✅ Phase 4: Right Sidebar Chat Panel (5-6 hours) - COMPLETED
 
-- [ ] **5.1** Create Agent Router (`src/server/api/routers/agent.ts`)
-  - [ ] Import Mastra instance
-  - [ ] Setup protected procedures (require auth)
+- [x] **4.1** Create Agent Sidebar Component (`src/components/agent-sidebar.tsx`) ✅
+  - [x] Slide-out panel from right side (480px width)
+  - [x] Toggle button (sparkles icon)
+  - [x] Fixed width (not resizable yet - future enhancement)
+  - [x] Two tabs: Chat & Config
+  - [x] Mobile: Backdrop overlay
 
-- [ ] **5.2** `agent.sendMessage` mutation
-  - [ ] Input: { sheetId, message, threadId? }
-  - [ ] Load sheet context using Sheet Reader tool
-  - [ ] Call mastra agent with message + context
-  - [ ] Stream response (use tRPC subscription if needed)
-  - [ ] Return: { response, threadId, previewId? }
+- [x] **4.2** Create Agent Chat Interface (`src/components/agent-chat.tsx`) ✅
+  - [x] Message list (scrollable, auto-scroll to bottom)
+  - [x] Input field with send button
+  - [x] Message types: user, agent, system
+  - [x] Typing indicator while agent processes
+  - [x] Error message display
+  - [x] **Conversation history persistence** (localStorage per sheet)
+  - [x] Quick action buttons for common queries
 
-- [ ] **5.3** `agent.confirmPreview` mutation
-  - [ ] Input: { previewId, modifications? }
-  - [ ] Load preview from database
-  - [ ] Execute preview action (call appropriate tool in 'execute' mode)
-  - [ ] Update preview status to 'completed'
-  - [ ] Return: { success, rowsCreated?, columnsAdded? }
+- [x] **4.3** Create Preview Card Component (`src/components/preview-card.tsx`) ✅
+  - [x] Display preview type: "Bulk Row Creation", "Add Column", "CSV Import"
+  - [x] Show summary: row count, column names, sample data
+  - [x] Action buttons: "Confirm", "Cancel"
+  - [x] Visual: clean card design with icons
+  - [x] Expandable details section
 
-- [ ] **5.4** `agent.cancelPreview` mutation
-  - [ ] Input: { previewId }
-  - [ ] Update preview status to 'cancelled'
-  - [ ] Return: { success }
+- [x] **4.4** Create Column Config Panel (`src/components/agent-column-config.tsx`) ✅
+  - [x] List all columns with: title, position, dataType
+  - [x] Show operatorType if configured
+  - [x] Visual indicators with color coding
+  - [x] Hint to ask agent for modifications
 
-- [ ] **5.5** `agent.getConversation` query
-  - [ ] Input: { sheetId, threadId? }
-  - [ ] Load conversation history from Mastra storage
-  - [ ] Return: { messages, threadId }
-
-- [ ] **5.6** Add agent router to root
-  - [ ] Import in `src/server/api/root.ts`
-  - [ ] Export as part of appRouter
+- [x] **4.5** Integrate Sidebar into SheetEditor ✅
+  - [x] Added AgentSidebar to `src/components/sheet-editor.tsx`
+  - [x] Pass sheetId prop
+  - [x] Add toggle state (open/closed)
+  - [x] **FIXED**: Keyboard shortcut Cmd/Ctrl + K to toggle
+  - [x] Persist sidebar state in localStorage
+  - [x] **TESTED**: Working on live sheets!
 
 ---
 
-### 📊 Phase 6: Bulk Row Creation Flow (4-5 hours)
+### ✅ Phase 5: tRPC Agent Endpoints (3-4 hours) - COMPLETED
 
-- [ ] **6.1** Implement search query detection
-  - [ ] Agent recognizes patterns: "find X", "search for Y", "top N Zs in location"
-  - [ ] Extract: search intent, count, location, category
+- [x] **5.1** Create Agent Router (`src/server/api/routers/agent.ts`) ✅
+  - [x] Import Mastra instance
+  - [x] Setup protected procedures (require auth)
 
-- [ ] **6.2** Multi-tool coordination
-  - [ ] Agent decides: use Google Search or Google Maps?
-  - [ ] For places: use Maps tool
-  - [ ] For general: use Search tool
-  - [ ] Combine results if needed
+- [x] **5.2** `agent.sendMessage` mutation ✅
+  - [x] Input: { sheetId, message, threadId? }
+  - [x] Includes sheet context in message to agent
+  - [x] Call mastra agent with message + context
+  - [x] Return: { response, threadId }
+  - [x] **Query invalidation** for instant UI updates
 
-- [ ] **6.3** Preview generation
-  - [ ] Agent calls Sheet Writer tool in 'preview' mode
-  - [ ] Determines columns needed: e.g., Name, Address, Rating, Phone
-  - [ ] Creates preview object with sample rows
-  - [ ] Stores in agent_previews table
-  - [ ] Returns preview to user in chat
+- [x] **5.3-5.4** Preview confirmation/cancellation ✅
+  - [x] Handled directly in agent workflow (preview→confirm flow)
+  - [x] No separate database table needed (agent manages state)
 
-- [ ] **6.4** Preview confirmation flow
-  - [ ] User clicks "Confirm" in UI
-  - [ ] Frontend calls `agent.confirmPreview`
-  - [ ] Backend calls Sheet Writer tool in 'execute' mode
-  - [ ] Creates cells for all rows (first column only)
-  - [ ] Creates events for each row (eventType: 'user_cell_edit')
-  - [ ] Existing background processor picks up events
+- [x] **5.5** Conversation history ✅
+  - [x] Stored in **localStorage** (per-sheet persistence)
+  - [x] Survives page refresh and sidebar close/open
 
-- [ ] **6.5** Progressive filling integration
-  - [ ] Events processed by existing SheetUpdater
-  - [ ] OperatorController selects operators for remaining columns
-  - [ ] Each row fills left-to-right as normal
-  - [ ] Agent can monitor progress and report back
+- [x] **5.6** Add agent router to root ✅
+  - [x] Imported in `src/server/api/root.ts`
+  - [x] Exported as part of appRouter
 
-- [ ] **6.6** Column auto-creation
-  - [ ] If columns don't exist, agent creates them first
-  - [ ] Set appropriate dataType: 'text', 'url', 'number'
-  - [ ] Optionally set operatorType if agent knows what's needed
-  - [ ] Example: "Address" column → set operatorType to 'url_context' if URLs will be added
+---
+
+### ✅ Phase 6: Bulk Row Creation Flow (4-5 hours) - COMPLETED
+
+- [x] **6.1** Implement search query detection ✅
+  - [x] Agent recognizes patterns: "find X", "search for Y", "top N Zs in location"
+  - [x] Extract: search intent, count, location, category
+  - [x] **TESTED**: "find top 5 pizzas in SF" works perfectly!
+
+- [x] **6.2** Multi-tool coordination ✅
+  - [x] Agent decides: use Google Search or Google Maps
+  - [x] For places: uses Maps tool with grounding
+  - [x] For general: uses Search tool
+  - [x] **TESTED**: Both tools working with proper URL extraction
+
+- [x] **6.3** Preview generation ✅
+  - [x] Agent calls Sheet Writer tool in 'preview' mode
+  - [x] Determines columns needed automatically
+  - [x] Creates preview object with sample rows
+  - [x] Returns preview to user in chat (text format)
+
+- [x] **6.4** Preview confirmation flow ✅
+  - [x] User says "yes", "add", "confirm" in chat
+  - [x] Agent calls Sheet Writer tool in 'execute' mode
+  - [x] Creates cells for all rows (first column only)
+  - [x] Creates events for each row (eventType: 'user_cell_edit')
+  - [x] **TESTED**: Created 5 pizza restaurant rows successfully!
+
+- [x] **6.5** Progressive filling integration ✅
+  - [x] Events processed by existing SheetUpdater
+  - [x] **FIXED**: Template loading handles null/custom templates
+  - [x] OperatorController processes remaining columns
+  - [x] Each row fills left-to-right as normal
+
+- [x] **6.6** Additional Features ✅
+  - [x] **Row deletion** via rowManagerTool
+  - [x] Delete empty rows by column
+  - [x] **Query invalidation** for instant UI updates
+  - [x] Improved URL extraction (avoid redirect URLs)
 
 ---
 

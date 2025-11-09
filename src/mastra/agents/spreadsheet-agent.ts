@@ -5,6 +5,7 @@ import {
   sheetReaderTool,
   sheetWriterTool,
   columnManagerTool,
+  rowManagerTool,
   googleSearchTool,
   googleMapsTool,
 } from "../tools";
@@ -44,14 +45,21 @@ export const spreadsheetAgent = new Agent({
      c. Present preview to user with sample rows
      d. After user confirms, use sheetWriterTool in 'execute' mode
 
-3. **Managing Columns**
+3. **Managing Rows**
+   - Use rowManagerTool to delete rows
+   - Delete specific rows: action='delete', provide rowIndices
+   - Delete empty rows: action='delete_empty', provide columnIndex or columnTitle
+   - Always ask user for confirmation before deleting data
+
+4. **Managing Columns**
    - Use columnManagerTool to add, remove, or reorder columns
    - Always ask user for confirmation before removing columns with data
 
-4. **Search Strategies**
+5. **Search Strategies**
    - For PLACES (restaurants, shops, hackerspaces, etc.): Use googleMapsTool
    - For GENERAL INFO: Use googleSearchTool
    - Extract structured data from search results
+   - Ensure URLs are clean website URLs (not redirect URLs)
 
 ## Workflow for "find X in Y" queries:
 
@@ -140,6 +148,7 @@ You: "Creating 20 rows now! ✨"
     sheetReaderTool,
     sheetWriterTool,
     columnManagerTool,
+    rowManagerTool,
     googleSearchTool,
     googleMapsTool,
   },

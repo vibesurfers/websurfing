@@ -52,18 +52,23 @@ Return the top ${maxResults} most relevant results in this exact JSON format:
 {
   "results": [
     {
-      "title": "Result title",
+      "title": "Company/Business Name",
       "url": "https://example.com",
-      "snippet": "Brief description or snippet"
+      "snippet": "Brief description"
     }
   ]
 }
 
+IMPORTANT URL INSTRUCTIONS:
+- Extract the ACTUAL website URL (e.g., "https://n-ix.com", "https://devsdata.com")
+- DO NOT include redirect URLs or grounding-api-redirect URLs
+- Use the main domain from the search result
+- If you see a redirect URL, extract the actual destination domain
+
 Focus on:
-- Business listings with addresses if searching for places
-- Most recent and relevant results
-- Include full URLs
-- Provide descriptive snippets`,
+- Clean, direct website URLs only
+- Business listings with full information
+- Most recent and relevant results`,
       });
 
       console.log(`[Google Search] Raw response:`, result.text);

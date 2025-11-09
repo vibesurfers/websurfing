@@ -52,6 +52,7 @@
     "compute-cosine-similarity": "^1.1.0",
     "drizzle-orm": "^0.41.0",
     "gcloud": "^0.37.2",
+    "lucide-react": "^0.553.0",
     "next": "^15.2.3",
     "next-auth": "5.0.0-beta.25",
     "postgres": "^3.4.4",
