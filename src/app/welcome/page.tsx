@@ -1,6 +1,7 @@
 import { HydrateClient } from "@/trpc/server";
-import { auth, signIn } from "@/server/auth";
+import { auth, signIn, signOut } from "@/server/auth";
 import { WelcomeFlow } from "@/components/welcome-flow";
+import { AppLayout } from "@/components/layout/app-layout";
 import Image from "next/image";
 import { headers } from "next/headers";
 
@@ -77,7 +78,15 @@ export default async function WelcomePage() {
 
   return (
     <HydrateClient>
-      <WelcomeFlow />
+      <AppLayout
+        user={session.user}
+        onSignOut={async () => {
+          "use server";
+          await signOut();
+        }}
+      >
+        <WelcomeFlow />
+      </AppLayout>
     </HydrateClient>
   );
 }

@@ -59,6 +59,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "compute-cosine-similarity": "^1.1.0",
+    "date-fns": "^4.1.0",
     "drizzle-orm": "^0.41.0",
     "gcloud": "^0.37.2",
     "lucide-react": "^0.553.0",
