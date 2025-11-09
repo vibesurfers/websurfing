@@ -3,10 +3,12 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { SignInModal } from "./sign-in-modal";
 
 export function MarketingHomepage() {
   const router = useRouter();
   const [activeExample, setActiveExample] = useState<'search' | 'url' | 'structured'>('search');
+  const [showSignIn, setShowSignIn] = useState(false);
 
   const examples = {
     search: {
