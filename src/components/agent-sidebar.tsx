@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Sparkles, X, ChevronRight, Settings } from "lucide-react";
 import { AgentChat } from "./agent-chat";
-import { EditableColumnConfig } from "./editable-column-config";
+import { AdvancedColumnConfigPanel } from "./advanced-column-config-panel";
 
 interface AgentSidebarProps {
   sheetId: string;
@@ -120,13 +120,13 @@ export function AgentSidebar({ sheetId, isOpen: controlledIsOpen, onToggle }: Ag
 
           {activeTab === "config" && (
             <div className="p-4 h-full overflow-y-auto">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                Operator Settings
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                Column Configuration
               </h3>
               <p className="text-xs text-gray-600 mb-4">
-                Customize how AI processes each column
+                Customize AI operators, prompts, and dependencies
               </p>
-              <EditableColumnConfig sheetId={sheetId} />
+              <AdvancedColumnConfigPanel sheetId={sheetId} />
             </div>
           )}
         </div>

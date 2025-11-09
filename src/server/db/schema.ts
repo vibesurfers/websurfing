@@ -256,6 +256,11 @@ export const columns = createTable(
     operatorType: d.varchar({ length: 50 }), // 'google_search', 'url_context', 'structured_output', 'function_calling'
     operatorConfig: d.jsonb(), // Operator-specific settings
     prompt: d.text(), // Custom prompt for this column's operator
+    // Advanced configuration (matching templateColumns)
+    dependencies: d.jsonb(), // Array of column positions this depends on [0, 1, 2]
+    validationRules: d.jsonb(), // JSON schema for validation
+    isRequired: d.boolean().default(false), // Whether column must have value
+    defaultValue: d.text(), // Default value if operator returns empty
     createdAt: d.timestamp({ withTimezone: true }).defaultNow(),
     updatedAt: d.timestamp({ withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
   }),
