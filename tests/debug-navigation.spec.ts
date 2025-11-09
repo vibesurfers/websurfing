@@ -10,98 +10,54 @@ test.describe('Debug Navigation', () => {
     });
   });
 
-  test('debug current page state', async ({ page }) => {
-    // Try navigating directly to root
-    await page.goto('http://localhost:3000/');
-    await page.waitForTimeout(3000);
+  test('Debug ALL TEMPLATES button click', async ({ page }) => {
+    // Go to the new template page
+    await page.goto('http://localhost:3003/templates/new');
 
-    console.log('After goto root URL:', page.url());
-    const h1Text = await page.locator('h1').first().textContent();
-    console.log('H1 Text:', h1Text);
+    // Wait for page to load
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('h1:has-text("Create New Template")')).toBeVisible({ timeout: 15000 });
 
-    // Check if we have sheets listed on the welcome page
-    const hasWebsets = await page.locator('text=🌊 Your Websets').isVisible();
-    const hasCreateWebset = await page.locator('text=🏄 Catch a Wave').isVisible();
+    // Fill template name
+    const templateName = `Debug Template ${Date.now()}`;
+    await page.fill('[placeholder="e.g., LinkedIn Lead Finder"]', templateName);
 
-    console.log('Has "🌊 Your Websets" section:', hasWebsets);
-    console.log('Has "🏄 Catch a Wave" section:', hasCreateWebset);
+    // Add a test column
+    await page.click('button:has-text("🎨 Visual")');
+    await page.click('button:has-text("+ Add Column")');
 
-    // Print page content for debugging
-    const pageContent = await page.content();
-    console.log('Page contains "Websets":', pageContent.includes('Websets'));
-    console.log('Page contains "Catch":', pageContent.includes('Catch'));
+    // Wait for buttons to appear and take a screenshot
+    await expect(page.locator('button:has-text("ALL TEMPLATES")')).toBeVisible({ timeout: 5000 });
+    await page.screenshot({ path: 'before-click.png' });
 
-    // Look for any h2 elements
-    const h2Elements = await page.locator('h2').allTextContents();
-    console.log('H2 elements:', h2Elements);
+    // Log current URL
+    console.log('URL before click:', page.url());
 
-    // If we're on welcome page, check for existing sheets
-    if (hasWebsets) {
-      // Look for sheet buttons more broadly
-      const sheetButtons = page.locator('[class*="bg-gray-50 hover:bg-blue-50"]').or(
-        page.locator('button').filter({ hasText: /sheet|webset/i })
-      );
-      const sheetCount = await sheetButtons.count();
-      console.log('Sheet buttons found:', sheetCount);
+    // Listen for navigation events
+    page.on('framenavigated', (frame) => {
+      console.log('Frame navigated to:', frame.url());
+    });
 
-      if (sheetCount > 0) {
-        console.log('Found existing sheet, clicking...');
-        await sheetButtons.first().click();
-        await page.waitForTimeout(2000);
-        console.log('After click URL:', page.url());
+    // Click ALL TEMPLATES button with debug info
+    const button = page.locator('button:has-text("ALL TEMPLATES")');
+    await expect(button).toBeEnabled();
 
-        const hasTipTap = await page.locator('.ProseMirror').isVisible();
-        console.log('TipTap visible after navigation:', hasTipTap);
-      }
-    }
+    console.log('Clicking ALL TEMPLATES button...');
+    await button.click();
 
-    // Try creating a sheet if we're still on welcome
-    if (hasCreateWebset) {
-      const templateButtons = page.locator('button').filter({ hasText: /🔥|📊|🧬/ });
-      const templateCount = await templateButtons.count();
-      console.log('Template buttons found:', templateCount);
-
-      if (templateCount > 0) {
-        console.log('Clicking template button...');
-        await templateButtons.first().click();
-        await page.waitForTimeout(3000);
-        console.log('After template click URL:', page.url());
-
-        const hasTipTap = await page.locator('.ProseMirror').isVisible();
-        console.log('TipTap visible after creating sheet:', hasTipTap);
-      }
-    }
-  });
-
-  test('try creating new sheet', async ({ page }) => {
-    await page.goto('http://localhost:3000');
+    // Wait a moment and check URL
     await page.waitForTimeout(2000);
+    console.log('URL after click:', page.url());
 
-    // Try to create a new sheet
-    const templateButtons = page.locator('button').filter({ hasText: /Lucky|Marketing|Scientific/ });
-    const buttonCount = await templateButtons.count();
-    console.log('Template buttons found:', buttonCount);
+    // Take screenshot after click
+    await page.screenshot({ path: 'after-click.png' });
 
-    if (buttonCount > 0) {
-      console.log('Clicking first template button...');
-      await templateButtons.first().click();
-      await page.waitForTimeout(3000);
-
-      console.log('After template click URL:', page.url());
-      const hasTipTap = await page.locator('.ProseMirror').isVisible();
-      console.log('TipTap visible after creating sheet:', hasTipTap);
-
-      if (hasTipTap) {
-        // Check for add column button
-        const addColumnButton = page.locator('div').filter({ hasText: '+' }).first();
-        const addColumnVisible = await addColumnButton.isVisible();
-        console.log('Add column button visible:', addColumnVisible);
-
-        if (addColumnVisible) {
-          const addColumnBox = await addColumnButton.boundingBox();
-          console.log('Add column button position:', addColumnBox);
-        }
-      }
+    // Try waiting for navigation
+    try {
+      await page.waitForURL('**/templates', { timeout: 5000 });
+      console.log('Successfully navigated to templates page');
+    } catch (e) {
+      console.log('Navigation did not occur:', e);
     }
   });
 });

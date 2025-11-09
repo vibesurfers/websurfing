@@ -1,0 +1,46 @@
+Based on the documentation analysis, here are the database insert patterns in `sheet-updater.ts`:
+
+## Database Operations in sheet-updater.ts
+
+**1. Sheet Metadata Query (line 51)**
+```sql
+SELECT * FROM sheets WHERE id = ? LIMIT 1
+```
+
+**2. Columns Query (line 76)**  
+```sql
+SELECT * FROM columns WHERE sheetId = ? ORDER BY position
+```
+
+**3. Cell Data Query (line 81)**
+```sql
+SELECT * FROM cells WHERE sheetId = ? AND rowIndex = ?
+```
+
+**4. Cell Insert/Update (lines 210-213)**
+```sql
+INSERT INTO cells (sheetId, userId, rowIndex, colIndex, content)
+VALUES (?, ?, ?, ?, ?)
+ON CONFLICT (sheetId, userId, rowIndex, colIndex)
+DO UPDATE SET content = ?, updatedAt = ?
+```
+
+**5. Sheet Updates Audit (line 218)**
+```sql
+INSERT INTO sheetUpdates (sheetId, userId, rowIndex, colIndex, content, updateType, appliedAt)
+VALUES (?, ?, ?, ?, ?, 'ai_response', ?)
+```
+
+**6. Event Queue Insert (line 224)**
+```sql
+INSERT INTO eventQueue (sheetId, userId, eventType, payload, status)
+VALUES (?, ?, 'robot_cell_update', ?, 'pending')
+```
+
+**7. Event Status Updates (lines 277, 286)**
+```sql
+UPDATE eventQueue SET status = 'processing' WHERE id IN (?)
+UPDATE eventQueue SET status = 'completed', processedAt = NOW() WHERE id = ?
+```
+
+Main tables: `sheets`, `columns`, `cells`, `sheetUpdates`, `eventQueue`

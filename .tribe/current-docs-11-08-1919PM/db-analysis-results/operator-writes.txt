@@ -1,0 +1,29 @@
+Based on the analysis of the CODEBASE_SUMMARY.MD file, here's the **writeToNextColumn data flow and database operations** with line numbers:
+
+## writeToNextColumn Data Flow
+
+**File**: `src/server/operators/column-aware-wrapper.ts:128-175`
+
+### Database Operations Sequence:
+
+1. **DB Operation 6**: `INSERT/UPDATE cells` - rowIndex=0, colIndex=1
+2. **DB Operation 7**: `INSERT sheetUpdates` - audit trail  
+3. **DB Operation 8**: `INSERT eventQueue` - robot_cell_update for next column
+
+### Flow Breakdown:
+
+**Line 89**: `writeToNextColumn` called with `nextColIndex = ctx.currentColumnIndex + 1`
+
+**Lines 128-175**: 
+- Extracts result content (e.g., "https://squarespace.com")
+- Writes to next column position
+- Creates audit trail in `websurfing_sheet_updates` table
+- Queues next column processing event
+
+### Database Tables Updated:
+
+1. **`websurfing_cell`** - stores actual cell content
+2. **`websurfing_sheet_updates`** - tracks all changes for audit
+3. **`websurfing_event_queue`** - triggers next column processing
+
+**Transaction scope**: Uses `db.transaction()` for atomic operations (operator-controller.ts:19-44)
