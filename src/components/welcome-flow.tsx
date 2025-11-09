@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { COLUMN_TEMPLATES, type TemplateType, getDefaultSheetName } from "@/server/templates/column-templates";
 
 export function WelcomeFlow() {
@@ -50,24 +51,39 @@ export function WelcomeFlow() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-8">
+    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-100 flex items-center justify-center p-8">
       <div className="max-w-4xl w-full bg-white rounded-2xl shadow-xl p-8 space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Welcome to VibeSurfing
-          </h1>
-          <p className="text-gray-600">
-            Search the internet using spreadsheets powered by AI
-          </p>
+        <div className="text-center space-y-6">
+          <div className="flex justify-center">
+            <Image
+              src="/logo.png"
+              alt="VibeSurfing - Vibe the Web"
+              width={300}
+              height={300}
+              priority
+              className="rounded-lg"
+            />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-3">
+              Vibe the Web
+            </h1>
+            <p className="text-lg text-gray-700 mb-2">
+              Ride the waves of information with websets
+            </p>
+            <p className="text-gray-600">
+              AI-powered spreadsheets that surf the internet for you
+            </p>
+          </div>
         </div>
 
         <div className="space-y-6">
-          <div className="border-2 border-gray-200 rounded-xl p-6 hover:border-blue-400 transition-colors">
+          <div className="border-2 border-cyan-200 rounded-xl p-6 hover:border-cyan-400 transition-colors bg-gradient-to-br from-white to-cyan-50/30">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-              📋 Create New Sheet from Template
+              🏄 Catch a Wave - Start a New Webset
             </h2>
             <p className="text-gray-600 mb-6">
-              Start with a pre-configured template optimized for specific research tasks
+              Pick your vibe and let AI surf the web for you
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -116,12 +132,12 @@ export function WelcomeFlow() {
             </div>
           </div>
 
-          <div className="border-2 border-gray-200 rounded-xl p-6 hover:border-green-400 transition-colors">
+          <div className="border-2 border-blue-200 rounded-xl p-6 hover:border-blue-400 transition-colors bg-gradient-to-br from-white to-blue-50/30">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-              📂 Open Existing Sheet
+              🌊 Your Websets
             </h2>
             <p className="text-gray-600 mb-4">
-              Continue working on a sheet you&apos;ve already created
+              Jump back into your saved websets and keep vibing
             </p>
 
             {sheets && sheets.length > 0 ? (
@@ -156,7 +172,7 @@ export function WelcomeFlow() {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
-                <p>No sheets yet. Create your first one above!</p>
+                <p>No websets yet. Catch your first wave above!</p>
               </div>
             )}
           </div>
