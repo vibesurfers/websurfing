@@ -346,22 +346,12 @@ this.operators.set("my_operator", new MyCustomOperator());
 
 ## 👥 Team Vibesurfers
 
-- **Maksym** - Architecture, Gemini integration, backend
-- [Add team members]
+- **Maksym** - Gemini integration, Mastra Agent integration, deployment
+- **Alex** - Spreadsheet component
 
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE)
 
-## 🙏 Acknowledgments
 
-- Anthropic for Claude (used for code generation during development)
-- Vercel for Next.js and hosting
-- Google for Gemini API and Vertex AI
-- Cerebral Valley for organizing the hackathon
-
----
-
-**Built with ❤️ and Gemini 2.5 Flash at the 2025 Google Vibe Coding Hackathon**
-
-[View Demo]() | [Watch Video]() | [GitHub](https://github.com/vibesurfers/vibesheets)
+[View Demo]() | [Watch Video]() | [GitHub](https://github.com/vibesurfers/websurfing)
