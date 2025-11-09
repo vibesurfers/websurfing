@@ -61,10 +61,6 @@ export default function VideoPage() {
             </div>
           </div>
         </div>
-
-        <p className="text-center text-gray-600 mt-4">
-          Click to join video call
-        </p>
       </div>
     </div>
   );
