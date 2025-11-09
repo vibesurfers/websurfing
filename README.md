@@ -1,6 +1,6 @@
 # VibeSheets 🚀
 
-**Team Vibesurfers** | Google Vibe Coding Hackathon 2025
+**Team Vibesurfers** | YC Vibe Coding Hackathon 2025
 
 > A natural language-powered spreadsheet that transforms cells into AI agents. Type, ask, automate - let Gemini do the work.
 
