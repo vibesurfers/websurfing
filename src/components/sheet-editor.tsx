@@ -37,7 +37,6 @@ export function SheetEditor({ sheetId, showTemplatePrompt }: SheetEditorProps) {
   const [treatRobotsAsHumans, setTreatRobotsAsHumans] = useState(true);
   const [showTemplatePromptBanner, setShowTemplatePromptBanner] = useState(showTemplatePrompt);
 
-  const { data: sheets } = api.sheet.list.useQuery();
 
   const { error: authError, isLoading } = api.cell.getEvents.useQuery(
     { sheetId },
