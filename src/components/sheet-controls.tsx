@@ -28,7 +28,7 @@ export function SheetControls({
   isProcessing = false
 }: SheetControlsProps) {
   return (
-    <div className="fixed bottom-0 left-[var(--sidebar-width)] right-0 bg-white border-t border-gray-300 shadow-lg z-40">
+    <div className="fixed bottom-0 left-[var(--sidebar-width)] right-[var(--agent-panel-width)] bg-white border-t border-gray-300 shadow-lg z-40">
       <div className="px-4 py-3 space-y-3">
         {/* Action Buttons */}
         <div className="flex gap-2 flex-wrap">

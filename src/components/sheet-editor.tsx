@@ -49,14 +49,6 @@ export function SheetEditor({ sheetId, appUrl }: SheetEditorProps) {
   const [pendingUpdates, setPendingUpdates] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [treatRobotsAsHumans, setTreatRobotsAsHumans] = useState(true);
-  const [agentSidebarOpen, setAgentSidebarOpen] = useState(() => {
-    // Load from localStorage
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('agentSidebarOpen');
-      return saved === 'true';
-    }
-    return false;
-  });
 
   // Title editing state
   const [editingTitle, setEditingTitle] = useState(false);
@@ -68,13 +60,6 @@ export function SheetEditor({ sheetId, appUrl }: SheetEditorProps) {
 
   // Processing state for sticky panel
   const [isProcessingEvents, setIsProcessingEvents] = useState(false);
-
-  // Persist sidebar state to localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('agentSidebarOpen', String(agentSidebarOpen));
-    }
-  }, [agentSidebarOpen]);
 
   const { data: sheets } = api.sheet.list.useQuery();
 
@@ -367,12 +352,8 @@ export function SheetEditor({ sheetId, appUrl }: SheetEditorProps) {
         </div>
       </main>
 
-      {/* Agent Sidebar */}
-      <AgentSidebar
-        sheetId={sheetId}
-        isOpen={agentSidebarOpen}
-        onToggle={setAgentSidebarOpen}
-      />
+      {/* Agent Sidebar - Always Visible */}
+      <AgentSidebar sheetId={sheetId} />
 
       {/* Sticky Bottom Control Panel */}
       <SheetControls
