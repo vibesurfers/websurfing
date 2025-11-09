@@ -9,6 +9,7 @@
 
 import { getGeminiClient } from "@/server/gemini/client";
 import { DEFAULT_MODEL, MAX_URLS_PER_REQUEST } from "@/server/gemini/config";
+import { resolveRedirectUrls } from "@/server/utils/url-resolver";
 import type {
   URLContextInput,
   URLContextOutput,
@@ -60,21 +61,26 @@ export class URLContextEnrichmentOperator
       );
     }
 
+    // Resolve redirect URLs to final destinations
+    console.log(`[URL Context] Resolving ${input.urls.length} URLs...`);
+    const resolvedUrls = await resolveRedirectUrls(input.urls);
+    console.log(`[URL Context] Resolved URLs:`, resolvedUrls);
+
     // Validate URLs
-    this.validateUrls(input.urls);
+    this.validateUrls(resolvedUrls);
 
     try {
       // Build prompt
       const prompt = input.extractionPrompt
-        ? `${input.extractionPrompt}\n\nURLs to analyze: ${input.urls.join(", ")}`
-        : `Please extract and summarize the content from the following URLs: ${input.urls.join(", ")}`;
+        ? `${input.extractionPrompt}\n\nURLs to analyze: ${resolvedUrls.join(", ")}`
+        : `Please extract and summarize the content from the following URLs: ${resolvedUrls.join(", ")}`;
 
       // Configure URL Context tool
       const config = {
         tools: [{ urlContext: {} }],
       };
 
-      // Call Gemini with URL context
+      // Call Gemini with URL context (using resolved URLs)
       const response = await client.models.generateContent({
         model: DEFAULT_MODEL,
         contents: prompt,

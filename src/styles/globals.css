@@ -4,3 +4,51 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
+
+/* Cell Processing Indicators */
+.cell-processing {
+  position: relative;
+  background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 50%, #eff6ff 100%) !important;
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.cell-processing::after {
+  content: attr(data-status-message);
+  position: absolute;
+  bottom: 2px;
+  right: 4px;
+  font-size: 10px;
+  color: #3b82f6;
+  font-weight: 500;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.cell-completed {
+  background-color: #d1fae5 !important;
+  transition: background-color 0.5s ease-out;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Spinner for processing cells */
+.cell-processing::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #3b82f6;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

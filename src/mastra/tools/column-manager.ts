@@ -1,8 +1,8 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
 import { db } from "@/server/db";
-import { columns, cells } from "@/server/db/schema";
-import { eq, and, gte } from "drizzle-orm";
+import { columns, cells, eventQueue } from "@/server/db/schema";
+import { eq, and, gte, sql } from "drizzle-orm";
 
 /**
  * Column Manager Tool
@@ -26,6 +26,8 @@ export const columnManagerTool = createTool({
     title: z.string().optional().describe("Column title (required for 'add')"),
     position: z.number().optional().describe("Position to insert column (required for 'add', 'reorder')"),
     dataType: z.string().optional().default("text").describe("Data type: text, url, email, number, json"),
+    processExistingRows: z.boolean().optional().default(true).describe("If true, triggers processing for all existing rows in the new column"),
+    userId: z.string().optional().describe("User ID (required for creating events)"),
 
     // For REMOVE action
     columnId: z.string().uuid().optional().describe("Column ID to remove (required for 'remove', 'update')"),
@@ -56,7 +58,7 @@ export const columnManagerTool = createTool({
 
       switch (action) {
         case "add": {
-          const { title, position, dataType } = context;
+          const { title, position, dataType, processExistingRows, userId } = context;
 
           if (!title) {
             return {
@@ -66,28 +68,29 @@ export const columnManagerTool = createTool({
             };
           }
 
+          // Get current columns to determine position
+          const existingCols = await db
+            .select({ position: columns.position })
+            .from(columns)
+            .where(eq(columns.sheetId, sheetId))
+            .orderBy(columns.position);
+
           // Get current max position if position not specified
           let insertPosition = position;
           if (insertPosition === undefined) {
-            const existingCols = await db
-              .select({ position: columns.position })
-              .from(columns)
-              .where(eq(columns.sheetId, sheetId))
-              .orderBy(columns.position);
-
             insertPosition = existingCols.length > 0
               ? Math.max(...existingCols.map(c => c.position)) + 1
               : 0;
           }
 
           // Shift existing columns if inserting in middle
-          if (position !== undefined && position < insertPosition) {
+          if (position !== undefined && insertPosition < existingCols.length) {
             await db
               .update(columns)
-              .set({ position: db.raw(`position + 1`) })
+              .set({ position: sql`${columns.position} + 1` })
               .where(and(
                 eq(columns.sheetId, sheetId),
-                gte(columns.position, position)
+                gte(columns.position, insertPosition)
               ));
           }
 
@@ -104,13 +107,46 @@ export const columnManagerTool = createTool({
 
           console.log(`[Column Manager] Added column "${title}" at position ${insertPosition}`);
 
+          // If processExistingRows is true, create events for all existing rows
+          let eventsCreated = 0;
+          if (processExistingRows && userId && insertPosition > 0) {
+            // Get all unique row indices in this sheet
+            const existingRows = await db
+              .selectDistinct({ rowIndex: cells.rowIndex })
+              .from(cells)
+              .where(eq(cells.sheetId, sheetId));
+
+            console.log(`[Column Manager] Found ${existingRows.length} existing rows to process`);
+
+            // Create events for the PREVIOUS column (which will trigger filling THIS new column)
+            const prevColumnIndex = insertPosition - 1;
+            const eventsToCreate = existingRows.map(row => ({
+              sheetId,
+              userId,
+              eventType: "robot_cell_update" as const,
+              payload: {
+                spreadsheetId: sheetId,
+                rowIndex: row.rowIndex,
+                colIndex: prevColumnIndex,
+                content: "trigger", // Dummy content to trigger processing
+              },
+              status: "pending" as const,
+            }));
+
+            if (eventsToCreate.length > 0) {
+              await db.insert(eventQueue).values(eventsToCreate);
+              eventsCreated = eventsToCreate.length;
+              console.log(`[Column Manager] Created ${eventsCreated} events to fill new column`);
+            }
+          }
+
           return {
             success: true,
             action: "add",
             columnId: newColumn?.id,
             columnTitle: newColumn?.title || title,
             position: newColumn?.position,
-            message: `Added column "${title}" at position ${insertPosition}`,
+            message: `Added column "${title}" at position ${insertPosition}${eventsCreated > 0 ? `. Queued ${eventsCreated} events to fill this column for existing rows.` : ''}`,
           };
         }
 
