@@ -3,6 +3,7 @@ import { cellRouter } from "@/server/api/routers/cell";
 import { sheetRouter } from "@/server/api/routers/sheet";
 import { adminRouter } from "@/server/api/routers/admin";
 import { templateRouter } from "@/server/api/routers/template";
+import { mastraTestRouter } from "@/server/api/routers/mastra-test";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 /**
@@ -16,6 +17,7 @@ export const appRouter = createTRPCRouter({
   sheet: sheetRouter,
   admin: adminRouter,
   template: templateRouter,
+  mastraTest: mastraTestRouter,
 });
 
 // export type definition of API

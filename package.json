@@ -29,8 +29,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.29",
+    "@ai-sdk/google-vertex": "^3.0.60",
     "@auth/drizzle-adapter": "^1.7.2",
     "@google/genai": "^1.29.0",
+    "@mastra/core": "^0.24.0",
+    "@mastra/loggers": "^0.10.19",
+    "@mastra/memory": "^0.15.11",
+    "@mastra/pg": "^0.17.8",
     "@t3-oss/env-nextjs": "^0.12.0",
     "@tanstack/react-query": "^5.69.0",
     "@tiptap/extension-table": "^3.10.4",
