@@ -13,6 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSkeleton,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -74,18 +75,21 @@ export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center gap-2">
-          <Image
-            src="/logo.png"
-            alt="VibeSurfing"
-            width={32}
-            height={32}
-            className="rounded"
-          />
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold">VibeSurfing</span>
-            <span className="text-xs text-muted-foreground">Vibe the Web</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo.png"
+              alt="VibeSurfing"
+              width={32}
+              height={32}
+              className="rounded"
+            />
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold">VibeSurfing</span>
+              <span className="text-xs text-muted-foreground">Vibe the Web</span>
+            </div>
           </div>
+          <SidebarTrigger className="-mr-1" />
         </div>
       </SidebarHeader>
 
