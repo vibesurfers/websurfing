@@ -1,0 +1,6 @@
+- [] create /mastra-test/page.tsx and make the mastra agent work in the browser
+- [] run the test
+- [] deploy to prod
+- [] create a function/mcp/tool that will add rows to spreadsheets
+- [] add a tool that will find new 
+- []
