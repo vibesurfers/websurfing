@@ -281,13 +281,31 @@ export default function TemplatesPage() {
             )}
             </>
           ) : (
-            <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-              <p className="text-gray-500 mb-4">No templates yet</p>
-              <Button
-                onClick={() => router.push('/templates/new')}
-              >
-                Create Your First Template
-              </Button>
+            <div className="text-center py-16 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 shadow-sm">
+              <div className="max-w-md mx-auto">
+                <div className="mb-6">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-3xl">✨</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    Create your first template
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    Templates help you quickly set up structured data collection workflows.
+                    Start by creating your first template to streamline your research process.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => router.push('/templates/new')}
+                  size="lg"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  ✨ Create New Template
+                </Button>
+                <p className="text-sm text-gray-500 mt-4">
+                  Get started in under a minute
+                </p>
+              </div>
             </div>
           )}
         </section>
