@@ -782,15 +782,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
         }
       `}} />
       <div className="relative group">
-        {/* Add column button - full height */}
-        <div
-          className="absolute right-0 top-0 bottom-0 w-16 bg-white hover:bg-blue-50 transition-colors cursor-pointer flex items-center justify-center z-20"
-          onClick={handleAddColumn}
-        >
-          <span className="text-gray-400 hover:text-blue-500 text-lg">+</span>
-        </div>
-
-        <table style={{ width: 'calc(100% - 60px)', borderCollapse: 'collapse', tableLayout: 'fixed', position: 'relative' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', position: 'relative' }}>
           <thead>
             <tr>
               {columnTitles.length > 0 ? (
@@ -926,7 +918,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           .ProseMirror table {
             border-collapse: collapse;
             table-layout: fixed;
-            width: calc(100% - 60px);
+            width: 100%;
             margin: 0;
             overflow: hidden;
             margin-top: -1px;
