@@ -46,6 +46,8 @@ export const users = createTable("user", (d) => ({
     })
     .$defaultFn(() => /* @__PURE__ */ new Date()),
   image: d.varchar({ length: 255 }),
+  apiKey: d.varchar({ length: 64 }).unique(),
+  apiKeyCreatedAt: d.timestamp({ mode: "date", withTimezone: true }),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({

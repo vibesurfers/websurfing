@@ -4,6 +4,7 @@ import { TiptapTable } from "@/components/tiptap-table";
 import { CountdownTimer } from "@/components/countdown-timer";
 import { SheetSelector } from "@/components/sheet-selector";
 import { AgentSidebar } from "@/components/agent-sidebar";
+import { ApiSnippetsDialog } from "@/components/api-snippets-dialog";
 import { useState, useCallback, createContext, useContext, useEffect } from "react";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
@@ -27,9 +28,10 @@ export function useSheetUpdates() {
 
 interface SheetEditorProps {
   sheetId: string;
+  appUrl: string;
 }
 
-export function SheetEditor({ sheetId }: SheetEditorProps) {
+export function SheetEditor({ sheetId, appUrl }: SheetEditorProps) {
   const router = useRouter();
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [pendingUpdates, setPendingUpdates] = useState(0);
@@ -52,6 +54,9 @@ export function SheetEditor({ sheetId }: SheetEditorProps) {
   }, [agentSidebarOpen]);
 
   const { data: sheets } = api.sheet.list.useQuery();
+
+  // Get current sheet name for API snippets
+  const currentSheet = sheets?.find(s => s.id === sheetId);
 
   const { error: authError, isLoading } = api.cell.getEvents.useQuery(
     { sheetId },
@@ -168,6 +173,11 @@ export function SheetEditor({ sheetId }: SheetEditorProps) {
               <SheetSelector
                 selectedSheetId={sheetId}
                 onSelectSheet={handleSelectSheet}
+              />
+              <ApiSnippetsDialog
+                sheetId={sheetId}
+                sheetName={currentSheet?.name}
+                appUrl={appUrl}
               />
               {pendingUpdates > 0 && (
                 <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded">

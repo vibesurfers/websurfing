@@ -4,6 +4,7 @@ import { SheetEditor } from "@/components/sheet-editor";
 import { AppLayout } from "@/components/layout/app-layout";
 import { headers } from "next/headers";
 import Image from "next/image";
+import { env } from "@/env";
 
 interface SheetPageProps {
   params: Promise<{
@@ -92,7 +93,7 @@ export default async function SheetPage({ params }: SheetPageProps) {
           await signOut();
         }}
       >
-        <SheetEditor sheetId={id} />
+        <SheetEditor sheetId={id} appUrl={env.AUTH_URL || 'http://localhost:3000'} />
       </AppLayout>
     </HydrateClient>
   );

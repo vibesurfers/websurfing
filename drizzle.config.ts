@@ -9,4 +9,5 @@ export default {
     url: env.DATABASE_URL!,
   },
   tablesFilter: ["websurfing_*"],
+  casing: 'snake_case', // Convert camelCase schema names to lowercase in database
 } satisfies Config;

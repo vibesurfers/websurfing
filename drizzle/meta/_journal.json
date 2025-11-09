@@ -36,6 +36,13 @@
       "when": 1762664330557,
       "tag": "0004_swift_jubilee",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1762707937067,
+      "tag": "0005_daily_nekra",
+      "breakpoints": true
     }
   ]
 }
