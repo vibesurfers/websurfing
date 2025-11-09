@@ -479,6 +479,6 @@ export default function NewTemplatePage() {
         </div>
       </div>
       </div>
-    </React.Fragment>
+    </>
   );
 }

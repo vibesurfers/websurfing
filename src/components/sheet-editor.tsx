@@ -3,6 +3,7 @@
 import { TiptapTable } from "@/components/tiptap-table";
 import { CountdownTimer } from "@/components/countdown-timer";
 import { SheetSelector } from "@/components/sheet-selector";
+import { AgentSidebar } from "@/components/agent-sidebar";
 import { useState, useCallback, createContext, useContext, useEffect } from "react";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
@@ -35,7 +36,21 @@ export function SheetEditor({ sheetId, showTemplatePrompt }: SheetEditorProps) {
   const [pendingUpdates, setPendingUpdates] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [treatRobotsAsHumans, setTreatRobotsAsHumans] = useState(true);
-  const [showTemplatePromptBanner, setShowTemplatePromptBanner] = useState(showTemplatePrompt);
+  const [agentSidebarOpen, setAgentSidebarOpen] = useState(() => {
+    // Load from localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('agentSidebarOpen');
+      return saved === 'true';
+    }
+    return false;
+  });
+
+  // Persist sidebar state to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('agentSidebarOpen', String(agentSidebarOpen));
+    }
+  }, [agentSidebarOpen]);
 
   const { data: sheets } = api.sheet.list.useQuery();
 
@@ -218,6 +233,13 @@ export function SheetEditor({ sheetId, showTemplatePrompt }: SheetEditorProps) {
           <TiptapTable treatRobotsAsHumans={treatRobotsAsHumans} sheetId={sheetId} />
         </div>
       </main>
+
+      {/* Agent Sidebar */}
+      <AgentSidebar
+        sheetId={sheetId}
+        isOpen={agentSidebarOpen}
+        onToggle={setAgentSidebarOpen}
+      />
     </SheetUpdateContext.Provider>
   );
 }
