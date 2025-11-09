@@ -69,10 +69,6 @@ export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
             height={32}
             className="rounded"
           />
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold">VibeSurfing</span>
-            <span className="text-xs text-muted-foreground">Vibe the Web</span>
-          </div>
         </div>
       </SidebarHeader>
 

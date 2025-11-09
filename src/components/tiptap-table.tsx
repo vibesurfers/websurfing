@@ -42,9 +42,11 @@ interface TiptapTableProps {
   sheetId: string
   onUpdateTick: () => Promise<void>
   onToggleRobotMode: () => void
+  onRefreshEvents?: (fn: () => void) => void
+  onDownloadCSV?: (fn: () => void) => void
 }
 
-export function TiptapTable({ treatRobotsAsHumans, sheetId, onUpdateTick, onToggleRobotMode }: TiptapTableProps) {
+export function TiptapTable({ treatRobotsAsHumans, sheetId, onUpdateTick, onToggleRobotMode, onRefreshEvents, onDownloadCSV }: TiptapTableProps) {
   const { lastUpdate } = useSheetUpdates()
   const isApplyingRobotUpdates = useRef(false)
   const [columnCount, setColumnCount] = useState(2)
@@ -418,6 +420,52 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId, onUpdateTick, onTogg
     }
   }, [isAddingColumn])
 
+  // Position row action buttons to align with actual table rows
+  useEffect(() => {
+    const positionRowButtons = () => {
+      if (!editor) return;
+
+      const editorElement = document.querySelector('.ProseMirror');
+      if (!editorElement) return;
+
+      const rows = editorElement.querySelectorAll('tbody tr');
+
+      rows.forEach((row, index) => {
+        const buttonElement = document.querySelector(`.row-actions-${index}`) as HTMLElement;
+        if (buttonElement && row instanceof HTMLElement) {
+          const rect = row.getBoundingClientRect();
+          const editorRect = editorElement.getBoundingClientRect();
+          const relativeTop = rect.top - editorRect.top;
+
+          buttonElement.style.top = `${relativeTop + (rect.height - 40) / 2}px`;
+        }
+      });
+    };
+
+    // Position buttons initially and on content changes
+    const timer = setTimeout(positionRowButtons, 100);
+
+    // Also position on scroll or resize
+    const handleReposition = () => {
+      requestAnimationFrame(positionRowButtons);
+    };
+
+    window.addEventListener('resize', handleReposition);
+
+    // Listen for editor updates
+    if (editor) {
+      editor.on('update', handleReposition);
+    }
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleReposition);
+      if (editor) {
+        editor.off('update', handleReposition);
+      }
+    };
+  }, [editor, cells])
+
   const handleAddColumn = () => {
     setIsAddingColumn(true);
 
@@ -727,6 +775,16 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId, onUpdateTick, onTogg
     document.body.removeChild(link)
   }, [editor, columnTitles, columnCount, sheetId])
 
+  // Expose functions to parent component
+  useEffect(() => {
+    if (onRefreshEvents) {
+      onRefreshEvents(() => refetch());
+    }
+    if (onDownloadCSV) {
+      onDownloadCSV(downloadCSV);
+    }
+  }, [onRefreshEvents, onDownloadCSV, refetch, downloadCSV]);
+
   // Show error state if there's an auth issue
   if (eventsError?.data?.code === 'UNAUTHORIZED') {
     return (
@@ -844,11 +902,10 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId, onUpdateTick, onTogg
               return (
                 <div
                   key={rowIndex}
-                  className="row-actions"
+                  className={`row-actions row-actions-${rowIndex}`}
                   style={{
                     position: 'absolute',
                     right: '-80px',
-                    top: `${rowIndex * 40}px`,
                     width: '60px',
                     height: '40px',
                     display: 'flex', // Always visible
@@ -997,23 +1054,6 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId, onUpdateTick, onTogg
         `}} />
       </div>
 
-      <div className="flex gap-2">
-        <Button
-          onClick={() => refetch()}
-          variant="secondary"
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh Events
-        </Button>
-        <Button
-          onClick={downloadCSV}
-          variant="outline"
-          className="bg-green-50 hover:bg-green-100 border-green-300 text-green-700"
-        >
-          Download as CSV
-        </Button>
-      </div>
 
       {/* Debug: Show events */}
       <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded">
