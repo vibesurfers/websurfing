@@ -16,6 +16,26 @@ export const sheetRouter = createTRPCRouter({
     return userSheets;
   }),
 
+  getById: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const sheet = await ctx.db.query.sheets.findFirst({
+        where: eq(sheets.id, input.id),
+      });
+
+      if (!sheet) {
+        throw new Error("Sheet not found");
+      }
+
+      // Verify ownership
+      if (sheet.userId !== userId) {
+        throw new Error("Access denied");
+      }
+
+      return sheet;
+    }),
+
   create: protectedProcedure
     .input(
       z.object({

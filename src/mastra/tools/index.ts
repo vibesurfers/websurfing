@@ -10,5 +10,6 @@ export { columnManagerTool } from "./column-manager";
 export { rowManagerTool } from "./row-manager";
 export { sheetConfigTool } from "./sheet-config";
 export { csvAnalyzerTool } from "./csv-analyzer";
+export { pdfAnalyzerTool } from "./pdf-analyzer";
 export { googleSearchTool } from "./google-search";
 export { googleMapsTool } from "./google-maps";

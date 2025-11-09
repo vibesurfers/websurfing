@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { TemplateChat } from "@/components/chat-builder/template-chat";
 import {
@@ -25,6 +25,7 @@ export default function NewTemplatePage() {
   const [columns, setColumns] = useState<ColumnConfig[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingSheet, setIsCreatingSheet] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   const createTemplate = api.template.create.useMutation({
     onSuccess: (data) => {
@@ -52,12 +53,27 @@ export default function NewTemplatePage() {
 
   const createSheet = api.sheet.create.useMutation({
     onSuccess: (data) => {
+      setCountdown(null);
       router.push(`/sheets/${data.id}`);
     },
     onError: (error) => {
+      setCountdown(null);
       alert(`Failed to create sheet: ${error.message}`);
     },
   });
+
+  // Countdown effect
+  useEffect(() => {
+    if (countdown !== null && countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0) {
+      // Countdown finished, proceed with the actual template use
+      actualUseTemplate();
+    }
+  }, [countdown]);
 
   const updateTemplate = api.template.update.useMutation({
     onSuccess: () => {
@@ -201,7 +217,7 @@ export default function NewTemplatePage() {
     }
   };
 
-  const handleUseTemplate = () => {
+  const actualUseTemplate = () => {
     if (!templateId && columns.length > 0) {
       // First save the template, then create sheet
       setIsCreatingSheet(true);
@@ -237,6 +253,11 @@ export default function NewTemplatePage() {
         templateId,
       });
     }
+  };
+
+  const handleUseTemplate = () => {
+    // Start the countdown
+    setCountdown(3);
   };
 
   return (
@@ -466,10 +487,10 @@ export default function NewTemplatePage() {
                     </button>
                     <button
                       onClick={handleUseTemplate}
-                      disabled={isSaving || !templateName.trim()}
+                      disabled={isSaving || !templateName.trim() || countdown !== null}
                       className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
                     >
-                      {isCreatingSheet ? 'Creating Sheet...' : 'USE TEMPLATE'}
+                      {countdown !== null ? `${countdown}` : isCreatingSheet ? 'Creating Sheet...' : 'USE TEMPLATE'}
                     </button>
                   </div>
                 </div>

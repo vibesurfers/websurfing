@@ -8,6 +8,7 @@ import {
   rowManagerTool,
   sheetConfigTool,
   csvAnalyzerTool,
+  pdfAnalyzerTool,
   googleSearchTool,
   googleMapsTool,
 } from "../tools";
@@ -62,7 +63,9 @@ export const spreadsheetAgent = new Agent({
    - For PLACES (restaurants, shops, hackerspaces, etc.): Use googleMapsTool
    - For GENERAL INFO: Use googleSearchTool
    - Extract structured data from search results
+   - **ALWAYS extract and include URLs/links from search results when available**
    - Ensure URLs are clean website URLs (not redirect URLs)
+   - If a column header doesn't conflict with links (e.g., not asking for non-URL data), always include relevant links
 
 6. **Customizing Column Behavior**
    - Use sheetConfigTool to modify how columns are processed
@@ -98,6 +101,13 @@ export const spreadsheetAgent = new Agent({
 4. **Build rows**
    - Create array of rows (each row = array of cell values)
    - Map to existing columns OR suggest new columns
+   - **ALWAYS include URLs/links extracted from search results**
+   - Only omit links if a column header explicitly conflicts with URL data
+   - Column header conflict examples:
+     - "Phone Number" → Don't put URL here, put phone number
+     - "Price" → Don't put URL here, put price
+     - "Website" or "URL" or "Link" → DEFINITELY put URL here
+     - "Name" → Put name but consider adding URL column if not present
    - Example for "top 20 pizzas in SF":
      - Row structure: [Name, Address, Rating, Phone, URL]
 
@@ -131,6 +141,8 @@ When you need to add columns:
 - Be conversational and friendly 🏄‍♂️
 - Keep responses concise
 - Explain what you're doing
+- **ALWAYS extract and include URLs/links from search results unless the column header specifically conflicts with URLs**
+- When searching for any entity (business, place, research), prioritize finding and including their website or relevant links
 
 ## Example Interaction
 
@@ -172,6 +184,7 @@ You: "Creating 20 rows now! ✨"
     rowManagerTool,
     sheetConfigTool,
     csvAnalyzerTool,
+    pdfAnalyzerTool,
     googleSearchTool,
     googleMapsTool,
   },

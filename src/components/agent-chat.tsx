@@ -35,6 +35,94 @@ interface Message {
 export function AgentChat({ sheetId }: AgentChatProps) {
   const queryClient = useQueryClient();
 
+  // Get sheet information to customize onboarding
+  const { data: sheetInfo } = api.sheet.getById.useQuery({ id: sheetId }, {
+    enabled: !!sheetId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Generate template-specific welcome message
+  const getWelcomeMessage = (templateType?: string | null): string => {
+    switch (templateType) {
+      case 'scientific':
+        return `Hey! I'm your research assistant! 🔬 I specialize in academic research and PDF analysis. I can help you:
+
+📚 **Find Research Papers**
+- Search for highly-cited papers on any topic
+- Find open access PDFs from arXiv, PubMed, Google Scholar
+
+📄 **Analyze PDFs**
+- Extract abstracts, methodologies, and key findings
+- Analyze figures and extract insights
+- Build citation networks
+
+🔍 **Research Tasks**
+- Compare methodologies across papers
+- Find related work and build literature reviews
+- Track citation relationships
+
+Try asking: "find papers on transformer architectures" or "analyze this PDF: [URL]"
+
+What research would you like to explore?`;
+
+      case 'marketing':
+        return `Hey! I'm your business intelligence assistant! 📊 I can help you research companies and markets:
+
+🏢 **Company Research**
+- Find business information and contact details
+- Research competitors and market players
+- Extract team sizes and company details
+
+🌐 **Web Analysis**
+- Analyze company websites
+- Find contact information and social media
+- Research market opportunities
+
+📈 **Data Enrichment**
+- Add missing business information
+- Verify company details
+- Build prospect lists
+
+Try asking: "find SaaS companies in San Francisco" or "research competitors of Slack"
+
+What business research would you like to do?`;
+
+      case 'lucky':
+        return `Hey! I'm your autonomous discovery agent! 🎲 I love exploring topics and finding unexpected connections:
+
+🎯 **Autonomous Exploration**
+- Give me any topic and I'll find related discoveries
+- I'll keep exploring and expanding based on what I find
+- Perfect for brainstorming and research inspiration
+
+🔍 **Smart Discovery**
+- I find patterns and connections you might miss
+- I explore tangential topics and interesting rabbit holes
+- I build knowledge maps automatically
+
+✨ **Surprise Factor**
+- Never know what interesting things I'll discover
+- Great for creative research and inspiration
+- I follow curiosity wherever it leads
+
+Try asking: "explore quantum computing" or "discover connections between music and mathematics"
+
+What should we explore together?`;
+
+      default:
+        return `Hey! I'm your spreadsheet assistant. I can help you:
+
+🔍 Search for data (e.g., 'find top 20 pizzas in SF')
+➕ Add rows in bulk
+📊 Manage columns
+🗺️ Find places using Google Maps
+🗑️ Remove empty rows
+📁 Import and analyze CSV files
+
+What would you like to do?`;
+    }
+  };
+
   // Load conversation history from localStorage
   const [messages, setMessages] = useState<Message[]>(() => {
     if (typeof window !== 'undefined') {
@@ -52,15 +140,22 @@ export function AgentChat({ sheetId }: AgentChatProps) {
         }
       }
     }
-    // Default welcome message
-    return [
-      {
-        role: "agent",
-        content: "Hey! I'm your spreadsheet assistant. I can help you:\n\n🔍 Search for data (e.g., 'find top 20 pizzas in SF')\n➕ Add rows in bulk\n📊 Manage columns\n🗺️ Find places using Google Maps\n🗑️ Remove empty rows\n\nWhat would you like to do?",
-        timestamp: new Date(),
-      },
-    ];
+    // Will be updated when sheet info loads
+    return [];
   });
+
+  // Update welcome message when sheet info loads
+  useEffect(() => {
+    if (sheetInfo && messages.length === 0) {
+      setMessages([
+        {
+          role: "agent",
+          content: getWelcomeMessage(sheetInfo.templateType),
+          timestamp: new Date(),
+        },
+      ]);
+    }
+  }, [sheetInfo, messages.length]);
 
   const [input, setInput] = useState("");
   const [threadId, setThreadId] = useState<string | null>(() => {
@@ -376,30 +471,128 @@ export function AgentChat({ sheetId }: AgentChatProps) {
             )}
           </button>
 
-          <button
-            onClick={() => setInput("find top 20 pizzas in SF")}
-            className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            🍕 Find pizzas
-          </button>
-          <button
-            onClick={() => setInput("search for hackerspaces near Palo Alto")}
-            className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            🔧 Find hackerspaces
-          </button>
-          <button
-            onClick={() => setInput("add a Phone Number column")}
-            className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            ➕ Add column
-          </button>
-          <button
-            onClick={() => setInput("read the current sheet")}
-            className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            📖 Read sheet
-          </button>
+          {/* Template-specific quick actions */}
+          {sheetInfo?.templateType === 'scientific' ? (
+            // Scientific Research Quick Actions
+            <>
+              <button
+                onClick={() => setInput("find papers on machine learning")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                📚 Find papers
+              </button>
+              <button
+                onClick={() => setInput("find recent transformer architecture papers")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                🤖 AI papers
+              </button>
+              <button
+                onClick={() => setInput("analyze PDFs in the current sheet")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                📄 Analyze PDFs
+              </button>
+              <button
+                onClick={() => setInput("find open access papers on quantum computing")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                ⚛️ Quantum papers
+              </button>
+              <button
+                onClick={() => setInput("build citation network from current papers")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                🔗 Citations
+              </button>
+            </>
+          ) : sheetInfo?.templateType === 'marketing' ? (
+            // Marketing Analysis Quick Actions
+            <>
+              <button
+                onClick={() => setInput("find SaaS companies in San Francisco")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                🏢 Find companies
+              </button>
+              <button
+                onClick={() => setInput("research competitors of Slack")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                📊 Competitors
+              </button>
+              <button
+                onClick={() => setInput("enrich business data with contact info")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                📞 Contact data
+              </button>
+              <button
+                onClick={() => setInput("find Y Combinator startups 2024")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                🚀 YC startups
+              </button>
+            </>
+          ) : sheetInfo?.templateType === 'lucky' ? (
+            // I'm Feeling Lucky Quick Actions
+            <>
+              <button
+                onClick={() => setInput("explore quantum computing")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                🎲 Explore quantum
+              </button>
+              <button
+                onClick={() => setInput("discover connections between music and mathematics")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                🎵 Music + Math
+              </button>
+              <button
+                onClick={() => setInput("find unexpected uses of blockchain")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                ⛓️ Blockchain ideas
+              </button>
+              <button
+                onClick={() => setInput("explore biomimicry in technology")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                🦋 Biomimicry
+              </button>
+            </>
+          ) : (
+            // Default Quick Actions
+            <>
+              <button
+                onClick={() => setInput("find top 20 pizzas in SF")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                🍕 Find pizzas
+              </button>
+              <button
+                onClick={() => setInput("search for hackerspaces near Palo Alto")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                🔧 Find hackerspaces
+              </button>
+              <button
+                onClick={() => setInput("add a Phone Number column")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                ➕ Add column
+              </button>
+              <button
+                onClick={() => setInput("read the current sheet")}
+                className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                📖 Read sheet
+              </button>
+            </>
+          )}
+
+          {/* Universal actions */}
           <button
             onClick={() => setInput("remove rows with empty first column")}
             className="text-xs px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"

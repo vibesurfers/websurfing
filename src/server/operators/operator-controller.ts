@@ -11,6 +11,7 @@ import { StructuredOutputConversionOperator } from "./structured-output-operator
 import { FunctionCallingOperator } from "./function-calling-operator";
 import { SimilarityExpansionOperator } from "./similarity-operator";
 import { AcademicPDFSearchOperator } from "./academic-search-operator";
+import { PDFContentOperator } from "./pdf-content-operator";
 import type { BaseOperator, OperatorName } from "@/types/operators";
 import { db } from "@/server/db";
 import { eventQueue } from "@/server/db/schema";
@@ -102,6 +103,7 @@ export class OperatorController {
       ["function_calling", new FunctionCallingOperator() as BaseOperator<unknown, unknown>],
       ["similarity_expansion", new SimilarityExpansionOperator() as BaseOperator<unknown, unknown>],
       ["academic_search", new AcademicPDFSearchOperator() as BaseOperator<unknown, unknown>],
+      ["pdf_content", new PDFContentOperator() as BaseOperator<unknown, unknown>],
     ]);
   }
 
@@ -132,6 +134,7 @@ export class OperatorController {
           'function_calling': 'Calling function...',
           'similarity_expansion': 'Finding similar concepts...',
           'academic_search': 'Searching academic papers...',
+          'pdf_content': 'Analyzing PDF content...',
         };
 
         await ColumnAwareWrapper.updateCellStatus(

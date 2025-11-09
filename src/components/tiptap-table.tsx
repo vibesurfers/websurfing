@@ -56,6 +56,9 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   const columnInputRef = useRef<HTMLInputElement>(null)
   const [selectedCell, setSelectedCell] = useState<{ rowIndex: number; colIndex: number } | null>(null)
   const [dragDownVisible, setDragDownVisible] = useState(false)
+  const [hoveredCell, setHoveredCell] = useState<{ rowIndex: number; colIndex: number } | null>(null)
+  const [tooltipVisible, setTooltipVisible] = useState(false)
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
 
   const utils = api.useUtils()
 
@@ -154,6 +157,20 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
         if (error.data?.code === 'UNAUTHORIZED') return false;
         return failureCount < 3;
       },
+      refetchOnWindowFocus: false,
+    }
+  )
+
+  const { data: hoveredCellStatus } = api.cell.getCellStatus.useQuery(
+    hoveredCell ? {
+      sheetId,
+      rowIndex: hoveredCell.rowIndex,
+      colIndex: hoveredCell.colIndex
+    } : undefined,
+    {
+      enabled: !!hoveredCell,
+      refetchInterval: 1000,
+      retry: false,
       refetchOnWindowFocus: false,
     }
   )
@@ -685,7 +702,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     });
   }, [editor, processingRows]);
 
-  // Add click handlers to table cells for selection
+  // Add click and hover handlers to table cells
   useEffect(() => {
     if (!editor) return;
 
@@ -723,8 +740,45 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
       }
     };
 
-    // Add event listener to the table
+    const handleCellMouseEnter = (event: Event) => {
+      const mouseEvent = event as MouseEvent;
+      const target = event.target as HTMLElement;
+      const cell = target.closest('td');
+      if (!cell) return;
+
+      const row = cell.closest('tr');
+      if (!row) return;
+
+      const tbody = row.closest('tbody');
+      if (!tbody) return;
+
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const cells = Array.from(row.querySelectorAll('td'));
+
+      const rowIndex = rows.indexOf(row);
+      const colIndex = cells.indexOf(cell);
+
+      if (rowIndex >= 0 && colIndex >= 0) {
+        // Get cell position for tooltip placement
+        const cellRect = cell.getBoundingClientRect();
+        setTooltipPosition({
+          x: cellRect.right + 10, // Position to the right of the cell
+          y: cellRect.top + cellRect.height / 2, // Vertically centered on cell
+        });
+        setHoveredCell({ rowIndex, colIndex });
+        setTooltipVisible(true);
+      }
+    };
+
+    const handleCellMouseLeave = () => {
+      setHoveredCell(null);
+      setTooltipVisible(false);
+    };
+
+    // Add event listeners to the table
     table.addEventListener('click', handleCellClick);
+    table.addEventListener('mouseenter', handleCellMouseEnter, true);
+    table.addEventListener('mouseleave', handleCellMouseLeave, true);
 
     // Add document click listener to hide selection when clicking outside
     const handleDocumentClick = (event: Event) => {
@@ -740,6 +794,8 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     // Cleanup
     return () => {
       table.removeEventListener('click', handleCellClick);
+      table.removeEventListener('mouseenter', handleCellMouseEnter, true);
+      table.removeEventListener('mouseleave', handleCellMouseLeave, true);
       document.removeEventListener('click', handleDocumentClick);
     };
   }, [editor, cells]); // Re-run when cells change to ensure handlers are attached
@@ -1069,6 +1125,11 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           <div key={event.id} className="bg-white p-2 rounded mb-2 border">
             <div className="font-mono text-xs">
               <strong>{event.eventType}</strong> - {event.status}
+              {event.payload && typeof event.payload === 'object' && 'colIndex' in event.payload && 'rowIndex' in event.payload && (
+                <span className="ml-2 bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
+                  ({(event.payload as any).colIndex},{(event.payload as any).rowIndex})
+                </span>
+              )}
             </div>
             <div className="text-xs text-gray-500">
               {JSON.stringify(event.payload)}
@@ -1141,6 +1202,35 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Cell Status Tooltip */}
+      {tooltipVisible && hoveredCell && hoveredCellStatus && (
+        <div
+          className="fixed z-50 px-3 py-2 bg-gray-900 text-white text-sm rounded shadow-lg pointer-events-none max-w-xs"
+          style={{
+            left: `${tooltipPosition.x}px`,
+            top: `${tooltipPosition.y}px`,
+            transform: 'translateY(-50%)',
+          }}
+        >
+          <div className="font-semibold">
+            Cell ({hoveredCell.colIndex}, {hoveredCell.rowIndex})
+          </div>
+          <div className="text-xs text-gray-300">
+            Status: {hoveredCellStatus.status || 'idle'}
+          </div>
+          {hoveredCellStatus.statusMessage && (
+            <div className="text-xs text-gray-300 mt-1">
+              {hoveredCellStatus.statusMessage}
+            </div>
+          )}
+          {hoveredCellStatus.operatorName && (
+            <div className="text-xs text-blue-300">
+              Operator: {hoveredCellStatus.operatorName}
+            </div>
+          )}
         </div>
       )}
     </div>

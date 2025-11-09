@@ -211,6 +211,37 @@ export const cellRouter = createTRPCRouter({
       return statusMap;
     }),
 
+  getCellStatus: protectedProcedure
+    .input(z.object({
+      sheetId: z.string().uuid().optional(),
+      rowIndex: z.number(),
+      colIndex: z.number()
+    }))
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      let sheetId = input.sheetId;
+      if (!sheetId) {
+        const userSheet = await ctx.db.select().from(sheets).where(eq(sheets.userId, userId)).limit(1);
+        if (!userSheet[0]) return null;
+        sheetId = userSheet[0].id;
+      }
+
+      const status = await ctx.db
+        .select()
+        .from(cellProcessingStatus)
+        .where(
+          and(
+            eq(cellProcessingStatus.sheetId, sheetId),
+            eq(cellProcessingStatus.rowIndex, input.rowIndex),
+            eq(cellProcessingStatus.colIndex, input.colIndex)
+          )
+        )
+        .limit(1);
+
+      return status[0] || null;
+    }),
+
   clearCellsToRight: protectedProcedure
     .input(z.object({
       sheetId: z.string().uuid().optional(),

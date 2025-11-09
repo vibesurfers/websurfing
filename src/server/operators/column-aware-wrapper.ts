@@ -240,6 +240,67 @@ export class ColumnAwareWrapper {
       return { success: true, needsRetry: false };
     }
 
+    // 🔒 CELL-LEVEL LOCKING: Use database transaction with explicit locking
+    return await db.transaction(async (tx) => {
+      // 1. Check if another agent is already processing this exact cell
+      const existingStatus = await tx
+        .select()
+        .from(cellProcessingStatus)
+        .where(and(
+          eq(cellProcessingStatus.sheetId, ctx.sheetId),
+          eq(cellProcessingStatus.rowIndex, ctx.rowIndex),
+          eq(cellProcessingStatus.colIndex, nextColIndex)
+        ))
+        .for('update') // 🔒 Lock the status record
+        .limit(1);
+
+      if (existingStatus.length > 0) {
+        const status = existingStatus[0];
+
+        // Check if another operator is currently processing this cell
+        if (status.status === 'processing' && status.operatorName !== operatorName) {
+          console.log(`[ColumnAwareWrapper] 🔒 Cell (${ctx.rowIndex}, ${nextColIndex}) is being processed by ${status.operatorName}, backing off`);
+          return {
+            success: false,
+            needsRetry: true,
+            validationIssues: [`Cell being processed by ${status.operatorName}`]
+          };
+        }
+      }
+
+      // 2. Also lock any existing cell content to prevent concurrent writes
+      const existingCell = await tx
+        .select()
+        .from(cells)
+        .where(and(
+          eq(cells.sheetId, ctx.sheetId),
+          eq(cells.userId, userId),
+          eq(cells.rowIndex, ctx.rowIndex),
+          eq(cells.colIndex, nextColIndex)
+        ))
+        .for('update') // 🔒 Lock the cell content
+        .limit(1);
+
+      console.log(`[ColumnAwareWrapper] 🔒 Acquired locks for cell (${ctx.rowIndex}, ${nextColIndex})`);
+
+      // 3. Proceed with the original write logic inside the transaction
+      return await this.executeWrite(tx, ctx, userId, eventId, output, operatorName, nextColIndex);
+    });
+  }
+
+  /**
+   * Execute the actual write operation within a transaction
+   */
+  private static async executeWrite(
+    tx: any, // Database transaction
+    ctx: SheetContext,
+    userId: string,
+    eventId: string,
+    output: any,
+    operatorName: string,
+    nextColIndex: number
+  ): Promise<{ success: boolean; needsRetry: boolean; validationIssues?: string[]; retryPrompt?: string }> {
+
     // Extract result content based on operator type
     let content = '';
     switch (operatorName) {
@@ -349,11 +410,6 @@ export class ColumnAwareWrapper {
       console.log('[ColumnAwareWrapper] Validation issues:', validation.issues);
     }
 
-    // Use sanitized content if available and valid
-    const finalContent = validation.valid && validation.sanitized
-      ? validation.sanitized
-      : content;
-
     // Write validation results to a log for debugging
     if (!validation.valid || validation.confidence < 0.7) {
       console.warn(
@@ -377,8 +433,9 @@ export class ColumnAwareWrapper {
       console.warn('[ColumnAwareWrapper] BLOCKED redirect URL - skipping cell write');
       console.warn('[ColumnAwareWrapper] Redirect URL:', content.substring(0, 100) + '...');
 
-      // Mark cell as idle since we're not writing
-      await ColumnAwareWrapper.updateCellStatus(
+      // Mark cell as idle since we're not writing (using transaction)
+      await this.updateCellStatusInTransaction(
+        tx,
         ctx,
         userId,
         nextColIndex,
@@ -387,7 +444,7 @@ export class ColumnAwareWrapper {
         'Redirect URL blocked'
       );
 
-      return; // Don't write redirect URLs
+      return { success: false, needsRetry: false, validationIssues: ['Redirect URL blocked'] };
     }
 
     // 3. Validate and normalize URL format if it looks like a URL
@@ -406,7 +463,7 @@ export class ColumnAwareWrapper {
     // 5. Filter out null/empty JSON values
     if (content === 'null' || content === '{}' || content === '[]' || content === 'undefined') {
       console.log('[ColumnAwareWrapper] Skipping null/empty JSON value');
-      return; // Don't write empty values
+      return { success: false, needsRetry: false, validationIssues: ['No valid content to write'] };
     }
 
     // 6. Clean JSON objects with null values
@@ -416,15 +473,21 @@ export class ColumnAwareWrapper {
         // If all values are null, skip
         if (Object.values(parsed).every(v => v === null)) {
           console.log('[ColumnAwareWrapper] Skipping object with all null values');
-          return;
+          return { success: false, needsRetry: false, validationIssues: ['All values are null'] };
         }
       } catch (e) {
         // Not valid JSON, continue
       }
     }
 
-    // Write DIRECTLY to cells table for immediate visibility
-    await db.insert(cells).values({
+    // Use sanitized content if available and valid
+    let finalContent = content;
+    if (validation.valid && validation.sanitized) {
+      finalContent = validation.sanitized;
+    }
+
+    // Write DIRECTLY to cells table for immediate visibility (using transaction)
+    await tx.insert(cells).values({
       sheetId: ctx.sheetId,
       userId,
       rowIndex: ctx.rowIndex,
@@ -438,8 +501,8 @@ export class ColumnAwareWrapper {
       }
     });
 
-    // ALSO write to sheetUpdates for audit trail
-    await db.insert(sheetUpdates).values({
+    // ALSO write to sheetUpdates for audit trail (using transaction)
+    await tx.insert(sheetUpdates).values({
       sheetId: ctx.sheetId,
       userId,
       rowIndex: ctx.rowIndex,
@@ -459,7 +522,7 @@ export class ColumnAwareWrapper {
     // Only create event if there's actually a next column to fill
     // Don't create event if we just filled the last column
     if (nextColIndex < ctx.columns.length - 1) {
-      await db.insert(eventQueue).values({
+      await tx.insert(eventQueue).values({
         sheetId: ctx.sheetId,
         userId,
         eventType: 'robot_cell_update',
@@ -501,5 +564,57 @@ export class ColumnAwareWrapper {
       validationIssues: validationIssues.length > 0 ? validationIssues : undefined,
       retryPrompt
     };
+  }
+
+  /**
+   * Update cell processing status within an existing transaction
+   */
+  private static async updateCellStatusInTransaction(
+    tx: any,
+    ctx: SheetContext,
+    userId: string,
+    colIndex: number,
+    status: 'idle' | 'processing' | 'completed' | 'error',
+    operatorName?: string,
+    message?: string
+  ): Promise<void> {
+    // Since there's no unique constraint on the table, we need to handle this manually
+    // First, try to find existing record
+    const existing = await tx
+      .select({ id: cellProcessingStatus.id })
+      .from(cellProcessingStatus)
+      .where(and(
+        eq(cellProcessingStatus.sheetId, ctx.sheetId),
+        eq(cellProcessingStatus.userId, userId),
+        eq(cellProcessingStatus.rowIndex, ctx.rowIndex),
+        eq(cellProcessingStatus.colIndex, colIndex)
+      ))
+      .limit(1);
+
+    if (existing.length > 0) {
+      // Update existing record
+      await tx
+        .update(cellProcessingStatus)
+        .set({
+          status,
+          operatorName: operatorName ?? null,
+          statusMessage: message ?? null,
+          updatedAt: new Date(),
+        })
+        .where(eq(cellProcessingStatus.id, existing[0].id));
+    } else {
+      // Insert new record
+      await tx.insert(cellProcessingStatus).values({
+        sheetId: ctx.sheetId,
+        userId,
+        rowIndex: ctx.rowIndex,
+        colIndex,
+        status,
+        operatorName: operatorName ?? null,
+        statusMessage: message ?? null,
+      });
+    }
+
+    console.log(`[updateCellStatusInTransaction] 🔒 Set cell (${ctx.rowIndex}, ${colIndex}) status to '${status}' for operator '${operatorName}' within transaction`);
   }
 }

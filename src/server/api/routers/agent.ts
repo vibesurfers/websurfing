@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { getSpreadsheetAgent } from "@/mastra";
+import { getSpreadsheetAgent, getScientificAgent } from "@/mastra";
+import { sheets } from "@/server/db/schema";
+import { eq } from "drizzle-orm";
 
 /**
  * Production Agent Router
@@ -21,22 +23,45 @@ export const agentRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       try {
-        const agent = getSpreadsheetAgent();
+        // Get sheet information to determine template type
+        const sheet = await ctx.db.query.sheets.findFirst({
+          where: eq(sheets.id, input.sheetId),
+        });
+
+        if (!sheet) {
+          throw new Error("Sheet not found");
+        }
+
+        // Route to appropriate agent based on template type
+        let agent;
+        let agentType;
+
+        if (sheet.templateType === "scientific") {
+          agent = getScientificAgent();
+          agentType = "scientific";
+        } else {
+          agent = getSpreadsheetAgent();
+          agentType = "spreadsheet";
+        }
 
         if (!agent) {
-          throw new Error("Spreadsheet agent not available");
+          throw new Error(`${agentType} agent not available`);
         }
 
         console.log("[Agent] Message:", input.message);
         console.log("[Agent] Sheet:", input.sheetId);
+        console.log("[Agent] Template:", sheet.templateType);
+        console.log("[Agent] Using agent:", agentType);
 
         // Generate thread ID if not provided
-        const threadId = input.threadId || `sheet-${input.sheetId}-${Date.now()}`;
+        const threadId = input.threadId || `${sheet.templateType || 'sheet'}-${input.sheetId}-${Date.now()}`;
         const resourceId = input.sheetId;
 
         // Build context message with sheet info
         const contextMessage = `Sheet ID: ${input.sheetId}
 User ID: ${ctx.session.user.id}
+Template Type: ${sheet.templateType || 'general'}
+Sheet Name: ${sheet.name}
 
 User message: ${input.message}`;
 
@@ -53,6 +78,7 @@ User message: ${input.message}`;
           success: true,
           response: response.text,
           threadId,
+          agentType,
         };
       } catch (error) {
         console.error("[Agent] Error:", error);

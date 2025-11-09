@@ -245,7 +245,8 @@ export type OperatorName =
   | "structured_output"
   | "function_calling"
   | "similarity_expansion"
-  | "academic_search";
+  | "academic_search"
+  | "pdf_content";
 
 /**
  * Base operator interface
