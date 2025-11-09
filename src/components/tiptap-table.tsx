@@ -28,7 +28,7 @@ function useSheetUpdates() {
 const initialContent = `
   <table>
     <tbody>
-      <tr><td>Cell 1</td><td>Cell 2</td></tr>
+      <tr><td></td><td></td></tr>
       <tr><td></td><td></td></tr>
       <tr><td></td><td></td></tr>
       <tr><td></td><td></td></tr>
@@ -54,6 +54,9 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   const utils = api.useUtils()
 
   const updateCell = api.cell.updateCell.useMutation({
+    onSuccess: () => {
+      void utils.cell.getEvents.invalidate({ sheetId });
+    },
     onError: (error) => {
       console.error('Failed to update cell:', error.message);
       if (error.data?.code === 'UNAUTHORIZED') {
@@ -63,6 +66,9 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   })
 
   const clearCell = api.cell.clearCell.useMutation({
+    onSuccess: () => {
+      void utils.cell.getEvents.invalidate({ sheetId });
+    },
     onError: (error) => {
       console.error('Failed to clear cell:', error.message);
       if (error.data?.code === 'UNAUTHORIZED') {
@@ -151,7 +157,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
       const lastContent = lastContentRef.current.get(cellKey)
 
       // Check if content actually changed
-      if (content !== lastContent && content !== 'Cell 1' && content !== 'Cell 2') {
+      if (content !== lastContent) {
 
         // If content is empty, user deleted the cell content
         if (!content || content === '') {

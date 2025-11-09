@@ -94,7 +94,7 @@ export function SheetEditor({ sheetId }: SheetEditorProps) {
       <div className="container mx-auto p-8 min-h-screen bg-white">
         <div className="space-y-6">
           <h1 className="text-3xl font-bold text-gray-900">
-            VibeCon - Web Search Spreadsheets
+            VibeSurfing - Web Search Spreadsheets
           </h1>
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <h3 className="text-yellow-800 font-semibold">Authentication Required</h3>
@@ -112,7 +112,7 @@ export function SheetEditor({ sheetId }: SheetEditorProps) {
       <div className="container mx-auto p-8 min-h-screen bg-white">
         <div className="space-y-6">
           <h1 className="text-3xl font-bold text-gray-900">
-            VibeCon - Web Search Spreadsheets
+            VibeSurfing - Web Search Spreadsheets
           </h1>
           <div className="flex items-center gap-2 text-gray-600">
             <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -129,7 +129,7 @@ export function SheetEditor({ sheetId }: SheetEditorProps) {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-gray-900">
-              VibeCon - Web Search Spreadsheets
+              VibeSurfing - Web Search Spreadsheets
             </h1>
             <div className="flex items-center gap-4">
               <button

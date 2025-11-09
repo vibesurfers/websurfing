@@ -52,7 +52,7 @@ export function WelcomeFlow() {
       <div className="max-w-4xl w-full bg-white rounded-2xl shadow-xl p-8 space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Welcome to VibeCon
+            Welcome to VibeSurfing
           </h1>
           <p className="text-gray-600">
             Search the internet using spreadsheets powered by AI
