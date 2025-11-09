@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, FileText, Settings, LogOut } from "lucide-react";
+import { Home, FileText, LogOut } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -43,11 +43,6 @@ const navigationItems = [
     title: "Templates",
     href: "/templates",
     icon: FileText,
-  },
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: Settings,
   },
 ];
 

@@ -141,48 +141,25 @@ export function SheetEditor({ sheetId }: SheetEditorProps) {
 
   return (
     <SheetUpdateContext.Provider value={{ lastUpdate, pendingUpdates, selectedSheetId: sheetId }}>
-      <main className="container mx-auto p-8 min-h-screen bg-white">
+      <main className="w-full px-8 py-8 min-h-screen bg-white">
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-gray-900">
               VibeSurfing - Web Search Spreadsheets
             </h1>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/welcome')}
-                className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                All Sheets
-              </button>
-              <button
-                onClick={() => signOut()}
-                className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                Sign out
-              </button>
-            </div>
           </div>
 
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <SheetSelector
-                selectedSheetId={sheetId}
-                onSelectSheet={handleSelectSheet}
-              />
-              {pendingUpdates > 0 && (
-                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  {pendingUpdates} updates applied
-                </div>
-              )}
-            </div>
-            <CountdownTimer
-              intervalMs={5000}
-              onTick={handleUpdateTick}
-              label="Next update"
-              treatRobotsAsHumans={treatRobotsAsHumans}
-              onToggleRobotMode={() => setTreatRobotsAsHumans(!treatRobotsAsHumans)}
+          <div className="flex items-center gap-4">
+            <SheetSelector
+              selectedSheetId={sheetId}
+              onSelectSheet={handleSelectSheet}
             />
+            {pendingUpdates > 0 && (
+              <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                {pendingUpdates} updates applied
+              </div>
+            )}
           </div>
 
           {lastUpdate && (
@@ -191,7 +168,12 @@ export function SheetEditor({ sheetId }: SheetEditorProps) {
             </div>
           )}
 
-          <TiptapTable treatRobotsAsHumans={treatRobotsAsHumans} sheetId={sheetId} />
+          <TiptapTable
+            treatRobotsAsHumans={treatRobotsAsHumans}
+            sheetId={sheetId}
+            onUpdateTick={handleUpdateTick}
+            onToggleRobotMode={() => setTreatRobotsAsHumans(!treatRobotsAsHumans)}
+          />
         </div>
       </main>
 

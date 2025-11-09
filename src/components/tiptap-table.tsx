@@ -9,6 +9,8 @@ import { TableCell } from '@tiptap/extension-table-cell'
 import { api } from "@/trpc/react"
 import { useCallback, useRef, useEffect, useState, useContext, createContext } from 'react'
 import { Button } from "@/components/ui/button"
+import { CountdownTimer } from "@/components/countdown-timer"
+import { RefreshCw } from "lucide-react"
 
 interface SheetUpdateContextType {
   lastUpdate: Date | null;
@@ -38,9 +40,11 @@ function generateInitialContent(columnCount: number): string {
 interface TiptapTableProps {
   treatRobotsAsHumans: boolean
   sheetId: string
+  onUpdateTick: () => Promise<void>
+  onToggleRobotMode: () => void
 }
 
-export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) {
+export function TiptapTable({ treatRobotsAsHumans, sheetId, onUpdateTick, onToggleRobotMode }: TiptapTableProps) {
   const { lastUpdate } = useSheetUpdates()
   const isApplyingRobotUpdates = useRef(false)
   const [columnCount, setColumnCount] = useState(2)
@@ -781,138 +785,117 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           z-index: 10;
         }
       `}} />
-      <div className="relative group">
-        {/* Add column button - full height */}
-        <div
-          className="absolute right-0 top-0 bottom-0 w-16 bg-white hover:bg-blue-50 transition-colors cursor-pointer flex items-center justify-center z-20"
-          onClick={handleAddColumn}
-        >
-          <span className="text-gray-400 hover:text-blue-500 text-lg">+</span>
-        </div>
+      <div className="relative group w-full" style={{ paddingRight: '80px' }}>
+        {/* Column headers */}
+        {columnTitles.length > 0 && (
+          <div
+            className="flex border-b border-gray-300 bg-blue-50 sticky top-0 z-10 w-full"
+          >
+            {columnTitles.map((title, i) => (
+              <div
+                key={i}
+                className="bg-blue-100 border-r border-blue-300 text-center font-semibold text-xs text-blue-900 min-w-0"
+                style={{
+                  padding: '8px 4px',
+                  width: `calc(100% / ${columnTitles.length})`,
+                  boxSizing: 'border-box',
+                }}
+              >
+                <div className="flex items-center justify-between gap-1">
+                  <span className="flex-1 truncate">{title}</span>
+                  {i > 0 && ( // Don't show reprocess for first column
+                    <Button
+                      onClick={() => handleReprocessColumn(i)}
+                      size="sm"
+                      variant="default"
+                      className="h-5 px-1 text-xs"
+                      title={`Reprocess all rows for "${title}"`}
+                    >
+                      ↻
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-        <table style={{ width: 'calc(100% - 60px)', borderCollapse: 'collapse', tableLayout: 'fixed', position: 'relative' }}>
-          <thead>
-            <tr>
-              {columnTitles.length > 0 ? (
-                columnTitles.map((title, i) => (
-                  <th
-                    key={i}
-                    className="bg-blue-100 border border-blue-300 text-center font-semibold text-xs text-blue-900"
-                    style={{
-                      padding: '4px 8px',
-                      minWidth: '1em',
-                      boxSizing: 'border-box',
-                      width: `calc(100% / ${columnTitles.length})`
-                    }}
-                  >
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="flex-1">{title}</span>
-                      {i > 0 && ( // Don't show reprocess for first column
-                        <Button
-                          onClick={() => handleReprocessColumn(i)}
-                          size="sm"
-                          variant="default"
-                          className="h-6 px-2 text-xs"
-                          title={`Reprocess all rows for "${title}"`}
-                        >
-                          ↻
-                        </Button>
-                      )}
-                    </div>
-                  </th>
-                ))
-              ) : (
-                Array.from({ length: columnCount }, (_, i) => (
-                  <th
-                    key={i}
-                    className="bg-gray-100 border border-gray-300 text-center font-semibold text-xs text-gray-700"
-                    style={{
-                      padding: '4px 12px',
-                      minWidth: '1em',
-                      boxSizing: 'border-box',
-                      width: `calc(100% / ${columnCount})`
-                    }}
-                  >
-                    {i + 1}
-                  </th>
-                ))
-              )}
-              {isAddingColumn && (
-                <th
-                  className="bg-yellow-100 border border-yellow-300 text-center font-semibold text-xs"
-                  style={{
-                    padding: '8px 12px',
-                    minWidth: '1em',
-                    boxSizing: 'border-box'
-                  }}
-                >
-                  <input
-                    ref={columnInputRef}
-                    type="text"
-                    value={newColumnTitle}
-                    onChange={(e) => setNewColumnTitle(e.target.value)}
-                    onBlur={handleColumnTitleSubmit}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleColumnTitleSubmit();
-                      if (e.key === 'Escape') {
-                        handleCancelAddColumn();
-                      }
-                    }}
-                    placeholder="Column title..."
-                    className="w-full bg-transparent border-none outline-none text-center text-xs"
-                  />
-                </th>
-              )}
-            </tr>
-          </thead>
-        </table>
         <div style={{ position: 'relative' }}>
           <EditorContent editor={editor} />
           {/* Row action buttons - positioned absolutely */}
           <div className="row-actions-container">
-            {Array.from({ length: 100 }).map((_, rowIndex) => (
-              <div
-                key={rowIndex}
-                className="row-actions"
-                style={{
-                  position: 'absolute',
-                  left: '-50px',
-                  top: `${rowIndex * 40}px`,
-                  width: '45px',
-                  height: '40px',
-                  display: 'none',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '2px',
-                }}
-                data-row-index={rowIndex}
-              >
-                <button
-                  onClick={() => {
-                    if (confirm(`Delete row ${rowIndex}?`)) {
-                      deleteRow.mutate({ sheetId, rowIndex });
-                    }
+            {/* Create buttons only for actual table rows */}
+            {(() => {
+              // Get the actual number of rows from the editor
+              if (!editor) return [];
+
+              const html = editor.getHTML();
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(html, 'text/html');
+              const tbody = doc.querySelector('tbody');
+              const actualRows = tbody ? tbody.querySelectorAll('tr').length : 0;
+
+              return Array.from({ length: actualRows }).map((_, rowIndex) => {
+                // Check if this row has data
+                const rowHasData = cells?.some(cell =>
+                  cell.rowIndex === rowIndex && cell.content && cell.content.trim()
+                ) || false;
+
+              return (
+                <div
+                  key={rowIndex}
+                  className="row-actions"
+                  style={{
+                    position: 'absolute',
+                    right: '-80px',
+                    top: `${rowIndex * 40}px`,
+                    width: '60px',
+                    height: '40px',
+                    display: 'flex', // Always visible
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '2px',
+                    backgroundColor: 'white',
+                    zIndex: 1000,
                   }}
-                  className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                  title="Delete row"
-                  style={{ fontSize: '14px' }}
+                  data-row-index={rowIndex}
                 >
-                  🗑️
-                </button>
-                <button
-                  onClick={() => {
-                    if (confirm(`Reprocess row ${rowIndex}?`)) {
-                      reprocessRow.mutate({ sheetId, rowIndex });
-                    }
-                  }}
-                  className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                  title="Reprocess row"
-                  style={{ fontSize: '14px' }}
-                >
-                  ↻
-                </button>
-              </div>
-            ))}
+                  <button
+                    onClick={() => {
+                      const confirmText = rowHasData
+                        ? `Are you sure you want to delete row ${rowIndex + 1}? This will permanently remove all data in this row.`
+                        : `Delete empty row ${rowIndex + 1}?`;
+                      if (confirm(confirmText)) {
+                        deleteRow.mutate({ sheetId, rowIndex });
+                      }
+                    }}
+                    className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors flex items-center justify-center"
+                    title="Delete row"
+                    style={{ fontSize: '12px', minWidth: '24px', height: '24px' }}
+                  >
+                    🗑️
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (rowHasData) {
+                        if (confirm(`Refresh and reprocess row ${rowIndex + 1}? This will clear the row and regenerate all data.`)) {
+                          reprocessRow.mutate({ sheetId, rowIndex });
+                        }
+                      } else {
+                        alert(`Row ${rowIndex + 1} is empty. Add some content first to refresh the row.`);
+                      }
+                    }}
+                    className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors flex items-center justify-center"
+                    title="Refresh / Reprocess row"
+                    style={{ fontSize: '12px', minWidth: '24px', height: '24px' }}
+                    disabled={!rowHasData}
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            });
+            })()}
           </div>
         </div>
         <div
@@ -926,7 +909,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           .ProseMirror table {
             border-collapse: collapse;
             table-layout: fixed;
-            width: calc(100% - 60px);
+            width: 100%;
             margin: 0;
             overflow: hidden;
             margin-top: -1px;
@@ -956,23 +939,16 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
             background-color: #f9fafb;
           }
 
-          /* Show row actions on row hover */
-          .ProseMirror tbody tr:hover ~ .row-actions-container .row-actions[data-row-index] {
-            display: flex !important;
+          /* Row actions are always visible */
+
+          .row-actions {
+            z-index: 1000;
           }
 
-          /* More specific approach - using nth-child */
-          .ProseMirror tbody tr:nth-child(1):hover ~ .row-actions-container .row-actions[data-row-index="0"],
-          .ProseMirror tbody tr:nth-child(2):hover ~ .row-actions-container .row-actions[data-row-index="1"],
-          .ProseMirror tbody tr:nth-child(3):hover ~ .row-actions-container .row-actions[data-row-index="2"],
-          .ProseMirror tbody tr:nth-child(4):hover ~ .row-actions-container .row-actions[data-row-index="3"],
-          .ProseMirror tbody tr:nth-child(5):hover ~ .row-actions-container .row-actions[data-row-index="4"],
-          .ProseMirror tbody tr:nth-child(6):hover ~ .row-actions-container .row-actions[data-row-index="5"],
-          .ProseMirror tbody tr:nth-child(7):hover ~ .row-actions-container .row-actions[data-row-index="6"],
-          .ProseMirror tbody tr:nth-child(8):hover ~ .row-actions-container .row-actions[data-row-index="7"],
-          .ProseMirror tbody tr:nth-child(9):hover ~ .row-actions-container .row-actions[data-row-index="8"],
-          .ProseMirror tbody tr:nth-child(10):hover ~ .row-actions-container .row-actions[data-row-index="9"] {
-            display: flex !important;
+          /* Table scroll without button interference */
+          .ProseMirror {
+            position: relative;
+            overflow-x: auto;
           }
 
           .row-actions-container {
@@ -1023,15 +999,11 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
 
       <div className="flex gap-2">
         <Button
-          onClick={triggerProcessing}
-          variant="default"
-        >
-          Process Events
-        </Button>
-        <Button
           onClick={() => refetch()}
           variant="secondary"
+          className="flex items-center gap-2"
         >
+          <RefreshCw className="h-4 w-4" />
           Refresh Events
         </Button>
         <Button
@@ -1045,7 +1017,16 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
 
       {/* Debug: Show events */}
       <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded">
-        <h3 className="font-semibold mb-2">Events ({events?.length ?? 0}):</h3>
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="font-semibold">Events ({events?.length ?? 0}):</h3>
+          <CountdownTimer
+            intervalMs={5000}
+            onTick={onUpdateTick}
+            label="Next update"
+            treatRobotsAsHumans={treatRobotsAsHumans}
+            onToggleRobotMode={onToggleRobotMode}
+          />
+        </div>
         {events?.length === 0 && (
           <p className="text-gray-400">No events yet</p>
         )}

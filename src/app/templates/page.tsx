@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
+import { Edit, Trash2 } from "lucide-react";
 
 export default function TemplatesPage() {
   const router = useRouter();
@@ -155,17 +156,19 @@ export default function TemplatesPage() {
                         onClick={() => router.push(`/templates/${template.id}/edit`)}
                         variant="ghost"
                         size="sm"
+                        className="h-8 w-8 p-0"
+                        title="Edit template"
                       >
-                        Edit
+                        <Edit className="h-4 w-4" />
                       </Button>
-                      <span className="text-gray-300">•</span>
                       <Button
                         onClick={() => handleDelete(template.id)}
                         variant="ghost"
                         size="sm"
-                        className={deleteConfirm === template.id ? 'text-destructive font-bold' : 'text-destructive'}
+                        className={`h-8 w-8 p-0 ${deleteConfirm === template.id ? 'text-destructive font-bold' : 'text-destructive hover:text-destructive'}`}
+                        title={deleteConfirm === template.id ? 'Click again to confirm deletion' : 'Delete template'}
                       >
-                        {deleteConfirm === template.id ? 'Confirm?' : 'Delete'}
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                     <Button
