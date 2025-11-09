@@ -30,7 +30,9 @@ export const env = createEnv({
     // Vertex AI Configuration
     GOOGLE_CLOUD_PROJECT: z.string(),
     GOOGLE_CLOUD_LOCATION: z.string().default("us-central1"),
-    // Optional: VERTEX_API_KEY is not needed when using ADC
+    // Google Service Account Credentials (JSON string)
+    GOOGLE_CREDENTIALS_JSON: z.string(),
+    // Optional: VERTEX_API_KEY is not needed when using service account
     VERTEX_API_KEY: z.string().optional(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -59,6 +61,7 @@ export const env = createEnv({
     VERTEX_API_KEY: process.env.VERTEX_API_KEY,
     GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT,
     GOOGLE_CLOUD_LOCATION: process.env.GOOGLE_CLOUD_LOCATION,
+    GOOGLE_CREDENTIALS_JSON: process.env.GOOGLE_CREDENTIALS_JSON,
     NODE_ENV: process.env.NODE_ENV,
   },
   /**

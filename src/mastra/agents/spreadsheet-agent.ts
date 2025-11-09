@@ -1,6 +1,6 @@
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
-import { vertex } from "@ai-sdk/google-vertex";
+import { vertex } from "../lib/vertex";
 import {
   sheetReaderTool,
   sheetWriterTool,

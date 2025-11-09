@@ -1,6 +1,6 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
-import { vertex } from "@ai-sdk/google-vertex";
+import { vertex } from "../lib/vertex";
 import { generateText } from "ai";
 
 /**
