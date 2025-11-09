@@ -32,12 +32,9 @@ export interface SheetContext {
     operatorType?: string | null;
     operatorConfig?: any;
     prompt?: string | null;
-    maxLength?: number;
-    minLength?: number;
-    required?: boolean;
-    validationPattern?: string;
-    examples?: string[];
-    description?: string;
+    dependencies?: number[] | null;
+    isRequired?: boolean | null;
+    defaultValue?: string | null;
   }>;
   rowIndex: number;
   currentColumnIndex: number;

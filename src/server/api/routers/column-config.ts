@@ -11,7 +11,7 @@ import { eq, and } from "drizzle-orm";
  */
 export const columnConfigRouter = createTRPCRouter({
   /**
-   * Update column operator configuration
+   * Update column operator configuration (full update)
    */
   updateColumnConfig: protectedProcedure
     .input(z.object({
@@ -20,6 +20,10 @@ export const columnConfigRouter = createTRPCRouter({
       operatorType: z.string().optional().nullable(),
       operatorConfig: z.record(z.any()).optional().nullable(),
       prompt: z.string().optional().nullable(),
+      dataType: z.string().optional().nullable(),
+      dependencies: z.array(z.number()).optional().nullable(),
+      isRequired: z.boolean().optional().nullable(),
+      defaultValue: z.string().optional().nullable(),
     }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
@@ -40,21 +44,26 @@ export const columnConfigRouter = createTRPCRouter({
         throw new Error('Sheet not found or access denied');
       }
 
+      // Build update object (only include non-undefined fields)
+      const updates: any = { updatedAt: new Date() };
+      if (input.operatorType !== undefined) updates.operatorType = input.operatorType;
+      if (input.operatorConfig !== undefined) updates.operatorConfig = input.operatorConfig;
+      if (input.prompt !== undefined) updates.prompt = input.prompt;
+      if (input.dataType !== undefined) updates.dataType = input.dataType;
+      if (input.dependencies !== undefined) updates.dependencies = input.dependencies;
+      if (input.isRequired !== undefined) updates.isRequired = input.isRequired;
+      if (input.defaultValue !== undefined) updates.defaultValue = input.defaultValue;
+
       // Update column configuration
       await ctx.db
         .update(columns)
-        .set({
-          operatorType: input.operatorType,
-          operatorConfig: input.operatorConfig,
-          prompt: input.prompt,
-          updatedAt: new Date(),
-        })
+        .set(updates)
         .where(and(
           eq(columns.id, input.columnId),
           eq(columns.sheetId, input.sheetId)
         ));
 
-      console.log(`[Column Config] Updated column configuration`);
+      console.log(`[Column Config] Updated column configuration:`, updates);
 
       return {
         success: true,
@@ -101,7 +110,7 @@ export const columnConfigRouter = createTRPCRouter({
     }),
 
   /**
-   * Get column configuration
+   * Get column configuration (full details)
    */
   getColumnConfig: protectedProcedure
     .input(z.object({
@@ -122,6 +131,9 @@ export const columnConfigRouter = createTRPCRouter({
         operatorType: col.operatorType,
         operatorConfig: col.operatorConfig,
         prompt: col.prompt,
+        dependencies: col.dependencies as number[] | null,
+        isRequired: col.isRequired,
+        defaultValue: col.defaultValue,
       }));
     }),
 });
