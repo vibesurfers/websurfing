@@ -7,6 +7,7 @@
 import { db } from "@/server/db";
 import { sheetUpdates, eventQueue, cells, cellProcessingStatus } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
+import { resolveRedirectUrl } from "@/server/utils/url-resolver";
 import type { SheetContext } from "./operator-controller";
 import { ResultValidator, ColumnDataType, type ValidatedColumn } from "./result-validator";
 import { FormatConstraints } from "./format-constraints";
@@ -231,7 +232,13 @@ export class ColumnAwareWrapper {
     switch (operatorName) {
       case 'google_search':
         // Use first search result URL or title
-        content = output.results?.[0]?.url || output.results?.[0]?.title || '';
+        let url = output.results?.[0]?.url || output.results?.[0]?.title || '';
+        // Resolve redirect URLs to actual destinations
+        if (url && url.includes('vertexaisearch.cloud.google.com/grounding-api-redirect')) {
+          console.log('[ColumnAwareWrapper] Resolving redirect URL...');
+          url = await resolveRedirectUrl(url);
+        }
+        content = url;
         break;
       case 'academic_search':
         // For academic search, prioritize PDF links or high-impact results

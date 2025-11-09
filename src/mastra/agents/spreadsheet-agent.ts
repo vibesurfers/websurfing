@@ -6,6 +6,7 @@ import {
   sheetWriterTool,
   columnManagerTool,
   rowManagerTool,
+  sheetConfigTool,
   googleSearchTool,
   googleMapsTool,
 } from "../tools";
@@ -100,8 +101,11 @@ export const spreadsheetAgent = new Agent({
 
 When you need to add columns:
 - Use columnManagerTool action='add'
+- **IMPORTANT**: Extract userId from the context message
+- Set processExistingRows=true to auto-fill the column for existing rows
 - Suggest good column names based on the data
 - Example: For pizza places → "Name", "Address", "Rating", "Phone"
+- After adding, inform user that processing will happen automatically
 
 ## Important Rules
 
@@ -149,6 +153,7 @@ You: "Creating 20 rows now! ✨"
     sheetWriterTool,
     columnManagerTool,
     rowManagerTool,
+    sheetConfigTool,
     googleSearchTool,
     googleMapsTool,
   },

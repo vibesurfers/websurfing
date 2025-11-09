@@ -548,7 +548,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
       }
     })
 
-    // Update cell contents from database
+    // Update cell contents from database AND add processing indicators
     let hasChanges = false
     let updatedCount = 0;
     cells.forEach(cell => {
@@ -557,6 +557,25 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
         const td = row.children[cell.colIndex] as HTMLTableCellElement
         const currentContent = td.textContent?.trim() || ''
         const dbContent = (cell.content || '').trim()
+
+        // Check if this cell is currently processing
+        const cellKey = `${cell.rowIndex}-${cell.colIndex}`;
+        const cellStatus = processingStatus?.[cellKey];
+
+        // Add processing class if cell is processing
+        if (cellStatus?.status === 'processing') {
+          td.classList.add('cell-processing');
+          td.setAttribute('data-status-message', cellStatus.message || 'Processing...');
+        } else {
+          td.classList.remove('cell-processing');
+          td.removeAttribute('data-status-message');
+        }
+
+        // Add completed class briefly when done
+        if (cellStatus?.status === 'completed' && dbContent && !td.classList.contains('cell-completed')) {
+          td.classList.add('cell-completed');
+          setTimeout(() => td.classList.remove('cell-completed'), 2000); // Remove after 2s
+        }
 
         // Only update if content from database is different from what's currently shown
         if (dbContent !== currentContent) {
