@@ -5,6 +5,7 @@ import { CountdownTimer } from "@/components/countdown-timer";
 import { SheetSelector } from "@/components/sheet-selector";
 import { AgentSidebar } from "@/components/agent-sidebar";
 import { ApiSnippetsDialog } from "@/components/api-snippets-dialog";
+import { SheetControls } from "@/components/sheet-controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +66,9 @@ export function SheetEditor({ sheetId, appUrl }: SheetEditorProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
 
+  // Processing state for sticky panel
+  const [isProcessingEvents, setIsProcessingEvents] = useState(false);
+
   // Persist sidebar state to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -83,6 +87,15 @@ export function SheetEditor({ sheetId, appUrl }: SheetEditorProps) {
       enabled: !!sheetId,
       refetchInterval: false,
       retry: false,
+    }
+  );
+
+  // Query events for sticky panel (with auto-refresh)
+  const { data: events, refetch: refetchEvents } = api.cell.getEvents.useQuery(
+    { sheetId },
+    {
+      enabled: !!sheetId && isReady,
+      refetchInterval: 2000, // Refresh every 2 seconds
     }
   );
 
@@ -150,6 +163,55 @@ export function SheetEditor({ sheetId, appUrl }: SheetEditorProps) {
       deleteMutation.mutate({ sheetId });
     }
   }, [confirmText, currentSheet?.name, sheetId, deleteMutation]);
+
+  // Sheet controls handlers
+  const handleProcessEvents = useCallback(async () => {
+    if (!sheetId) return;
+    setIsProcessingEvents(true);
+    try {
+      await fetch(`/api/update-sheet?sheetId=${sheetId}`, { method: 'POST' });
+      refetchEvents();
+      void utils.cell.getCells.invalidate({ sheetId });
+    } catch (error) {
+      console.error('Error processing events:', error);
+    } finally {
+      setIsProcessingEvents(false);
+    }
+  }, [sheetId, refetchEvents, utils]);
+
+  const handleRefreshEvents = useCallback(() => {
+    refetchEvents();
+  }, [refetchEvents]);
+
+  const handleDownloadCSV = useCallback(async () => {
+    if (!currentSheet?.name) return;
+
+    try {
+      // Fetch columns and cells
+      const response = await fetch(`/api/v1/sheets/${sheetId}/data?format=csv`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('apiKey') || ''}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download CSV');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentSheet.name.replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading CSV:', error);
+      alert('Failed to download CSV. Please try again.');
+    }
+  }, [sheetId, currentSheet?.name]);
 
   const handleUpdateTick = useCallback(async () => {
     if (!sheetId) return;
@@ -310,6 +372,15 @@ export function SheetEditor({ sheetId, appUrl }: SheetEditorProps) {
         sheetId={sheetId}
         isOpen={agentSidebarOpen}
         onToggle={setAgentSidebarOpen}
+      />
+
+      {/* Sticky Bottom Control Panel */}
+      <SheetControls
+        events={events ?? []}
+        onProcessEvents={handleProcessEvents}
+        onRefreshEvents={handleRefreshEvents}
+        onDownloadCSV={handleDownloadCSV}
+        isProcessing={isProcessingEvents}
       />
 
       {/* Delete Confirmation Dialog */}

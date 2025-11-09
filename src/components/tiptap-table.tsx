@@ -9,6 +9,7 @@ import { TableCell } from '@tiptap/extension-table-cell'
 import { api } from "@/trpc/react"
 import { useCallback, useRef, useEffect, useState, useContext, createContext } from 'react'
 import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface SheetUpdateContextType {
   lastUpdate: Date | null;
@@ -738,7 +739,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   if (!editor) return null
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-52">
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes spin-loader {
           to { transform: rotate(360deg); }
@@ -781,6 +782,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           z-index: 10;
         }
       `}} />
+      <ScrollArea className="h-[calc(100vh-450px)] w-full rounded border border-gray-300">
       <div className="relative group">
         <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', position: 'relative' }}>
           <thead>
@@ -914,7 +916,9 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           <span className="text-blue-600 text-2xl font-bold">+</span>
           <span className="text-blue-700 font-medium text-sm">Add Row</span>
         </div>
-        <style key={`table-styles-${columnCount}`} dangerouslySetInnerHTML={{ __html: `
+      </div>
+      </ScrollArea>
+      <style key={`table-styles-${columnCount}`} dangerouslySetInnerHTML={{ __html: `
           .ProseMirror table {
             border-collapse: collapse;
             table-layout: fixed;
@@ -1011,50 +1015,6 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
             outline: none;
           }
         `}} />
-      </div>
-
-      <div className="flex gap-2">
-        <Button
-          onClick={triggerProcessing}
-          variant="default"
-        >
-          Process Events
-        </Button>
-        <Button
-          onClick={() => refetch()}
-          variant="secondary"
-        >
-          Refresh Events
-        </Button>
-        <Button
-          onClick={downloadCSV}
-          variant="outline"
-          className="bg-green-50 hover:bg-green-100 border-green-300 text-green-700"
-        >
-          Download as CSV
-        </Button>
-      </div>
-
-      {/* Debug: Show events */}
-      <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded">
-        <h3 className="font-semibold mb-2">Events ({events?.length ?? 0}):</h3>
-        {events?.length === 0 && (
-          <p className="text-gray-400">No events yet</p>
-        )}
-        {events?.slice().reverse().slice(0, 5).map(event => (
-          <div key={event.id} className="bg-white p-2 rounded mb-2 border">
-            <div className="font-mono text-xs">
-              <strong>{event.eventType}</strong> - {event.status}
-            </div>
-            <div className="text-xs text-gray-500">
-              {JSON.stringify(event.payload)}
-            </div>
-            <div className="text-xs text-gray-400">
-              {event.createdAt?.toLocaleString()}
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* Confirmation Modal */}
       {confirmationPending && (
