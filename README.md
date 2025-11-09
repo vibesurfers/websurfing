@@ -186,7 +186,7 @@ Google Cloud Project with Vertex AI enabled
 
 1. **Clone and install**
 ```bash
-git clone https://github.com/vibesurfers/vibesheets
+git clone https://github.com/vibesurfers/websurfing
 cd vibesheets
 pnpm install
 ```
