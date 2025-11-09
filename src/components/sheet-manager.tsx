@@ -3,6 +3,7 @@
 import { TiptapTable } from "@/components/tiptap-table";
 import { CountdownTimer } from "@/components/countdown-timer";
 import { SheetSelector } from "@/components/sheet-selector";
+import { WelcomeFlow } from "@/components/welcome-flow";
 import { useState, useCallback, createContext, useContext, useEffect } from "react";
 import { api } from "@/trpc/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -34,22 +35,21 @@ export function SheetManager() {
 
   const { data: sheets } = api.sheet.list.useQuery();
 
-  // Auto-select first sheet when sheets load or update URL from query param
   useEffect(() => {
     const sheetIdFromUrl = searchParams.get('sheetId');
 
-    if (sheets && sheets.length > 0) {
-      if (sheetIdFromUrl && sheets.some(s => s.id === sheetIdFromUrl)) {
-        // Valid sheet in URL, use it
+    if (sheetIdFromUrl) {
+      if (sheets && sheets.some(s => s.id === sheetIdFromUrl)) {
         if (selectedSheetId !== sheetIdFromUrl) {
+          console.log('Setting selectedSheetId from URL:', sheetIdFromUrl);
           setSelectedSheetId(sheetIdFromUrl);
         }
-      } else if (!selectedSheetId) {
-        // No valid sheet selected, use first one and update URL
-        const firstSheet = sheets[0].id;
-        setSelectedSheetId(firstSheet);
-        router.replace(`/?sheetId=${firstSheet}`);
       }
+    } else if (sheets && sheets.length > 0 && !selectedSheetId) {
+      const firstSheet = sheets[0].id;
+      console.log('Auto-selecting first sheet:', firstSheet);
+      setSelectedSheetId(firstSheet);
+      router.replace(`/?sheetId=${firstSheet}`);
     }
   }, [sheets, searchParams, selectedSheetId, router]);
 
@@ -139,6 +139,10 @@ export function SheetManager() {
         </div>
       </div>
     );
+  }
+
+  if (!selectedSheetId) {
+    return <WelcomeFlow />;
   }
 
   return (

@@ -34,6 +34,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   const { lastUpdate } = useSheetUpdates()
   const isApplyingRobotUpdates = useRef(false)
   const [columnCount, setColumnCount] = useState(2)
+  const [columnTitles, setColumnTitles] = useState<string[]>([])
 
   const utils = api.useUtils()
 
@@ -80,11 +81,31 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     }
   )
 
+  const { data: columns } = api.sheet.getColumns.useQuery(
+    { sheetId },
+    {
+      refetchInterval: false,
+      retry: (failureCount, error) => {
+        if (error.data?.code === 'UNAUTHORIZED') return false;
+        return failureCount < 3;
+      },
+      refetchOnWindowFocus: false,
+    }
+  )
+
   useEffect(() => {
     if (events) {
       console.log(`[TiptapTable] Received ${events.length} events for sheetId: ${sheetId}`)
     }
   }, [events, sheetId])
+
+  useEffect(() => {
+    if (columns && columns.length > 0) {
+      const titles = columns.map(col => col.title)
+      setColumnTitles(titles)
+      setColumnCount(titles.length)
+    }
+  }, [columns])
 
   // Debounce mechanism - only fire events after user stops typing
   const debounceRefs = useRef<Map<string, NodeJS.Timeout>>(new Map())
@@ -92,6 +113,9 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
 
   const debouncedCellUpdate = useCallback((content: string, rowIndex: number, colIndex: number) => {
     const cellKey = `${rowIndex}-${colIndex}`
+
+    // Capture whether this is a robot update at the time of the call
+    const isRobotUpdate = isApplyingRobotUpdates.current
 
     // Clear existing timeout for this specific cell
     const existingTimeout = debounceRefs.current.get(cellKey)
@@ -101,7 +125,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
 
     // If this is a robot update and we're not treating robots as humans, skip creating event
     // But still update the content tracking so we know what's in the cell
-    if (isApplyingRobotUpdates.current && !treatRobotsAsHumans) {
+    if (isRobotUpdate && !treatRobotsAsHumans) {
       console.log(`Skipping robot update event for (${rowIndex}, ${colIndex}) - treatRobotsAsHumans is false`)
       lastContentRef.current.set(cellKey, content)
       return
@@ -127,7 +151,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           })
         } else {
           // Normal update with content
-          const updateSource = isApplyingRobotUpdates.current ? 'robot' : 'user'
+          const updateSource = isRobotUpdate ? 'robot' : 'user'
           console.log(`Creating ${updateSource} cell update event at (${rowIndex}, ${colIndex}): "${content}"`)
           lastContentRef.current.set(cellKey, content)
           updateCell.mutate({
@@ -172,8 +196,8 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
 
       const rows = tbody.querySelectorAll('tr')
 
-      // Update column count based on first row
-      if (rows[0]) {
+      // Update column count based on first row (only if no columns from DB)
+      if (rows[0] && columnTitles.length === 0) {
         const cellCount = rows[0].querySelectorAll('td').length
         setColumnCount(cellCount)
       }
@@ -327,21 +351,41 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   return (
     <div className="space-y-4">
       <div className="border rounded p-4">
-        <div className="flex" style={{ width: '100%' }}>
-          {Array.from({ length: columnCount }, (_, i) => (
-            <div
-              key={i}
-              className="bg-gray-100 border border-gray-300 text-center font-semibold text-xs text-gray-700"
-              style={{
-                flex: '1 1 0',
-                padding: '4px 12px',
-                minWidth: '1em'
-              }}
-            >
-              {i + 1}
-            </div>
-          ))}
-        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <thead>
+            <tr>
+              {columnTitles.length > 0 ? (
+                columnTitles.map((title, i) => (
+                  <th
+                    key={i}
+                    className="bg-blue-100 border border-blue-300 text-center font-semibold text-xs text-blue-900"
+                    style={{
+                      padding: '8px 12px',
+                      minWidth: '1em',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {title}
+                  </th>
+                ))
+              ) : (
+                Array.from({ length: columnCount }, (_, i) => (
+                  <th
+                    key={i}
+                    className="bg-gray-100 border border-gray-300 text-center font-semibold text-xs text-gray-700"
+                    style={{
+                      padding: '4px 12px',
+                      minWidth: '1em',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {i + 1}
+                  </th>
+                ))
+              )}
+            </tr>
+          </thead>
+        </table>
         <EditorContent editor={editor} />
         <style jsx global>{`
           .ProseMirror table {
@@ -350,6 +394,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
             width: 100%;
             margin: 0;
             overflow: hidden;
+            margin-top: -1px;
           }
 
           .ProseMirror td {

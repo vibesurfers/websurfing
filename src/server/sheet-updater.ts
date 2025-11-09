@@ -41,31 +41,7 @@ export class SheetUpdater {
 
       for (const event of pendingEvents) {
         try {
-          if (event.eventType === 'cell_update') {
-            const payload = event.payload as { rowIndex: number; colIndex: number; content: string };
-
-            // Create a sheet update to put the same content in the cell to the right
-            const newUpdate = await this.createSheetUpdate(
-              sheetId,
-              userId,
-              payload.rowIndex,
-              payload.colIndex + 1, // Cell to the right
-              payload.content, // Same content
-              'auto_copy'
-            );
-
-            appliedUpdates.push({
-              id: newUpdate.id,
-              rowIndex: newUpdate.rowIndex,
-              colIndex: newUpdate.colIndex,
-              content: newUpdate.content,
-              updateType: newUpdate.updateType,
-            });
-
-            console.log(`Created sheet update from event ${event.id}: (${payload.rowIndex}, ${payload.colIndex}) → (${payload.rowIndex}, ${payload.colIndex + 1}) = "${payload.content}"`);
-          }
-
-          // Mark event as completed
+          // Mark event as completed (no auto-copy automation)
           await db
             .update(eventQueue)
             .set({
@@ -73,6 +49,8 @@ export class SheetUpdater {
               processedAt: new Date()
             })
             .where(eq(eventQueue.id, event.id));
+
+          console.log(`Processed event ${event.id}: ${event.eventType}`);
 
         } catch (error) {
           console.error(`Failed to process event ${event.id}:`, error);
