@@ -229,13 +229,13 @@ VALUES (?, ?, 'robot_cell_update', ?, 'pending')
 - **Stop creating events when**: `nextColIndex < ctx.columns.length - 1` is false
 - **Condition**: Don't create event if just filled the last column
 - **Final check**: `nextColIndex >= ctx.columns.length` stops writing entirely (lines 92-95)
-## 10. UI CELL UPDATE MECHANISM
+## 10. UI CELL UPDATE MECHANISM ✅
 
 ### 1. getCells Query Refetch Interval
-**Line 120**: `refetchInterval: 2000` - Refetches cells every 2 seconds
+**Line 114**: `refetchInterval: 2000` - Refetches cells every 2 seconds
 
-### 2. Cell Rendering Effect Dependencies and Guard Conditions  
-**Lines 446-448**: Effect dependencies are `[editor, cells, cells.length]` with guards:
+### 2. Cell Rendering Effect Dependencies and Guard Conditions
+**Lines 502-504**: Effect dependencies are `[editor, cells, cells.length]` with guards:
 - Requires editor to exist: `if (!editor || !cells || cells.length === 0) return`
 
 ### 3. Cell Comparison Logic
@@ -246,7 +246,7 @@ if (content !== lastContent) {
 Uses `lastContentRef.current.get(cellKey)` to track previous content per cell key `${rowIndex}-${colIndex}`
 
 ### 4. Editor Content Updates
-**Lines 368-372**: Robot updates bypass events:
+**Lines 514**: Robot updates bypass events:
 ```typescript
 isApplyingRobotUpdates.current = true
 const newHtml = table.outerHTML
@@ -392,7 +392,7 @@ static buildContextualPrompt(ctx: SheetContext, targetColumn: string): string {
 - **url_context**: `ctx.columns[ctx.currentColumnIndex + 1]` (line 289)  
 - **structured_output**: Uses `writeToNextColumn` with `nextColIndex = ctx.currentColumnIndex + 1` (line 89)
 
-## 11. DATABASE SCHEMA & RELATIONSHIPS
+## 11. DATABASE SCHEMA & RELATIONSHIPS ✅
 
 ### Complete CREATE TABLE Statements
 
@@ -630,10 +630,10 @@ StructuredOutputOutput {
 ```
 
 
-## 12. COMPLETE FLOW TIMELINE
+## 12. COMPLETE FLOW TIMELINE ✅
 
 ### T+0ms: User Input Detection
-- **File**: `src/components/tiptap-table.tsx:296-323`
+- **File**: `src/components/tiptap-table.tsx:290-316`
 - **Action**: User types "squarespace" in cell (0,0)
 - **Trigger**: TipTap `onUpdate` handler fires
 - **Parse**: HTML → DOM → extract cell content

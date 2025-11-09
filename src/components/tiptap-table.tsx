@@ -360,8 +360,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     if (hasChanges) {
       console.log('[TiptapTable] Updating editor with new column structure')
       isApplyingRobotUpdates.current = true
-      const newHtml = table.outerHTML
-      editor.commands.setContent(newHtml)
+      editor.commands.setContent(`<div class="tableWrapper">${table.outerHTML}</div>`)
       isApplyingRobotUpdates.current = false
     }
   }, [columnCount, editor])
@@ -396,34 +395,18 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   const handleAddColumn = () => {
     setIsAddingColumn(true);
 
-    // Immediately add a temporary column to the editor to maintain alignment
+    // Use TipTap's native addColumnAfter command
     if (editor) {
-      const html = editor.getHTML();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const table = doc.querySelector('table');
-      if (table) {
-        const tbody = table.querySelector('tbody') || table;
-        const rows = tbody.querySelectorAll('tr');
+      isApplyingRobotUpdates.current = true;
+      editor.chain().focus().addColumnAfter().run();
+      isApplyingRobotUpdates.current = false;
 
-        // Add a cell to each row
-        rows.forEach(row => {
-          const newCell = doc.createElement('td');
-          row.appendChild(newCell);
-        });
-
-        isApplyingRobotUpdates.current = true;
-        const newHtml = table.outerHTML;
-        editor.commands.setContent(newHtml);
-        isApplyingRobotUpdates.current = false;
-
-        // Update column count to reflect the new column
-        setColumnCount(prev => {
-          const newCount = prev + 1;
-          console.log('[TiptapTable] Column count increased to:', newCount);
-          return newCount;
-        });
-      }
+      // Update column count to reflect the new column
+      setColumnCount(prev => {
+        const newCount = prev + 1;
+        console.log('[TiptapTable] Column count increased to:', newCount);
+        return newCount;
+      });
     }
   }
 
@@ -444,31 +427,14 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   }
 
   const handleCancelAddColumn = () => {
-    // Remove the temporary column from the editor
+    // Use TipTap's native deleteColumn command to remove the temporary column
     if (editor) {
-      const html = editor.getHTML();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const table = doc.querySelector('table');
-      if (table) {
-        const tbody = table.querySelector('tbody') || table;
-        const rows = tbody.querySelectorAll('tr');
+      isApplyingRobotUpdates.current = true;
+      editor.chain().focus().deleteColumn().run();
+      isApplyingRobotUpdates.current = false;
 
-        // Remove the last cell from each row
-        rows.forEach(row => {
-          if (row.lastChild) {
-            row.removeChild(row.lastChild);
-          }
-        });
-
-        isApplyingRobotUpdates.current = true;
-        const newHtml = table.outerHTML;
-        editor.commands.setContent(newHtml);
-        isApplyingRobotUpdates.current = false;
-
-        // Update column count to reflect the removed column
-        setColumnCount(prev => prev - 1);
-      }
+      // Update column count to reflect the removed column
+      setColumnCount(prev => prev - 1);
     }
 
     setIsAddingColumn(false);
@@ -478,22 +444,9 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   const handleAddRow = () => {
     if (!editor) return;
 
-    const html = editor.getHTML();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    const table = doc.querySelector('table');
-    if (!table) return;
-
-    const tbody = table.querySelector('tbody') || table;
-    const newRow = doc.createElement('tr');
-    for (let i = 0; i < columnCount; i++) {
-      const newCell = doc.createElement('td');
-      newRow.appendChild(newCell);
-    }
-    tbody.appendChild(newRow);
-
+    // Use TipTap's native addRowAfter command
     isApplyingRobotUpdates.current = true;
-    editor.commands.setContent(`<div class="tableWrapper">${table.outerHTML}</div>`);
+    editor.chain().focus().addRowAfter().run();
     isApplyingRobotUpdates.current = false;
   }
 
@@ -759,8 +712,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
       <div className="relative group">
         {/* Add column button - full height */}
         <div
-          className="absolute right-0 top-0 bottom-0 w-16 bg-white border border-gray-300 hover:bg-blue-50 transition-colors cursor-pointer flex items-center justify-center z-20"
-          style={{ borderLeft: 'none' }}
+          className="absolute right-0 top-0 bottom-0 w-16 bg-white hover:bg-blue-50 transition-colors cursor-pointer flex items-center justify-center z-20"
           onClick={handleAddColumn}
         >
           <span className="text-gray-400 hover:text-blue-500 text-lg">+</span>
@@ -834,8 +786,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
         </div>
         <div
           onClick={handleAddRow}
-          className="w-full h-10 bg-white border border-gray-300 hover:bg-blue-50 transition-colors cursor-pointer flex items-center justify-center"
-          style={{ borderTop: 'none' }}
+          className="w-full h-10 bg-white hover:bg-blue-50 transition-colors cursor-pointer flex items-center justify-center"
         >
           <span className="text-gray-400 hover:text-blue-500 text-lg">+</span>
         </div>
@@ -873,20 +824,8 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
             background-color: #f9fafb;
           }
 
-          .ProseMirror td:first-child {
-            border-left: 1px solid #d1d5db;
-          }
-
-          .ProseMirror td:last-child {
-            border-right: 1px solid #d1d5db;
-          }
-
-          .ProseMirror tr:first-child td {
-            border-top: 1px solid #d1d5db;
-          }
-
-          .ProseMirror tr:last-child td {
-            border-bottom: 1px solid #d1d5db;
+          .ProseMirror table {
+            border: 1px solid #d1d5db;
           }
 
           .ProseMirror .selectedCell:after {
