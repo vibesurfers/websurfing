@@ -10,6 +10,23 @@ import { URLContextEnrichmentOperator } from "./url-context-operator";
 import { StructuredOutputConversionOperator } from "./structured-output-operator";
 import { FunctionCallingOperator } from "./function-calling-operator";
 import type { BaseOperator, OperatorName } from "@/types/operators";
+import { db } from "@/server/db";
+import { eventQueue } from "@/server/db/schema";
+import { eq } from "drizzle-orm";
+import { ColumnAwareWrapper } from "./column-aware-wrapper";
+
+/**
+ * Sheet context for operators
+ */
+export interface SheetContext {
+  sheetId: string;
+  templateType: 'lucky' | 'marketing' | 'scientific' | null;
+  systemPrompt?: string;
+  columns: Array<{ id: string; title: string; position: number; dataType: string }>;
+  rowIndex: number;
+  currentColumnIndex: number;
+  rowData: Record<number, string>;
+}
 
 /**
  * Base event structure (from PROJECT-ARCHITECTURE.md)
@@ -20,6 +37,7 @@ export interface BaseEvent<T = unknown> {
   eventType: EventType;
   timestamp: Date;
   data: T;
+  sheetContext?: SheetContext;
 }
 
 /**
@@ -95,6 +113,19 @@ export class OperatorController {
       // Execute operator
       const output = await operator.operation(input);
 
+      console.log(`[OperatorController] Operator returned:`, output);
+
+      // Write result to next column in the row
+      if (event.sheetContext) {
+        await ColumnAwareWrapper.writeToNextColumn(
+          event.sheetContext,
+          event.userId,
+          event.eventId,
+          output,
+          operatorName
+        );
+      }
+
       // Call next() hook if defined
       if (operator.next) {
         await operator.next(output);
@@ -133,7 +164,8 @@ export class OperatorController {
    */
   private selectOperator(eventType: EventType, data: unknown): OperatorName {
     switch (eventType) {
-      case "user_cell_edit": {
+      case "user_cell_edit":
+      case "robot_cell_update": {
         const cellData = data as UpdateCellInput;
         const content = cellData.content.toLowerCase().trim();
 
@@ -190,11 +222,21 @@ export class OperatorController {
       case "google_search": {
         const cellData = event.data as UpdateCellInput | ManualTriggerData;
 
-        // Extract query from cell content or trigger parameters
-        const query =
+        let query =
           "content" in cellData
             ? cellData.content.replace(/^(search:|find:|query:)/i, "").trim()
             : (cellData.parameters?.query as string) || "";
+
+        if (event.sheetContext) {
+          const ctx = event.sheetContext;
+          const nextCol = ctx.columns[ctx.currentColumnIndex + 1];
+          if (nextCol) {
+            const contextPrompt = ColumnAwareWrapper.buildContextualPrompt(ctx, nextCol.title);
+            query = `${query} ${nextCol.title}`.trim();
+            console.log('[OperatorController] Context-aware search query:', query);
+            console.log('[OperatorController] Full context:\n', contextPrompt);
+          }
+        }
 
         return {
           query,
@@ -205,7 +247,6 @@ export class OperatorController {
       case "url_context": {
         const cellData = event.data as UpdateCellInput | ManualTriggerData;
 
-        // Extract URLs from content or parameters
         const urls =
           "content" in cellData
             ? this.extractUrls(cellData.content)
@@ -252,9 +293,6 @@ export class OperatorController {
     }
   }
 
-  /**
-   * Detect if content is a search query
-   */
   private isSearchQuery(content: string): boolean {
     // Check for search prefixes
     const searchPrefixes = /^(search:|find:|query:|what is|who is|where is|when is|how to)/i;
@@ -289,23 +327,30 @@ export class OperatorController {
   /**
    * Mark event as completed in database
    */
-  private async completeEvent(_eventId: string, _output: unknown): Promise<void> {
-    // TODO: Update event_queue table
-    // - status = 'completed'
-    // - completedAt = now
-    // - Store output in appropriate field
-    console.log(`[OperatorController] Event completed (DB update not implemented)`);
+  private async completeEvent(eventId: string, _output: unknown): Promise<void> {
+    await db
+      .update(eventQueue)
+      .set({
+        status: 'completed',
+        processedAt: new Date(),
+      })
+      .where(eq(eventQueue.id, eventId));
+
+    console.log(`[OperatorController] Event ${eventId} marked as completed`);
   }
 
   /**
    * Mark event as failed in database
    */
-  private async failEvent(_eventId: string, error: Error): Promise<void> {
-    // TODO: Update event_queue table
-    // - status = 'failed'
-    // - error = error.message
-    // - Increment retryCount
-    console.error(`[OperatorController] Event failed:`, error.message);
+  private async failEvent(eventId: string, error: Error): Promise<void> {
+    await db
+      .update(eventQueue)
+      .set({
+        status: 'failed',
+      })
+      .where(eq(eventQueue.id, eventId));
+
+    console.error(`[OperatorController] Event ${eventId} failed:`, error.message);
   }
 
   /**

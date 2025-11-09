@@ -41,8 +41,14 @@ export const cellRouter = createTRPCRouter({
       await ctx.db.insert(eventQueue).values({
         sheetId: sheetId,
         userId: userId,
-        eventType: 'cell_update',
-        payload: input,
+        eventType: 'user_cell_edit',
+        payload: {
+          spreadsheetId: sheetId,
+          rowIndex: input.rowIndex,
+          columnId: '',
+          colIndex: input.colIndex,
+          content: input.content,
+        },
         status: 'pending',
       });
 

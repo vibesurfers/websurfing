@@ -1,8 +1,16 @@
 import { db } from "@/server/db";
-import { sheetUpdates, cells, eventQueue, sheets } from "@/server/db/schema";
+import { sheetUpdates, cells, eventQueue, sheets, columns } from "@/server/db/schema";
 import { eq, and, isNull, inArray } from "drizzle-orm";
+import { OperatorController } from "@/server/operators/operator-controller";
+import type { BaseEvent, SheetContext } from "@/server/operators/operator-controller";
+import { getTemplate } from "@/server/templates/column-templates";
 
 export class SheetUpdater {
+  private operatorController: OperatorController;
+
+  constructor() {
+    this.operatorController = new OperatorController();
+  }
   async updateSheet(userId: string, sheetId: string) {
     console.log('Updating sheet for user:', userId, 'sheetId:', sheetId);
 
@@ -39,16 +47,79 @@ export class SheetUpdater {
 
       const appliedUpdates: any[] = [];
 
+      // Fetch sheet metadata once for all events
+      const sheet = await db.select().from(sheets).where(eq(sheets.id, sheetId)).limit(1);
+      const sheetData = sheet[0];
+
+      if (!sheetData) {
+        console.error('Sheet not found:', sheetId);
+        return { success: false, error: 'Sheet not found', appliedUpdates: [], totalApplied: 0 };
+      }
+
+      // Fetch columns for this sheet
+      const sheetColumns = await db.select().from(columns).where(eq(columns.sheetId, sheetId)).orderBy(columns.position);
+
       for (const event of pendingEvents) {
         try {
-          // Mark event as completed (no auto-copy automation)
-          await db
-            .update(eventQueue)
-            .set({
-              status: 'completed',
-              processedAt: new Date()
-            })
-            .where(eq(eventQueue.id, event.id));
+          // Extract cell position from event payload
+          const payload = event.payload as any;
+          const rowIndex = payload.rowIndex ?? 0;
+          const colIndex = payload.colIndex ?? 0;
+
+          // Check if row is already complete (all columns filled)
+          if (colIndex >= sheetColumns.length - 1) {
+            console.log(`Row ${rowIndex} already complete, marking event ${event.id} as completed`);
+            try {
+              await db
+                .update(eventQueue)
+                .set({
+                  status: 'completed',
+                  processedAt: new Date()
+                })
+                .where(eq(eventQueue.id, event.id));
+              console.log(`Successfully marked event ${event.id} as completed`);
+            } catch (updateError) {
+              console.error(`Failed to mark event ${event.id} as completed:`, updateError);
+            }
+            continue;
+          }
+
+          // Fetch existing row data
+          const rowCells = await db.select().from(cells).where(
+            and(
+              eq(cells.sheetId, sheetId),
+              eq(cells.rowIndex, rowIndex)
+            )
+          );
+
+          const rowData: Record<number, string> = {};
+          rowCells.forEach(cell => {
+            rowData[cell.colIndex] = cell.content ?? '';
+          });
+
+          // Build sheet context
+          const sheetContext: SheetContext = {
+            sheetId,
+            templateType: sheetData.templateType as any,
+            systemPrompt: sheetData.templateType ? getTemplate(sheetData.templateType as any).systemPrompt : undefined,
+            columns: sheetColumns.map(col => ({ id: col.id, title: col.title, position: col.position, dataType: col.dataType ?? 'text' })),
+            rowIndex,
+            currentColumnIndex: colIndex,
+            rowData,
+          };
+
+          // Dispatch event to operator controller with context
+          const baseEvent: BaseEvent = {
+            userId: event.userId,
+            eventId: event.id,
+            eventType: event.eventType as any,
+            timestamp: event.createdAt ?? new Date(),
+            data: event.payload,
+            sheetContext,
+          };
+
+          // Process the event through the operator controller
+          await this.operatorController.dispatch(baseEvent);
 
           console.log(`Processed event ${event.id}: ${event.eventType}`);
 

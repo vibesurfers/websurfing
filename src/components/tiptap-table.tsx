@@ -25,20 +25,20 @@ function useSheetUpdates() {
   return context;
 }
 
-const initialContent = `
+function generateInitialContent(columnCount: number): string {
+  const rows = Array.from({ length: 8 }, () => {
+    const cells = Array.from({ length: columnCount }, () => '<td></td>').join('');
+    return `<tr>${cells}</tr>`;
+  }).join('\n      ');
+
+  return `
   <table>
     <tbody>
-      <tr><td></td><td></td></tr>
-      <tr><td></td><td></td></tr>
-      <tr><td></td><td></td></tr>
-      <tr><td></td><td></td></tr>
-      <tr><td></td><td></td></tr>
-      <tr><td></td><td></td></tr>
-      <tr><td></td><td></td></tr>
-      <tr><td></td><td></td></tr>
+      ${rows}
     </tbody>
   </table>
-`
+`;
+}
 
 interface TiptapTableProps {
   treatRobotsAsHumans: boolean
@@ -124,9 +124,15 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     if (columns && columns.length > 0) {
       const titles = columns.map(col => col.title)
       setColumnTitles(titles)
-      setColumnCount(titles.length)
+      const newCount = titles.length
+      console.log('[TiptapTable] Setting column count to:', newCount, 'columns:', titles)
+
+      // Update column count and reinitialize editor if needed
+      if (newCount !== columnCount) {
+        setColumnCount(newCount)
+      }
     }
-  }, [columns])
+  }, [columns, columnCount])
 
   // Debounce mechanism - only fire events after user stops typing
   const debounceRefs = useRef<Map<string, NodeJS.Timeout>>(new Map())
@@ -203,7 +209,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
       TableHeader,
       TableCell,
     ],
-    content: initialContent,
+    content: generateInitialContent(columnCount),
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
       // Parse table and extract actual cell contents
@@ -255,8 +261,13 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     const tbody = table.querySelector('tbody') || table
     const allRows = tbody.querySelectorAll('tr')
 
+    console.log('[TiptapTable] Adjusting table columns. Current rows:', allRows.length, 'Target columnCount:', columnCount)
+
     let hasChanges = false
-    allRows.forEach(row => {
+    allRows.forEach((row, idx) => {
+      const currentCols = row.children.length
+      console.log(`[TiptapTable] Row ${idx} has ${currentCols} columns, needs ${columnCount}`)
+
       // Add columns if needed
       while (row.children.length < columnCount) {
         const newCell = doc.createElement('td')
@@ -271,6 +282,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     })
 
     if (hasChanges) {
+      console.log('[TiptapTable] Updating editor with new column structure')
       isApplyingRobotUpdates.current = true
       const newHtml = table.outerHTML
       editor.commands.setContent(newHtml)
@@ -284,8 +296,8 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
 
     console.log(`[TiptapTable] Sheet changed to: ${sheetId}, clearing editor and refetching data`)
 
-    // Reset editor to initial empty state
-    editor.commands.setContent(initialContent)
+    // Reset editor to initial empty state with correct column count
+    editor.commands.setContent(generateInitialContent(columnCount))
 
     // Clear tracking refs
     lastContentRef.current.clear()
