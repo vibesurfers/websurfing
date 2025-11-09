@@ -1,8 +1,51 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Add Column Functionality', () => {
+  const testUserId = 'e1879083-6ac1-4c73-970d-0a01a11f5a3f';
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000');
+    // Set up authentication bypass headers for tRPC calls
+    await page.setExtraHTTPHeaders({
+      'x-bypass-user-id': testUserId
+    });
+
+    // First navigate to welcome to create/find a sheet
+    await page.goto('http://localhost:3000/welcome');
+    await page.waitForTimeout(2000);
+
+    // Try to find existing sheet button or create one
+    const existingSheets = page.locator('button').filter({ hasText: /\d{1,2}\/\d{1,2}\/\d{4}/ });
+    const existingSheetCount = await existingSheets.count();
+
+    if (existingSheetCount > 0) {
+      console.log('Found existing sheet, clicking...');
+      await existingSheets.first().click();
+    } else {
+      // Create new sheet by clicking template button
+      console.log('Creating new sheet...');
+      // Look for template buttons with emojis
+      const templateButton = page.locator('button').filter({ hasText: /🔥|📊|🧬/ }).first();
+      if (await templateButton.isVisible()) {
+        await templateButton.click();
+      } else {
+        // Fallback: look for any button that might create a sheet
+        const createButtons = page.locator('button').filter({ hasText: /lucky|marketing|scientific/i });
+        if (await createButtons.count() > 0) {
+          await createButtons.first().click();
+        } else {
+          // Direct navigation if welcome flow isn't working
+          console.log('Trying direct sheet navigation...');
+          await page.goto('http://localhost:3000/?sheetId=test-sheet-id');
+        }
+      }
+    }
+
+    // Wait for navigation and table to load
+    await page.waitForTimeout(3000);
+
+    // Check if we successfully got to a sheet page
+    const currentUrl = page.url();
+    console.log('Current URL after setup:', currentUrl);
 
     // Wait for table to load completely
     await expect(page.locator('.ProseMirror')).toBeVisible({ timeout: 10000 });

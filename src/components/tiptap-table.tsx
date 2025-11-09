@@ -824,8 +824,12 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
             background-color: #f9fafb;
           }
 
-          .ProseMirror table {
-            border: 1px solid #d1d5db;
+          .ProseMirror td:last-child {
+            border-right: 1px solid #d1d5db;
+          }
+
+          .ProseMirror tr:last-child td {
+            border-bottom: 1px solid #d1d5db;
           }
 
           .ProseMirror .selectedCell:after {
