@@ -75,7 +75,7 @@ export const sheetRouter = createTRPCRouter({
         .where(eq(sheets.id, input.sheetId))
         .limit(1);
 
-      if (!sheet[0] || sheet[0].userId !== userId) {
+      if (!sheet[0]?.userId || sheet[0].userId !== userId) {
         throw new Error("Sheet not found or unauthorized");
       }
 
@@ -104,7 +104,7 @@ export const sheetRouter = createTRPCRouter({
         .where(eq(sheets.id, input.sheetId))
         .returning();
 
-      if (!updated[0] || updated[0].userId !== userId) {
+      if (!updated[0]?.userId || updated[0].userId !== userId) {
         throw new Error("Sheet not found or unauthorized");
       }
 
@@ -122,7 +122,7 @@ export const sheetRouter = createTRPCRouter({
         .where(eq(sheets.id, input.sheetId))
         .limit(1);
 
-      if (!sheet[0] || sheet[0].userId !== userId) {
+      if (!sheet[0]?.userId || sheet[0].userId !== userId) {
         throw new Error("Sheet not found or unauthorized");
       }
 

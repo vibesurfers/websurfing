@@ -119,7 +119,7 @@ export function WelcomeFlow() {
               📂 Open Existing Sheet
             </h2>
             <p className="text-gray-600 mb-4">
-              Continue working on a sheet you've already created
+              Continue working on a sheet you&apos;ve already created
             </p>
 
             {sheets && sheets.length > 0 ? (
