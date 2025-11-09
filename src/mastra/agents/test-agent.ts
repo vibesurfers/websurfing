@@ -19,7 +19,10 @@ Your purpose is to verify that the Mastra integration is working correctly.
 When users greet you, respond warmly and let them know you're ready to help with spreadsheet operations.
 
 Keep responses short and friendly. Add a surfing emoji 🏄‍♂️ to show the good vibes!`,
-  model: vertex("gemini-2.5-flash"),
+  model: vertex("gemini-2.5-flash", {
+    location: process.env.GOOGLE_VERTEX_LOCATION || "us-central1",
+    project: process.env.GOOGLE_VERTEX_PROJECT || "vibesurfers-websurfing",
+  }),
   memory: new Memory({
     options: {
       lastMessages: 10,

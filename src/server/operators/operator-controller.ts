@@ -24,7 +24,18 @@ export interface SheetContext {
   sheetId: string;
   templateType: 'lucky' | 'marketing' | 'scientific' | null;
   systemPrompt?: string;
-  columns: Array<{ id: string; title: string; position: number; dataType: string }>;
+  columns: Array<{
+    id: string;
+    title: string;
+    position: number;
+    dataType: string;
+    maxLength?: number;
+    minLength?: number;
+    required?: boolean;
+    validationPattern?: string;
+    examples?: string[];
+    description?: string;
+  }>;
   rowIndex: number;
   currentColumnIndex: number;
   rowData: Record<number, string>;
@@ -34,9 +45,9 @@ export interface SheetContext {
  * Base event structure (from PROJECT-ARCHITECTURE.md)
  */
 export interface BaseEvent<T = unknown> {
-  userid: string;
-  eventid: string;
-  eventtype: EventType;
+  userId: string;
+  eventId: string;
+  eventType: EventType;
   timestamp: Date;
   data: T;
   sheetContext?: SheetContext;
@@ -100,7 +111,7 @@ export class OperatorController {
    */
   async dispatch(event: BaseEvent): Promise<void> {
     try {
-      const operatorName = this.selectOperator(event.eventtype, event.data, event.sheetContext);
+      const operatorName = this.selectOperator(event.eventType, event.data, event.sheetContext);
       const operator = this.operators.get(operatorName);
 
       if (!operator) {
@@ -108,7 +119,7 @@ export class OperatorController {
       }
 
       console.log(
-        `[OperatorController] Dispatching event ${event.eventid} to ${operatorName}`
+        `[OperatorController] Dispatching event ${event.eventId} to ${operatorName}`
       );
 
       // Set status to processing for next column
@@ -125,7 +136,7 @@ export class OperatorController {
 
         await ColumnAwareWrapper.updateCellStatus(
           event.sheetContext,
-          event.userid,
+          event.userId,
           targetColIndex,
           'processing',
           operatorName,
@@ -143,21 +154,79 @@ export class OperatorController {
 
       // Write result to next column in the row
       if (event.sheetContext) {
-        await ColumnAwareWrapper.writeToNextColumn(
+        const writeResult = await ColumnAwareWrapper.writeToNextColumn(
           event.sheetContext,
-          event.userid,
-          event.eventid,
+          event.userId,
+          event.eventId,
           output,
           operatorName
         );
+
+        console.log(`[OperatorController] Write result:`, {
+          success: writeResult.success,
+          needsRetry: writeResult.needsRetry,
+          issues: writeResult.validationIssues
+        });
+
+        // Handle retry if needed and not already attempted
+        const retryCount = await this.getRetryCount(event.eventId);
+        const maxRetries = 2;
+
+        if (writeResult.needsRetry && retryCount < maxRetries && writeResult.retryPrompt) {
+          console.log(`[OperatorController] Retrying with improved prompt (attempt ${retryCount + 1}/${maxRetries})`);
+
+          // Update retry count
+          await this.incrementRetryCount(event.eventId);
+
+          // Update cell status to show retry
+          const targetColIndex = event.sheetContext.currentColumnIndex + 1;
+          await ColumnAwareWrapper.updateCellStatus(
+            event.sheetContext,
+            event.userId,
+            targetColIndex,
+            'processing',
+            operatorName,
+            `Retrying... (${retryCount + 1}/${maxRetries})`
+          );
+
+          // Prepare improved input based on validation feedback
+          const improvedInput = this.prepareImprovedInput(event, operatorName, writeResult.retryPrompt);
+
+          try {
+            // Retry with improved prompt
+            const retryOutput = await operator.operation(improvedInput);
+            console.log(`[OperatorController] Retry output:`, retryOutput);
+
+            // Write retry result
+            const retryWriteResult = await ColumnAwareWrapper.writeToNextColumn(
+              event.sheetContext,
+              event.userId,
+              event.eventId,
+              retryOutput,
+              operatorName
+            );
+
+            if (retryWriteResult.success) {
+              console.log(`[OperatorController] Retry successful`);
+            } else {
+              console.warn(`[OperatorController] Retry failed, using original result`);
+            }
+
+          } catch (retryError) {
+            console.error(`[OperatorController] Retry failed:`, retryError);
+            // Continue with original result
+          }
+        }
 
         // Mark as completed
         const targetColIndex = event.sheetContext.currentColumnIndex + 1;
         await ColumnAwareWrapper.updateCellStatus(
           event.sheetContext,
-          event.userid,
+          event.userId,
           targetColIndex,
-          'completed'
+          writeResult.success ? 'completed' : 'error',
+          operatorName,
+          writeResult.success ? undefined : writeResult.validationIssues?.join(', ')
         );
       }
 
@@ -167,19 +236,19 @@ export class OperatorController {
       }
 
       // Mark event as completed
-      await this.completeEvent(event.eventid, output);
+      await this.completeEvent(event.eventId, output);
 
       console.log(
-        `[OperatorController] Successfully processed event ${event.eventid}`
+        `[OperatorController] Successfully processed event ${event.eventId}`
       );
     } catch (error) {
       console.error(
-        `[OperatorController] Error processing event ${event.eventid}:`,
+        `[OperatorController] Error processing event ${event.eventId}:`,
         error
       );
 
       // Try operator-specific error handler
-      const operatorName = this.selectOperator(event.eventtype, event.data, event.sheetContext);
+      const operatorName = this.selectOperator(event.eventType, event.data, event.sheetContext);
       const operator = this.operators.get(operatorName);
 
       if (operator?.onError) {
@@ -188,7 +257,7 @@ export class OperatorController {
       }
 
       // Mark event as failed
-      await this.failEvent(event.eventid, error as Error);
+      await this.failEvent(event.eventId, error as Error);
     }
   }
 
@@ -197,8 +266,8 @@ export class OperatorController {
    *
    * This implements the hardcoded processing directions from the architecture
    */
-  private selectOperator(eventtype: EventType, data: unknown, sheetContext?: SheetContext): OperatorName {
-    switch (eventtype) {
+  private selectOperator(eventType: EventType, data: unknown, sheetContext?: SheetContext): OperatorName {
+    switch (eventType) {
       case "user_cell_edit":
       case "robot_cell_update": {
         const cellData = data as UpdateCellInput;
@@ -275,7 +344,7 @@ export class OperatorController {
       }
 
       default:
-        throw new Error(`Unknown event type: ${eventtype}`);
+        throw new Error(`Unknown event type: ${eventType}`);
     }
   }
 
@@ -296,7 +365,7 @@ export class OperatorController {
           const ctx = event.sheetContext;
           const nextCol = ctx.columns[ctx.currentColumnIndex + 1];
           if (nextCol) {
-            const contextPrompt = ColumnAwareWrapper.buildContextualPrompt(ctx, nextCol.title);
+            const contextPrompt = ColumnAwareWrapper.buildContextualPromptWithFormat(ctx, nextCol.title, operatorName);
             // Build a focused query that includes the column goal
             query = `${contextPrompt}\n\nSearch query: Find information for "${nextCol.title}" based on: ${query}`;
             console.log('[OperatorController] Context-aware search query:\n', query);
@@ -324,7 +393,7 @@ export class OperatorController {
           const ctx = event.sheetContext;
           const nextCol = ctx.columns[ctx.currentColumnIndex + 1];
           if (nextCol) {
-            const contextPrompt = ColumnAwareWrapper.buildContextualPrompt(ctx, nextCol.title);
+            const contextPrompt = ColumnAwareWrapper.buildContextualPromptWithFormat(ctx, nextCol.title, operatorName);
             extractionPrompt = contextPrompt + (extractionPrompt ? `\n\nAdditional instructions: ${extractionPrompt}` : '');
             console.log('[OperatorController] Context-aware URL extraction prompt:\n', extractionPrompt);
           }
@@ -366,7 +435,7 @@ export class OperatorController {
           const ctx = event.sheetContext;
           const nextCol = ctx.columns[ctx.currentColumnIndex + 1];
           if (nextCol) {
-            const contextPrompt = ColumnAwareWrapper.buildContextualPrompt(ctx, nextCol.title);
+            const contextPrompt = ColumnAwareWrapper.buildContextualPromptWithFormat(ctx, nextCol.title, operatorName);
             prompt = contextPrompt + (prompt ? `\n\nAdditional instructions: ${prompt}` : '');
             console.log('[OperatorController] Context-aware structured output prompt:\n', prompt);
             console.log('[OperatorController] Raw data for processing:\n', rawData);
@@ -409,7 +478,7 @@ export class OperatorController {
           const ctx = event.sheetContext;
           const nextCol = ctx.columns[ctx.currentColumnIndex + 1];
           if (nextCol) {
-            const contextPrompt = ColumnAwareWrapper.buildContextualPrompt(ctx, nextCol.title);
+            const contextPrompt = ColumnAwareWrapper.buildContextualPromptWithFormat(ctx, nextCol.title, operatorName);
             // Enhance topic with academic context
             topic = `${topic} (Academic research focus: ${nextCol.title})`;
             console.log('[OperatorController] Context-aware academic search topic:\n', topic);
@@ -535,6 +604,95 @@ export class OperatorController {
    */
   getRegisteredOperators(): OperatorName[] {
     return Array.from(this.operators.keys());
+  }
+
+  /**
+   * Get retry count for an event
+   */
+  private async getRetryCount(eventId: string): Promise<number> {
+    try {
+      const event = await db.select({ retryCount: eventQueue.retryCount })
+        .from(eventQueue)
+        .where(eq(eventQueue.id, eventId))
+        .limit(1);
+
+      return event[0]?.retryCount || 0;
+    } catch (error) {
+      console.error(`[OperatorController] Error getting retry count for ${eventId}:`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * Increment retry count for an event
+   */
+  private async incrementRetryCount(eventId: string): Promise<void> {
+    try {
+      const currentCount = await this.getRetryCount(eventId);
+      await db.update(eventQueue)
+        .set({ retryCount: currentCount + 1 })
+        .where(eq(eventQueue.id, eventId));
+    } catch (error) {
+      console.error(`[OperatorController] Error incrementing retry count for ${eventId}:`, error);
+    }
+  }
+
+  /**
+   * Prepare improved input based on validation feedback
+   */
+  private prepareImprovedInput(event: BaseEvent, operatorName: OperatorName, retryPrompt: string): unknown {
+    const originalInput = this.prepareInput(event, operatorName);
+
+    switch (operatorName) {
+      case "google_search": {
+        const googleInput = originalInput as { query: string; maxResults: number };
+        return {
+          ...googleInput,
+          query: retryPrompt
+        };
+      }
+
+      case "url_context": {
+        const urlInput = originalInput as { urls: string[]; extractionPrompt?: string };
+        return {
+          ...urlInput,
+          extractionPrompt: retryPrompt
+        };
+      }
+
+      case "structured_output": {
+        const structuredInput = originalInput as { rawData: string; outputSchema?: unknown; prompt?: string };
+        return {
+          ...structuredInput,
+          prompt: retryPrompt
+        };
+      }
+
+      case "academic_search": {
+        const academicInput = originalInput as { topic: string; query: string; [key: string]: unknown };
+        return {
+          ...academicInput,
+          topic: retryPrompt,
+          query: retryPrompt
+        };
+      }
+
+      case "similarity_expansion": {
+        const similarityInput = originalInput as { concept: string; [key: string]: unknown };
+        // Extract just the concept from the improved prompt
+        const conceptMatch = retryPrompt.match(/concept[:\s]+["']?([^"'\n]+)["']?/i);
+        const improvedConcept = conceptMatch ? conceptMatch[1] : retryPrompt;
+
+        return {
+          ...similarityInput,
+          concept: improvedConcept,
+          context: retryPrompt
+        };
+      }
+
+      default:
+        return originalInput;
+    }
   }
 }
 

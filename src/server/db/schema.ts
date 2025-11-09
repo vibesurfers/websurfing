@@ -252,6 +252,12 @@ export const columns = createTable(
     title: d.varchar({ length: 255 }).notNull(),
     position: d.integer().notNull(),
     dataType: d.varchar({ length: 50 }).default('text'),
+    maxLength: d.integer(), // Maximum character length
+    minLength: d.integer(), // Minimum character length
+    required: d.boolean().default(false), // Whether field is required
+    validationPattern: d.text(), // Regex pattern for validation
+    examples: d.jsonb(), // Array of example values
+    description: d.text(), // Description of what the column should contain
     createdAt: d.timestamp({ withTimezone: true }).defaultNow(),
     updatedAt: d.timestamp({ withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
   }),

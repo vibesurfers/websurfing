@@ -1,0 +1,17 @@
+Based on the codebase documentation, here's the **eventQueue table lifecycle**:
+
+## **Creation** 
+- **Lines 41-53**: User cell edit → Insert event with `status='pending'`, `eventType='user_cell_edit'`
+- **Lines 163-175**: AI result write → Insert next event with `status='pending'`, `eventType='robot_cell_update'`
+
+## **Processing**
+- **Lines 22-40**: Background processor polls every 1000ms → Select pending events → Mark as `status='processing'` with row locking
+- **Lines 194-273**: Operator selection based on content patterns
+- **Lines 34-82**: Gemini API execution (google_search/url_context/structured_output)
+
+## **Completion**  
+- **Lines 73-79, 399-405**: Mark as `status='completed'` with `processedAt=NOW()`
+- **Lines 129-134**: Mark as `status='failed'` on errors
+- **Lines 69-85**: Skip processing if row complete, mark as completed
+
+**Flow**: `pending` → `processing` → `completed`/`failed` with atomic transactions and row locking for concurrency safety.

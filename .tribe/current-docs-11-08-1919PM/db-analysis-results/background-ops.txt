@@ -1,0 +1,18 @@
+## Background Processor Event Queue Operations
+
+**Database Queries:**
+
+1. **Pending Events Query** `src/server/background-processor.ts:46-50`
+   ```sql
+   SELECT * FROM eventQueue WHERE status = 'pending' LIMIT 50
+   ```
+
+**Key Operations:**
+
+- **Poll Interval**: 1000ms `background-processor.ts:8`
+- **Event Grouping**: Groups by `sheetId` using Map `background-processor.ts:58-65`
+- **Concurrency Control**: `processingSheets` Set prevents duplicate processing `background-processor.ts:70-73`
+- **Batch Processing**: `Promise.allSettled()` for concurrent sheet updates `background-processor.ts:88`
+- **SheetUpdater Call**: `updateSheet(userId, sheetId)` `background-processor.ts:79-80`
+
+The processor runs a continuous 1-second polling loop, fetches up to 50 pending events, groups them by sheet, and processes multiple sheets concurrently while preventing duplicate processing.

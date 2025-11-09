@@ -26,14 +26,16 @@ export function useSheetUpdates() {
 
 interface SheetEditorProps {
   sheetId: string;
+  showTemplatePrompt?: boolean;
 }
 
-export function SheetEditor({ sheetId }: SheetEditorProps) {
+export function SheetEditor({ sheetId, showTemplatePrompt }: SheetEditorProps) {
   const router = useRouter();
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [pendingUpdates, setPendingUpdates] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [treatRobotsAsHumans, setTreatRobotsAsHumans] = useState(true);
+  const [showTemplatePromptBanner, setShowTemplatePromptBanner] = useState(showTemplatePrompt);
 
   const { data: sheets } = api.sheet.list.useQuery();
 
@@ -172,6 +174,44 @@ export function SheetEditor({ sheetId }: SheetEditorProps) {
           {lastUpdate && (
             <div className="text-sm text-gray-500">
               Last update: {lastUpdate.toLocaleTimeString()}
+            </div>
+          )}
+
+          {showTemplatePromptBanner && (
+            <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-start space-x-4">
+                  <div className="text-4xl">🚀</div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Great! Your CSV data is imported
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Now create an intelligent template to automatically enrich your data with AI-powered searches, web scraping, and data extraction.
+                    </p>
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => router.push('/templates/new')}
+                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      >
+                        ✨ Create Enrichment Template
+                      </button>
+                      <button
+                        onClick={() => setShowTemplatePromptBanner(false)}
+                        className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+                      >
+                        Later
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowTemplatePromptBanner(false)}
+                  className="text-gray-400 hover:text-gray-600 text-xl"
+                >
+                  ×
+                </button>
+              </div>
             </div>
           )}
 

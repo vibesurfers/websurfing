@@ -110,9 +110,9 @@ export class SheetUpdater {
 
           // Dispatch event to operator controller with context
           const baseEvent: BaseEvent = {
-            userid: event.userId,
-            eventid: event.id,
-            eventtype: event.eventType as any,
+            userId: event.userId,
+            eventId: event.id,
+            eventType: event.eventType as any,
             timestamp: event.createdAt ?? new Date(),
             data: event.payload,
             sheetContext,
