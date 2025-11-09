@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 export const cellRouter = createTRPCRouter({
   updateCell: protectedProcedure
     .input(z.object({
+      sheetId: z.string().uuid().optional(),
       rowIndex: z.number(),
       colIndex: z.number(),
       content: z.string(),
@@ -14,9 +15,12 @@ export const cellRouter = createTRPCRouter({
       const userId = ctx.session.user.id;
       console.log('Updating cell for user:', userId, input);
 
-      const userSheet = await ctx.db.select().from(sheets).where(eq(sheets.userId, userId)).limit(1);
-      if (!userSheet[0]) throw new Error('No sheet found for user');
-      const sheetId = userSheet[0].id;
+      let sheetId = input.sheetId;
+      if (!sheetId) {
+        const userSheet = await ctx.db.select().from(sheets).where(eq(sheets.userId, userId)).limit(1);
+        if (!userSheet[0]) throw new Error('No sheet found for user');
+        sheetId = userSheet[0].id;
+      }
 
       // 1. Update/insert cell
       await ctx.db.insert(cells).values({
@@ -48,6 +52,7 @@ export const cellRouter = createTRPCRouter({
 
   clearCell: protectedProcedure
     .input(z.object({
+      sheetId: z.string().uuid().optional(),
       rowIndex: z.number(),
       colIndex: z.number(),
     }))
@@ -55,9 +60,12 @@ export const cellRouter = createTRPCRouter({
       const userId = ctx.session.user.id;
       console.log('Clearing cell for user:', userId, input);
 
-      const userSheet = await ctx.db.select().from(sheets).where(eq(sheets.userId, userId)).limit(1);
-      if (!userSheet[0]) throw new Error('No sheet found for user');
-      const sheetId = userSheet[0].id;
+      let sheetId = input.sheetId;
+      if (!sheetId) {
+        const userSheet = await ctx.db.select().from(sheets).where(eq(sheets.userId, userId)).limit(1);
+        if (!userSheet[0]) throw new Error('No sheet found for user');
+        sheetId = userSheet[0].id;
+      }
 
       // 1. Clear the cell content
       await ctx.db.insert(cells).values({
@@ -85,36 +93,44 @@ export const cellRouter = createTRPCRouter({
     }),
 
   getEvents: protectedProcedure
-    .query(async ({ ctx }) => {
+    .input(z.object({ sheetId: z.string().uuid().optional() }).optional())
+    .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
-      // Get the user's sheet first
-      const userSheet = await ctx.db.select().from(sheets).where(eq(sheets.userId, userId)).limit(1);
-      if (!userSheet[0]) return [];
+      let sheetId = input?.sheetId;
+      if (!sheetId) {
+        const userSheet = await ctx.db.select().from(sheets).where(eq(sheets.userId, userId)).limit(1);
+        if (!userSheet[0]) return [];
+        sheetId = userSheet[0].id;
+      }
 
       const events = await ctx.db
         .select()
         .from(eventQueue)
-        .where(eq(eventQueue.sheetId, userSheet[0].id))
+        .where(eq(eventQueue.sheetId, sheetId))
         .orderBy(eventQueue.createdAt)
-        .limit(100); // Limit to prevent performance issues
+        .limit(100);
 
       console.log('Fetched events for user:', userId, events.length);
       return events;
     }),
 
   getCells: protectedProcedure
-    .query(async ({ ctx }) => {
+    .input(z.object({ sheetId: z.string().uuid().optional() }).optional())
+    .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
-      // Get the user's sheet first
-      const userSheet = await ctx.db.select().from(sheets).where(eq(sheets.userId, userId)).limit(1);
-      if (!userSheet[0]) return [];
+      let sheetId = input?.sheetId;
+      if (!sheetId) {
+        const userSheet = await ctx.db.select().from(sheets).where(eq(sheets.userId, userId)).limit(1);
+        if (!userSheet[0]) return [];
+        sheetId = userSheet[0].id;
+      }
 
       const cellData = await ctx.db
         .select()
         .from(cells)
-        .where(eq(cells.sheetId, userSheet[0].id))
+        .where(eq(cells.sheetId, sheetId))
         .orderBy(cells.rowIndex, cells.colIndex);
 
       return cellData;
