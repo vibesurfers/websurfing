@@ -2,8 +2,7 @@
 
 import { TiptapTable } from "@/components/tiptap-table";
 import { CountdownTimer } from "@/components/countdown-timer";
-import { SheetSelector } from "@/components/sheet-selector";
-import { AgentSidebar } from "@/components/agent-sidebar";
+import { AppHeader } from "@/components/app-header";
 import { useState, useCallback, createContext, useContext, useEffect } from "react";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
@@ -35,21 +34,8 @@ export function SheetEditor({ sheetId }: SheetEditorProps) {
   const [pendingUpdates, setPendingUpdates] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [treatRobotsAsHumans, setTreatRobotsAsHumans] = useState(true);
-  const [agentSidebarOpen, setAgentSidebarOpen] = useState(() => {
-    // Load from localStorage
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('agentSidebarOpen');
-      return saved === 'true';
-    }
-    return false;
-  });
-
-  // Persist sidebar state to localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('agentSidebarOpen', String(agentSidebarOpen));
-    }
-  }, [agentSidebarOpen]);
+  const [refreshEventsCallback, setRefreshEventsCallback] = useState<(() => void) | null>(null);
+  const [downloadCSVCallback, setDownloadCSVCallback] = useState<(() => void) | null>(null);
 
   const { data: sheets } = api.sheet.list.useQuery();
 
@@ -109,9 +95,6 @@ export function SheetEditor({ sheetId }: SheetEditorProps) {
     return (
       <div className="container mx-auto p-8 min-h-screen bg-white">
         <div className="space-y-6">
-          <h1 className="text-3xl font-bold text-gray-900">
-            VibeSurfing - Web Search Spreadsheets
-          </h1>
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <h3 className="text-yellow-800 font-semibold">Authentication Required</h3>
             <p className="text-yellow-600 mt-2">
@@ -127,9 +110,6 @@ export function SheetEditor({ sheetId }: SheetEditorProps) {
     return (
       <div className="container mx-auto p-8 min-h-screen bg-white">
         <div className="space-y-6">
-          <h1 className="text-3xl font-bold text-gray-900">
-            VibeSurfing - Web Search Spreadsheets
-          </h1>
           <div className="flex items-center gap-2 text-gray-600">
             <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             Loading...
@@ -141,66 +121,34 @@ export function SheetEditor({ sheetId }: SheetEditorProps) {
 
   return (
     <SheetUpdateContext.Provider value={{ lastUpdate, pendingUpdates, selectedSheetId: sheetId }}>
-      <main className="container mx-auto p-8 min-h-screen bg-white">
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">
-              VibeSurfing - Web Search Spreadsheets
-            </h1>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/welcome')}
-                className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                All Sheets
-              </button>
-              <button
-                onClick={() => signOut()}
-                className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
+      <div className="min-h-screen bg-white">
+        <AppHeader
+          selectedSheetId={sheetId}
+          onSelectSheet={handleSelectSheet}
+          pendingUpdates={pendingUpdates}
+          onRefreshEvents={refreshEventsCallback}
+          onDownloadCSV={downloadCSVCallback}
+        />
 
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <SheetSelector
-                selectedSheetId={sheetId}
-                onSelectSheet={handleSelectSheet}
-              />
-              {pendingUpdates > 0 && (
-                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  {pendingUpdates} updates applied
-                </div>
-              )}
-            </div>
-            <CountdownTimer
-              intervalMs={5000}
-              onTick={handleUpdateTick}
-              label="Next update"
+        <main className="w-full px-8 py-8">
+          <div className="space-y-6">
+            {lastUpdate && (
+              <div className="text-sm text-gray-500">
+                Last update: {lastUpdate.toLocaleTimeString()}
+              </div>
+            )}
+
+            <TiptapTable
               treatRobotsAsHumans={treatRobotsAsHumans}
+              sheetId={sheetId}
+              onUpdateTick={handleUpdateTick}
               onToggleRobotMode={() => setTreatRobotsAsHumans(!treatRobotsAsHumans)}
+              onRefreshEvents={setRefreshEventsCallback}
+              onDownloadCSV={setDownloadCSVCallback}
             />
           </div>
-
-          {lastUpdate && (
-            <div className="text-sm text-gray-500">
-              Last update: {lastUpdate.toLocaleTimeString()}
-            </div>
-          )}
-
-          <TiptapTable treatRobotsAsHumans={treatRobotsAsHumans} sheetId={sheetId} />
-        </div>
-      </main>
-
-      {/* Agent Sidebar */}
-      <AgentSidebar
-        sheetId={sheetId}
-        isOpen={agentSidebarOpen}
-        onToggle={setAgentSidebarOpen}
-      />
+        </main>
+      </div>
     </SheetUpdateContext.Provider>
   );
 }

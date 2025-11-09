@@ -174,13 +174,6 @@ export function SheetManager() {
                 {pendingUpdates} updates applied
               </div>
             )}
-            <CountdownTimer
-              intervalMs={5000}
-              onTick={handleUpdateTick}
-              label="Next update"
-              treatRobotsAsHumans={treatRobotsAsHumans}
-              onToggleRobotMode={() => setTreatRobotsAsHumans(!treatRobotsAsHumans)}
-            />
           </div>
         </div>
 
@@ -190,7 +183,14 @@ export function SheetManager() {
           </div>
         )}
 
-        {selectedSheetId && <TiptapTable treatRobotsAsHumans={treatRobotsAsHumans} sheetId={selectedSheetId} />}
+        {selectedSheetId && (
+          <TiptapTable
+            treatRobotsAsHumans={treatRobotsAsHumans}
+            sheetId={selectedSheetId}
+            onUpdateTick={handleUpdateTick}
+            onToggleRobotMode={() => setTreatRobotsAsHumans(!treatRobotsAsHumans)}
+          />
+        )}
       </div>
     </SheetUpdateContext.Provider>
   );

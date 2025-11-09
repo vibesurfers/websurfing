@@ -28,7 +28,6 @@ export function SheetSelector({ selectedSheetId, onSelectSheet }: SheetSelectorP
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm text-gray-600">Sheet:</span>
       <select
         value={selectedSheetId ?? ""}
         onChange={(e) => onSelectSheet(e.target.value)}

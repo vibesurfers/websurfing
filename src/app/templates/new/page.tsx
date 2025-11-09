@@ -24,6 +24,7 @@ export default function NewTemplatePage() {
   const [systemPrompt, setSystemPrompt] = useState('');
   const [columns, setColumns] = useState<ColumnConfig[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUsingTemplate, setIsUsingTemplate] = useState(false);
 
   const createTemplate = api.template.create.useMutation({
     onSuccess: (data) => {
@@ -43,6 +44,51 @@ export default function NewTemplatePage() {
     },
     onError: (error) => {
       setIsSaving(false);
+      alert(`Failed to update template: ${error.message}`);
+    },
+  });
+
+  const createSheet = api.sheet.create.useMutation({
+    onSuccess: (sheet) => {
+      setIsSaving(false);
+      setIsUsingTemplate(false);
+      if (!sheet) {
+        alert('Failed to create sheet: No sheet returned');
+        return;
+      }
+      router.push(`/sheets/${sheet.id}`);
+    },
+    onError: (error) => {
+      setIsSaving(false);
+      setIsUsingTemplate(false);
+      alert(`Failed to create sheet: ${error.message}`);
+    },
+  });
+
+  const createTemplateForUse = api.template.create.useMutation({
+    onSuccess: (data) => {
+      // After template is created, create the sheet
+      createSheet.mutate({
+        name: `${templateName} - ${new Date().toLocaleDateString()}`,
+        templateId: data.id,
+      });
+    },
+    onError: (error) => {
+      setIsUsingTemplate(false);
+      alert(`Failed to save template: ${error.message}`);
+    },
+  });
+
+  const updateTemplateForUse = api.template.update.useMutation({
+    onSuccess: () => {
+      // After template is updated, create the sheet
+      createSheet.mutate({
+        name: `${templateName} - ${new Date().toLocaleDateString()}`,
+        templateId: templateId!,
+      });
+    },
+    onError: (error) => {
+      setIsUsingTemplate(false);
       alert(`Failed to update template: ${error.message}`);
     },
   });
@@ -175,6 +221,53 @@ export default function NewTemplatePage() {
       });
     } else {
       createTemplate.mutate(templateData);
+    }
+  };
+
+  const handleUseTemplate = () => {
+    if (!templateName.trim()) {
+      alert('Please enter a template name');
+      return;
+    }
+
+    if (columns.length === 0) {
+      alert('Please add at least one column');
+      return;
+    }
+
+    setIsUsingTemplate(true);
+
+    const templateData = {
+      name: templateName,
+      description: templateDescription,
+      icon: templateIcon,
+      isPublic: false,
+      isAutonomous,
+      systemPrompt: systemPrompt || undefined,
+      config: {},
+      columns: columns.map((col) => ({
+        title: col.title,
+        position: col.position,
+        operatorType: col.operatorType,
+        operatorConfig: col.operatorConfig,
+        prompt: col.prompt,
+        dataType: col.dataType,
+        dependencies: col.dependencies,
+        validationRules: {},
+        isRequired: col.isRequired,
+        defaultValue: undefined,
+      })),
+    };
+
+    if (templateId) {
+      // Update existing template first, then create sheet
+      updateTemplateForUse.mutate({
+        id: templateId,
+        ...templateData,
+      });
+    } else {
+      // Create new template first, then create sheet
+      createTemplateForUse.mutate(templateData);
     }
   };
 
@@ -370,21 +463,30 @@ export default function NewTemplatePage() {
                 </div>
               </div>
 
-              {/* Save Button */}
+              {/* Action Buttons */}
               {columns.length > 0 && (
-                <div className="flex justify-end space-x-3">
+                <div className="flex justify-between items-center">
                   <Button
                     onClick={() => router.push('/templates')}
                     variant="outline"
                   >
                     Cancel
                   </Button>
-                  <Button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? 'Saving...' : templateId ? 'Update Template' : 'Create Template'}
-                  </Button>
+                  <div className="flex space-x-3">
+                    <Button
+                      onClick={handleSave}
+                      disabled={isSaving || isUsingTemplate}
+                      variant="outline"
+                    >
+                      {isSaving ? 'Saving...' : templateId ? 'Update Template' : 'Create Template'}
+                    </Button>
+                    <Button
+                      onClick={handleUseTemplate}
+                      disabled={isSaving || isUsingTemplate}
+                    >
+                      {isUsingTemplate ? 'Creating Sheet...' : 'Use Template →'}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

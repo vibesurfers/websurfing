@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, FileText, Settings, LogOut } from "lucide-react";
+import { Home, FileText, LogOut } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -44,11 +44,6 @@ const navigationItems = [
     href: "/templates",
     icon: FileText,
   },
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: Settings,
-  },
 ];
 
 export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
@@ -74,10 +69,6 @@ export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
             height={32}
             className="rounded"
           />
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold">VibeSurfing</span>
-            <span className="text-xs text-muted-foreground">Vibe the Web</span>
-          </div>
         </div>
       </SidebarHeader>
 
