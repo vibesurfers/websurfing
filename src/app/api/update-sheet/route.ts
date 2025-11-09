@@ -10,6 +10,7 @@ export async function POST(request: NextRequest) {
     // Check for bypass userId in query params (for testing)
     const { searchParams } = new URL(request.url);
     const bypassUserId = searchParams.get('userId');
+    const sheetId = searchParams.get('sheetId');
 
     let userId: string;
 
@@ -31,8 +32,15 @@ export async function POST(request: NextRequest) {
       userId = session.user.id;
     }
 
+    if (!sheetId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Sheet ID required'
+      }, { status: 400 });
+    }
+
     const updater = new SheetUpdater();
-    const result = await updater.updateSheet(userId);
+    const result = await updater.updateSheet(userId, sheetId);
 
     console.log('API: Sheet update result:', result);
 
