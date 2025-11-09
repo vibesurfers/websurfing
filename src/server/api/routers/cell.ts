@@ -323,4 +323,122 @@ export const cellRouter = createTRPCRouter({
         message: `Queued ${eventsToCreate.length} rows for reprocessing`,
       };
     }),
+
+  deleteRow: protectedProcedure
+    .input(z.object({
+      sheetId: z.string().uuid(),
+      rowIndex: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      console.log(`Deleting row ${input.rowIndex} from sheet ${input.sheetId}`);
+
+      // Delete all cells in this row
+      const deleted = await ctx.db
+        .delete(cells)
+        .where(and(
+          eq(cells.sheetId, input.sheetId),
+          eq(cells.userId, userId),
+          eq(cells.rowIndex, input.rowIndex)
+        ))
+        .returning();
+
+      // Delete any pending events for this row
+      await ctx.db
+        .delete(eventQueue)
+        .where(and(
+          eq(eventQueue.sheetId, input.sheetId),
+          eq(eventQueue.userId, userId),
+          eq(eventQueue.rowIndex, input.rowIndex)
+        ));
+
+      // Delete any processing status for cells in this row
+      await ctx.db
+        .delete(cellProcessingStatus)
+        .where(and(
+          eq(cellProcessingStatus.sheetId, input.sheetId),
+          eq(cellProcessingStatus.userId, userId),
+          eq(cellProcessingStatus.rowIndex, input.rowIndex)
+        ));
+
+      console.log(`Deleted ${deleted.length} cells from row ${input.rowIndex}`);
+
+      return {
+        success: true,
+        cellsDeleted: deleted.length,
+        message: `Deleted row ${input.rowIndex}`,
+      };
+    }),
+
+  reprocessRow: protectedProcedure
+    .input(z.object({
+      sheetId: z.string().uuid(),
+      rowIndex: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      console.log(`Reprocessing row ${input.rowIndex} for sheet ${input.sheetId}`);
+
+      // Get all cells in this row
+      const rowCells = await ctx.db
+        .select()
+        .from(cells)
+        .where(and(
+          eq(cells.sheetId, input.sheetId),
+          eq(cells.userId, userId),
+          eq(cells.rowIndex, input.rowIndex)
+        ))
+        .orderBy(cells.colIndex);
+
+      if (rowCells.length === 0) {
+        return {
+          success: false,
+          message: `No cells found in row ${input.rowIndex}`,
+        };
+      }
+
+      // Check if first column has content
+      const firstCell = rowCells.find(c => c.colIndex === 0);
+      const firstCellContent = firstCell?.content?.trim() || '';
+
+      if (!firstCellContent || firstCellContent === 'null' || firstCellContent === '{}' || firstCellContent === '[]') {
+        return {
+          success: false,
+          message: `Row ${input.rowIndex} has no content in first column`,
+        };
+      }
+
+      // Clear all cells except the first column
+      await ctx.db
+        .delete(cells)
+        .where(and(
+          eq(cells.sheetId, input.sheetId),
+          eq(cells.userId, userId),
+          eq(cells.rowIndex, input.rowIndex),
+          gt(cells.colIndex, 0)
+        ));
+
+      // Create event to reprocess from column 0
+      await ctx.db.insert(eventQueue).values({
+        sheetId: input.sheetId,
+        userId,
+        eventType: "robot_cell_update" as const,
+        payload: {
+          spreadsheetId: input.sheetId,
+          rowIndex: input.rowIndex,
+          colIndex: 0,
+          content: firstCellContent,
+        },
+        status: "pending" as const,
+      });
+
+      console.log(`Created reprocess event for row ${input.rowIndex}`);
+
+      return {
+        success: true,
+        message: `Row ${input.rowIndex} queued for reprocessing`,
+      };
+    }),
 });

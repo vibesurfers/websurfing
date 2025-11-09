@@ -1,8 +1,9 @@
 import { HydrateClient } from "@/trpc/server";
-import { auth, signIn } from "@/server/auth";
+import { auth, signIn, signOut } from "@/server/auth";
 import { SheetEditor } from "@/components/sheet-editor";
-import { AppHeader } from "@/components/app-header";
+import { AppLayout } from "@/components/layout/app-layout";
 import { headers } from "next/headers";
+import Image from "next/image";
 
 interface SheetPageProps {
   params: Promise<{
@@ -34,46 +35,65 @@ export default async function SheetPage({ params }: SheetPageProps) {
 
   if (!session?.user) {
     return (
-      <>
-        <AppHeader />
-        <main className="container mx-auto p-8 min-h-screen bg-white">
-        <div className="max-w-md mx-auto mt-8">
-          <h1 className="text-3xl font-bold mb-6 text-gray-900 text-center">
-            VibeSurfing - Web Search Spreadsheets
-          </h1>
-          <div className="bg-gray-50 rounded-lg p-8 text-center">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">
-              Sign in to continue
-            </h2>
-            <p className="text-gray-600 mb-6">
-              You need to sign in to access this sheet.
-            </p>
-            <form
-              action={async () => {
-                "use server";
-                await signIn("google");
-              }}
-            >
-              <button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+      <main className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-100 flex items-center justify-center p-8">
+        <div className="max-w-md mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center space-y-6">
+            <div className="flex justify-center">
+              <Image
+                src="/logo.png"
+                alt="VibeSurfing - Vibe the Web"
+                width={250}
+                height={250}
+                priority
+                className="rounded-lg"
+              />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                Vibe the Web
+              </h1>
+              <p className="text-gray-600 mb-6">
+                AI-powered websets that surf the internet for you
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-3 text-gray-800">
+                Ready to catch some waves?
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Sign in to access this sheet
+              </p>
+              <form
+                action={async () => {
+                  "use server";
+                  await signIn("google");
+                }}
               >
-                Sign in with Google
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-all shadow-lg hover:shadow-xl"
+                >
+                  Sign in with Google
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </main>
-      </>
     );
   }
 
   return (
-    <>
-      <AppHeader />
-      <HydrateClient>
+    <HydrateClient>
+      <AppLayout
+        user={session.user}
+        onSignOut={async () => {
+          "use server";
+          await signOut();
+        }}
+      >
         <SheetEditor sheetId={id} />
-      </HydrateClient>
-    </>
+      </AppLayout>
+    </HydrateClient>
   );
 }

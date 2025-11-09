@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
+import { Button } from "@/components/ui/button";
 
 export default function TemplatesPage() {
   const router = useRouter();
@@ -61,37 +62,27 @@ export default function TemplatesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="container mx-auto px-4 py-8 space-y-8 max-w-7xl">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Templates</h1>
-              <p className="text-gray-600 mt-1">
-                Manage your workflow templates
-              </p>
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => router.push('/welcome')}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                ← Back to Home
-              </button>
-              <button
-                onClick={() => router.push('/templates/new')}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                + Create Template
-              </button>
-            </div>
-          </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Templates</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your workflow templates
+          </p>
+        </div>
+        <div className="flex space-x-3">
+          <Button
+            onClick={() => router.push('/templates/new')}
+            variant="default"
+          >
+            + Create Template
+          </Button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+      <div className="space-y-8">
         {/* My Templates */}
         <section>
           <h2 className="text-2xl font-semibold text-gray-900 mb-4">
@@ -160,30 +151,29 @@ export default function TemplatesPage() {
                   {/* Actions */}
                   <div className="border-t border-gray-200 bg-gray-50 px-6 py-3 flex items-center justify-between">
                     <div className="flex space-x-2">
-                      <button
+                      <Button
                         onClick={() => router.push(`/templates/${template.id}/edit`)}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        variant="ghost"
+                        size="sm"
                       >
                         Edit
-                      </button>
+                      </Button>
                       <span className="text-gray-300">•</span>
-                      <button
+                      <Button
                         onClick={() => handleDelete(template.id)}
-                        className={`text-sm font-medium ${
-                          deleteConfirm === template.id
-                            ? 'text-red-700 font-bold'
-                            : 'text-red-600 hover:text-red-700'
-                        }`}
+                        variant="ghost"
+                        size="sm"
+                        className={deleteConfirm === template.id ? 'text-destructive font-bold' : 'text-destructive'}
                       >
                         {deleteConfirm === template.id ? 'Confirm?' : 'Delete'}
-                      </button>
+                      </Button>
                     </div>
-                    <button
+                    <Button
                       onClick={() => handleUseTemplate(template.id, template.name)}
-                      className="text-sm bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700 transition-colors font-medium"
+                      size="sm"
                     >
                       Use →
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -191,12 +181,11 @@ export default function TemplatesPage() {
           ) : (
             <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
               <p className="text-gray-500 mb-4">No templates yet</p>
-              <button
+              <Button
                 onClick={() => router.push('/templates/new')}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 Create Your First Template
-              </button>
+              </Button>
             </div>
           )}
         </section>
@@ -247,12 +236,12 @@ export default function TemplatesPage() {
                   </div>
 
                   <div className="border-t border-gray-200 bg-gray-50 px-6 py-3 flex justify-end">
-                    <button
+                    <Button
                       onClick={() => cloneTemplate.mutate({ id: template.id })}
-                      className="text-sm bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700 transition-colors font-medium"
+                      size="sm"
                     >
                       Clone to My Templates
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}

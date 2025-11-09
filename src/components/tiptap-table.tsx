@@ -8,6 +8,7 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { api } from "@/trpc/react"
 import { useCallback, useRef, useEffect, useState, useContext, createContext } from 'react'
+import { Button } from "@/components/ui/button"
 
 interface SheetUpdateContextType {
   lastUpdate: Date | null;
@@ -104,6 +105,27 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
       if (error.data?.code === 'UNAUTHORIZED') {
         console.error('User not authenticated - please refresh the page');
       }
+    }
+  })
+
+  const deleteRow = api.cell.deleteRow.useMutation({
+    onSuccess: () => {
+      void utils.cell.getCells.invalidate({ sheetId });
+    },
+    onError: (error) => {
+      console.error('Failed to delete row:', error.message);
+      alert('Failed to delete row. Please try again.');
+    }
+  })
+
+  const reprocessRow = api.cell.reprocessRow.useMutation({
+    onSuccess: () => {
+      void utils.cell.getEvents.invalidate({ sheetId });
+      void utils.cell.getCells.invalidate({ sheetId });
+    },
+    onError: (error) => {
+      console.error('Failed to reprocess row:', error.message);
+      alert(error.message || 'Failed to reprocess row. Please try again.');
     }
   })
 
@@ -786,13 +808,15 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
                     <div className="flex items-center justify-between gap-1">
                       <span className="flex-1">{title}</span>
                       {i > 0 && ( // Don't show reprocess for first column
-                        <button
+                        <Button
                           onClick={() => handleReprocessColumn(i)}
-                          className="px-1.5 py-0.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs transition-colors"
+                          size="sm"
+                          variant="default"
+                          className="h-6 px-2 text-xs"
                           title={`Reprocess all rows for "${title}"`}
                         >
                           ↻
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </th>
@@ -844,6 +868,52 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
         </table>
         <div style={{ position: 'relative' }}>
           <EditorContent editor={editor} />
+          {/* Row action buttons - positioned absolutely */}
+          <div className="row-actions-container">
+            {Array.from({ length: 100 }).map((_, rowIndex) => (
+              <div
+                key={rowIndex}
+                className="row-actions"
+                style={{
+                  position: 'absolute',
+                  left: '-50px',
+                  top: `${rowIndex * 40}px`,
+                  width: '45px',
+                  height: '40px',
+                  display: 'none',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '2px',
+                }}
+                data-row-index={rowIndex}
+              >
+                <button
+                  onClick={() => {
+                    if (confirm(`Delete row ${rowIndex}?`)) {
+                      deleteRow.mutate({ sheetId, rowIndex });
+                    }
+                  }}
+                  className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                  title="Delete row"
+                  style={{ fontSize: '14px' }}
+                >
+                  🗑️
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm(`Reprocess row ${rowIndex}?`)) {
+                      reprocessRow.mutate({ sheetId, rowIndex });
+                    }
+                  }}
+                  className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                  title="Reprocess row"
+                  style={{ fontSize: '14px' }}
+                >
+                  ↻
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
         <div
           onClick={handleAddRow}
@@ -886,6 +956,38 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
             background-color: #f9fafb;
           }
 
+          /* Show row actions on row hover */
+          .ProseMirror tbody tr:hover ~ .row-actions-container .row-actions[data-row-index] {
+            display: flex !important;
+          }
+
+          /* More specific approach - using nth-child */
+          .ProseMirror tbody tr:nth-child(1):hover ~ .row-actions-container .row-actions[data-row-index="0"],
+          .ProseMirror tbody tr:nth-child(2):hover ~ .row-actions-container .row-actions[data-row-index="1"],
+          .ProseMirror tbody tr:nth-child(3):hover ~ .row-actions-container .row-actions[data-row-index="2"],
+          .ProseMirror tbody tr:nth-child(4):hover ~ .row-actions-container .row-actions[data-row-index="3"],
+          .ProseMirror tbody tr:nth-child(5):hover ~ .row-actions-container .row-actions[data-row-index="4"],
+          .ProseMirror tbody tr:nth-child(6):hover ~ .row-actions-container .row-actions[data-row-index="5"],
+          .ProseMirror tbody tr:nth-child(7):hover ~ .row-actions-container .row-actions[data-row-index="6"],
+          .ProseMirror tbody tr:nth-child(8):hover ~ .row-actions-container .row-actions[data-row-index="7"],
+          .ProseMirror tbody tr:nth-child(9):hover ~ .row-actions-container .row-actions[data-row-index="8"],
+          .ProseMirror tbody tr:nth-child(10):hover ~ .row-actions-container .row-actions[data-row-index="9"] {
+            display: flex !important;
+          }
+
+          .row-actions-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+          }
+
+          .row-actions {
+            pointer-events: auto;
+          }
+
           .ProseMirror td:last-child {
             border-right: 1px solid #d1d5db;
           }
@@ -920,24 +1022,25 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
       </div>
 
       <div className="flex gap-2">
-        <button
+        <Button
           onClick={triggerProcessing}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          variant="default"
         >
           Process Events
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => refetch()}
-          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+          variant="secondary"
         >
           Refresh Events
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={downloadCSV}
-          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+          variant="outline"
+          className="bg-green-50 hover:bg-green-100 border-green-300 text-green-700"
         >
           Download as CSV
-        </button>
+        </Button>
       </div>
 
       {/* Debug: Show events */}

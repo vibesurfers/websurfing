@@ -9,7 +9,7 @@ import {
 } from "@/components/template-builder/column-config-panel";
 import { api } from "@/trpc/react";
 import type { TemplateConfig } from "@/server/ai/template-generator";
-import { AppHeader } from "@/components/app-header";
+import { Button } from "@/components/ui/button";
 
 type BuilderMode = 'chat' | 'visual' | 'hybrid';
 
@@ -179,61 +179,46 @@ export default function NewTemplatePage() {
   };
 
   return (
-    <>
-      <AppHeader />
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Create New Template
-              </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Design a reusable workflow for data extraction
-              </p>
-            </div>
+    <div className="container mx-auto px-4 py-8 space-y-6 max-w-7xl">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Create New Template
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Design a reusable workflow for data extraction
+          </p>
+        </div>
 
-            {/* Mode Selector */}
-            <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setMode('chat')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  mode === 'chat'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                💬 Chat
-              </button>
-              <button
-                onClick={() => setMode('hybrid')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  mode === 'hybrid'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                🔀 Hybrid
-              </button>
-              <button
-                onClick={() => setMode('visual')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  mode === 'visual'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                🎨 Visual
-              </button>
-            </div>
-          </div>
+        {/* Mode Selector */}
+        <div className="flex items-center space-x-2 bg-muted rounded-lg p-1">
+          <Button
+            onClick={() => setMode('chat')}
+            variant={mode === 'chat' ? 'secondary' : 'ghost'}
+            size="sm"
+          >
+            💬 Chat
+          </Button>
+          <Button
+            onClick={() => setMode('hybrid')}
+            variant={mode === 'hybrid' ? 'secondary' : 'ghost'}
+            size="sm"
+          >
+            🔀 Hybrid
+          </Button>
+          <Button
+            onClick={() => setMode('visual')}
+            variant={mode === 'visual' ? 'secondary' : 'ghost'}
+            size="sm"
+          >
+            🎨 Visual
+          </Button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="space-y-6">
         <div className="grid grid-cols-12 gap-6">
           {/* Chat Panel (Left side in hybrid mode) */}
           {(mode === 'chat' || mode === 'hybrid') && (
@@ -388,26 +373,24 @@ export default function NewTemplatePage() {
               {/* Save Button */}
               {columns.length > 0 && (
                 <div className="flex justify-end space-x-3">
-                  <button
+                  <Button
                     onClick={() => router.push('/templates')}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    variant="outline"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
                   >
                     {isSaving ? 'Saving...' : templateId ? 'Update Template' : 'Create Template'}
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
-      </div>
-    </>
+    </div>
   );
 }
