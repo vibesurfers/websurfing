@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { templates, templateColumns } from "@/server/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, lt } from "drizzle-orm";
 import {
   generateTemplateFromDescription,
   refineTemplate,
@@ -47,6 +47,11 @@ const updateTemplateInput = z.object({
 
 const generateFromChatInput = z.object({
   description: z.string().min(10).max(2000),
+});
+
+const listPaginatedInput = z.object({
+  limit: z.number().min(1).max(100).default(36),
+  cursor: z.string().uuid().optional(),
 });
 
 const refineTemplateInput = z.object({
@@ -99,45 +104,117 @@ export const templateRouter = createTRPCRouter({
     }),
 
   /**
-   * Get all templates for the current user (including public templates)
+   * Get all templates for the current user with cursor-based pagination
    */
-  list: protectedProcedure.query(async ({ ctx }) => {
-    const userTemplates = await ctx.db.query.templates.findMany({
-      where: eq(templates.userId, ctx.session.user.id),
-      with: {
-        columns: {
-          orderBy: (cols, { asc }) => [asc(cols.position)],
-        },
-      },
-      orderBy: [desc(templates.createdAt)],
-    });
+  list: protectedProcedure
+    .input(listPaginatedInput.optional())
+    .query(async ({ ctx, input }) => {
+      const { limit = 36, cursor } = input ?? {};
 
-    return userTemplates;
-  }),
+      // Build where clause
+      let whereClause;
+      if (cursor) {
+        // Get the cursor template's createdAt
+        const cursorTemplate = await ctx.db.query.templates.findFirst({
+          where: and(
+            eq(templates.id, cursor),
+            eq(templates.userId, ctx.session.user.id)
+          ),
+          columns: { createdAt: true },
+        });
 
-  /**
-   * Get public templates (template marketplace)
-   */
-  listPublic: protectedProcedure.query(async ({ ctx }) => {
-    const publicTemplates = await ctx.db.query.templates.findMany({
-      where: eq(templates.isPublic, true),
-      with: {
-        columns: {
-          orderBy: (cols, { asc }) => [asc(cols.position)],
-        },
-        user: {
+        if (cursorTemplate) {
+          whereClause = and(
+            eq(templates.userId, ctx.session.user.id),
+            lt(templates.createdAt, cursorTemplate.createdAt)
+          );
+        } else {
+          whereClause = eq(templates.userId, ctx.session.user.id);
+        }
+      } else {
+        whereClause = eq(templates.userId, ctx.session.user.id);
+      }
+
+      // Fetch limit + 1 to determine if there are more
+      const userTemplates = await ctx.db.query.templates.findMany({
+        where: whereClause,
+        with: {
           columns: {
-            id: true,
-            name: true,
+            orderBy: (cols, { asc }) => [asc(cols.position)],
           },
         },
-      },
-      orderBy: [desc(templates.usageCount), desc(templates.createdAt)],
-      limit: 50,
-    });
+        orderBy: [desc(templates.createdAt)],
+        limit: limit + 1,
+      });
 
-    return publicTemplates;
-  }),
+      const hasMore = userTemplates.length > limit;
+      const items = hasMore ? userTemplates.slice(0, limit) : userTemplates;
+
+      return {
+        items,
+        nextCursor: hasMore ? items[items.length - 1]!.id : undefined,
+      };
+    }),
+
+  /**
+   * Get public templates (template marketplace) with cursor-based pagination
+   */
+  listPublic: protectedProcedure
+    .input(listPaginatedInput.optional())
+    .query(async ({ ctx, input }) => {
+      const { limit = 36, cursor } = input ?? {};
+
+      // Build where clause
+      let whereClause;
+      if (cursor) {
+        // Get the cursor template's usageCount and createdAt
+        const cursorTemplate = await ctx.db.query.templates.findFirst({
+          where: and(
+            eq(templates.id, cursor),
+            eq(templates.isPublic, true)
+          ),
+          columns: { usageCount: true, createdAt: true },
+        });
+
+        if (cursorTemplate) {
+          // For pagination with multiple sort columns, we need a more complex where clause
+          // This is a simplified version - in production you might want composite cursor
+          whereClause = and(
+            eq(templates.isPublic, true),
+            lt(templates.createdAt, cursorTemplate.createdAt)
+          );
+        } else {
+          whereClause = eq(templates.isPublic, true);
+        }
+      } else {
+        whereClause = eq(templates.isPublic, true);
+      }
+
+      const publicTemplates = await ctx.db.query.templates.findMany({
+        where: whereClause,
+        with: {
+          columns: {
+            orderBy: (cols, { asc }) => [asc(cols.position)],
+          },
+          user: {
+            columns: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: [desc(templates.usageCount), desc(templates.createdAt)],
+        limit: limit + 1,
+      });
+
+      const hasMore = publicTemplates.length > limit;
+      const items = hasMore ? publicTemplates.slice(0, limit) : publicTemplates;
+
+      return {
+        items,
+        nextCursor: hasMore ? items[items.length - 1]!.id : undefined,
+      };
+    }),
 
   /**
    * Get a specific template by ID

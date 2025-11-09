@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, FileText, Settings, LogOut } from "lucide-react";
+import { Home, FileText, Settings, LogOut, Plus, ChevronRight, Sparkles, Database } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -12,6 +12,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSkeleton,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -23,6 +24,7 @@ import {
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { api } from "@/trpc/react";
 
 interface AppSidebarProps {
   user?: {
@@ -40,19 +42,25 @@ const navigationItems = [
     icon: Home,
   },
   {
+    title: "All Websets",
+    href: "/websets",
+    icon: Database,
+  },
+  {
     title: "Templates",
     href: "/templates",
     icon: FileText,
-  },
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: Settings,
   },
 ];
 
 export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
   const pathname = usePathname();
+
+  // Query sheets list
+  const { data: sheets, isLoading: sheetsLoading } = api.sheet.list.useQuery();
+
+  // Get recent sheets (last 15, reversed to show newest first)
+  const recentSheets = sheets ? sheets.slice(-15).reverse() : [];
 
   const getUserInitials = () => {
     if (!user?.name) return "U";
@@ -82,6 +90,7 @@ export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent>
+        {/* Navigation Group */}
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -102,9 +111,78 @@ export function AppSidebar({ user, onSignOut }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Recent Websets Group */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Recent Websets</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {/* Create New Button */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/welcome">
+                    <Plus className="w-4 h-4" />
+                    <span>Create New</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Loading State */}
+              {sheetsLoading && (
+                <>
+                  <SidebarMenuSkeleton />
+                  <SidebarMenuSkeleton />
+                  <SidebarMenuSkeleton />
+                </>
+              )}
+
+              {/* Sheets List */}
+              {!sheetsLoading && recentSheets.map((sheet) => {
+                const isActive = pathname.includes(sheet.id);
+                return (
+                  <SidebarMenuItem key={sheet.id}>
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <Link href={`/sheets/${sheet.id}`} className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate flex-1">{sheet.name}</span>
+                        {sheet.isAutonomous && (
+                          <Sparkles className="w-3 h-3 flex-shrink-0 text-primary" />
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+
+              {/* View All Link */}
+              {!sheetsLoading && sheets && sheets.length > 15 && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild variant="outline">
+                    <Link href="/welcome" className="flex items-center gap-2">
+                      <span className="flex-1 text-xs">View all {sheets.length} websets</span>
+                      <ChevronRight className="w-3 h-3 flex-shrink-0" />
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
+        {/* Settings Link */}
+        <Link
+          href="/settings"
+          className={`flex items-center gap-3 px-2 py-2 rounded-lg transition-colors hover:bg-sidebar-accent mb-2 ${
+            pathname === "/settings" ? "bg-sidebar-accent" : ""
+          }`}
+        >
+          <Settings className="w-4 h-4" />
+          <span className="text-sm font-medium">Settings</span>
+        </Link>
+
+        {/* User Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-3 w-full hover:bg-sidebar-accent rounded-lg p-2 transition-colors">

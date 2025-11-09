@@ -3,16 +3,21 @@
 import { useState } from "react";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
-import { TemplateGalleryCard } from "@/components/template-gallery-card";
 import { WebsetsTable } from "@/components/websets-table";
-import { Loader2 } from "lucide-react";
+import { Loader2, Pencil, Trash2, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 export function WelcomeFlow() {
   const router = useRouter();
   const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const { data: templates, isLoading: templatesLoading } = api.template.list.useQuery();
+  const { data: templatesData, isLoading: templatesLoading, refetch: refetchTemplates } = api.template.list.useQuery();
   const { data: sheets, isLoading: sheetsLoading } = api.sheet.list.useQuery();
+
+  // Extract templates from paginated response
+  const templates = templatesData?.items ?? [];
 
   const createSheet = api.sheet.create.useMutation({
     onError: (error) => {
@@ -30,6 +35,16 @@ export function WelcomeFlow() {
     onError: (error) => {
       console.error('Failed to delete sheet:', error);
       alert('Failed to delete sheet. Please try again.');
+    },
+  });
+
+  const deleteTemplate = api.template.delete.useMutation({
+    onSuccess: () => {
+      setDeleteConfirm(null);
+      refetchTemplates();
+    },
+    onError: (error) => {
+      alert(`Failed to delete template: ${error.message}`);
     },
   });
 
@@ -70,7 +85,17 @@ export function WelcomeFlow() {
     router.push(`/sheets/${sheetId}`);
   };
 
+  const handleDelete = (id: string) => {
+    if (deleteConfirm === id) {
+      deleteTemplate.mutate({ id });
+    } else {
+      setDeleteConfirm(id);
+      setTimeout(() => setDeleteConfirm(null), 3000);
+    }
+  };
+
   return (
+    <TooltipProvider>
     <div className="container mx-auto px-4 py-8 space-y-8 max-w-7xl">
       {/* Header */}
       <div className="space-y-2">
@@ -95,24 +120,88 @@ export function WelcomeFlow() {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : templates && templates.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {templates.map((template) => (
-              <TemplateGalleryCard
+              <div
                 key={template.id}
-                id={template.id}
-                name={template.name}
-                description={template.description ?? undefined}
-                icon={template.icon ?? undefined}
-                isAutonomous={template.isAutonomous ?? false}
-                isPublic={template.isPublic ?? false}
-                columns={template.columns.map(col => ({
-                  title: col.title,
-                  position: col.position,
-                  dataType: col.dataType ?? 'text',
-                }))}
-                usageCount={template.usageCount ?? 0}
-                onUse={handleTemplateUse}
-              />
+                className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+              >
+                {/* Template Card Header */}
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-4xl">{template.icon || '📋'}</span>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">
+                          {template.name}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {template.columns?.length || 0} columns
+                        </p>
+                      </div>
+                    </div>
+                    {/* Delete button in top right corner */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={() => handleDelete(template.id)}
+                          variant="ghost"
+                          size="icon-sm"
+                          className={deleteConfirm === template.id ? 'text-destructive font-bold' : 'text-destructive hover:text-destructive'}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {deleteConfirm === template.id ? 'Click again to confirm' : 'Delete template'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  {template.description && (
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-6">
+                      {template.description}
+                    </p>
+                  )}
+
+                  {/* Column Pills */}
+                  {template.columns && template.columns.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {template.columns.slice(0, 4).map((col) => (
+                        <span
+                          key={col.id}
+                          className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
+                        >
+                          {col.title}
+                        </span>
+                      ))}
+                      {template.columns.length > 4 && (
+                        <span className="text-xs text-gray-400 px-2 py-1">
+                          +{template.columns.length - 4} more
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="border-t border-gray-200 bg-gray-50 px-6 py-3 flex items-center gap-3">
+                  <Button
+                    onClick={() => router.push(`/templates/${template.id}/edit`)}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Customize
+                  </Button>
+                  <Button
+                    onClick={() => handleTemplateUse(template.id)}
+                    className="flex-1"
+                  >
+                    Create <ArrowRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         ) : (
@@ -149,5 +238,6 @@ export function WelcomeFlow() {
         />
       </div>
     </div>
+    </TooltipProvider>
   );
 }
