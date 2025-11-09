@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,8 +27,9 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MoreVertical, Trash2, ExternalLink, Sparkles } from "lucide-react";
+import { MoreVertical, Trash2, ExternalLink, Sparkles, Edit2, Check, X } from "lucide-react";
 import { format } from "date-fns";
+import { api } from "@/trpc/react";
 
 interface Sheet {
   id: string;
@@ -56,7 +58,21 @@ export function WebsetsTable({
 }: WebsetsTableProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sheetToDelete, setSheetToDelete] = useState<string | null>(null);
+  const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
   const observerTarget = useRef<HTMLTableRowElement>(null);
+
+  // Rename mutation
+  const utils = api.useUtils();
+  const renameMutation = api.sheet.rename.useMutation({
+    onSuccess: () => {
+      setEditingSheetId(null);
+      void utils.sheet.list.invalidate();
+    },
+    onError: (error) => {
+      alert(`Failed to rename: ${error.message}`);
+    },
+  });
 
   // Infinite scroll observer
   useEffect(() => {
@@ -88,6 +104,25 @@ export function WebsetsTable({
       setSheetToDelete(null);
     }
   }, [sheetToDelete, onDelete]);
+
+  const startEdit = useCallback((sheetId: string, currentName: string) => {
+    setEditingSheetId(sheetId);
+    setEditingName(currentName);
+  }, []);
+
+  const saveEdit = useCallback(() => {
+    if (editingSheetId && editingName.trim()) {
+      renameMutation.mutate({
+        sheetId: editingSheetId,
+        name: editingName.trim(),
+      });
+    }
+  }, [editingSheetId, editingName, renameMutation]);
+
+  const cancelEdit = useCallback(() => {
+    setEditingSheetId(null);
+    setEditingName("");
+  }, []);
 
   const getTemplateLabel = (templateType: string | null) => {
     if (!templateType) return "Custom";
@@ -131,16 +166,55 @@ export function WebsetsTable({
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => onNavigate(sheet.id)}
               >
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
-                    {sheet.name}
-                    {sheet.isAutonomous && (
-                      <Badge variant="secondary" className="text-xs">
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        Auto
-                      </Badge>
-                    )}
-                  </div>
+                <TableCell className="font-medium" onClick={(e) => e.stopPropagation()}>
+                  {editingSheetId === sheet.id ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        className="h-8"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEdit();
+                          if (e.key === 'Escape') cancelEdit();
+                        }}
+                      />
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        onClick={saveEdit}
+                        disabled={renameMutation.isPending}
+                      >
+                        <Check className="w-4 h-4 text-green-600" />
+                      </Button>
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        onClick={cancelEdit}
+                        disabled={renameMutation.isPending}
+                      >
+                        <X className="w-4 h-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 group">
+                      <span>{sheet.name}</span>
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        onClick={() => startEdit(sheet.id, sheet.name)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      {sheet.isAutonomous && (
+                        <Badge variant="secondary" className="text-xs">
+                          <Sparkles className="w-3 h-3 mr-1" />
+                          Auto
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell>
                   <span className="text-sm text-muted-foreground">

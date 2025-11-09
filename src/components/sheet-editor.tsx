@@ -8,7 +8,6 @@ import { ApiSnippetsDialog } from "@/components/api-snippets-dialog";
 import { useState, useCallback, createContext, useContext, useEffect } from "react";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
 
 interface SheetUpdateContextType {
   lastUpdate: Date | null;
@@ -148,24 +147,10 @@ export function SheetEditor({ sheetId, appUrl }: SheetEditorProps) {
     <SheetUpdateContext.Provider value={{ lastUpdate, pendingUpdates, selectedSheetId: sheetId }}>
       <main className="container mx-auto p-8 min-h-screen bg-white">
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
+          <div>
             <h1 className="text-3xl font-bold text-gray-900">
               VibeSurfing - Web Search Spreadsheets
             </h1>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/welcome')}
-                className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                All Sheets
-              </button>
-              <button
-                onClick={() => signOut()}
-                className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                Sign out
-              </button>
-            </div>
           </div>
 
           <div className="flex justify-between items-center">
