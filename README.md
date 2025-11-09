@@ -2,7 +2,7 @@
 
 **Team Vibesurfers** | Google Vibe Coding Hackathon 2025
 
-> A natural language-powered spreadsheet that transforms cells into AI agents. Type, ask, automate - let Gemini do the work.
+> A dual-AI spreadsheet combining conversational agents with automatic cell processing. Chat with Mastra agents for bulk operations, edit cells for instant AI enrichment - powered by Gemini 2.5.
 
 [![Demo](https://img.shields.io/badge/Demo-Live-green)]() [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -18,42 +18,82 @@ Modern spreadsheets are powerful but rigid. Data enrichment requires switching b
 
 ## 💡 What We Built
 
-A collaborative spreadsheet where **every cell is a potential AI agent**:
+A **dual-architecture AI spreadsheet** combining conversational agents with automatic cell processing:
 
+### 🗣️ **Mastra Agent Flow** (Conversational Bulk Operations)
+```
+User: "Find top 20 pizza places in SF"
+  ↓ (Agent Chat Interface)
+Agent: "I'll search for 20 pizza places. Ready to create rows?"
+  ↓ (Preview/Confirm)
+Result: 20 rows created with restaurant names
+  ↓ (Triggers Operator Events)
+Automatic: Phone numbers, websites, ratings filled by operators
+```
+
+### ⚡ **Operator Flow** (Instant Cell Processing)
 ```
 Cell A1: "search for Next.js 15 features"
-  ↓ (Gemini Google Search)
+  ↓ (Cell Edit Event)
 Cell B1: https://nextjs.org/docs, https://react.dev...
-  ↓ (Gemini URL Context)
+  ↓ (Automatic URL Processing)
 Cell C1: { features: [...], releaseDate: "..." }
-  ↓ (Gemini Structured Output)
+  ↓ (Structured Data Extraction)
 Cell D1: "✓ 12 features extracted"
 ```
 
-### Key Features
+### 🔄 **Hybrid Power**: Agents Create → Operators Enrich
 
-1. **🔍 Natural Language Triggers**
-   - Type `search: best coffee in SF` → Gemini searches and populates adjacent cells
-   - Type URLs → Gemini extracts and summarizes content
-   - Type raw data → Gemini structures it into JSON
+## ✨ Key Features
 
-2. **🤖 Autonomous Cascading**
-   - Robot mode: Updates trigger new AI operations automatically
-   - Human mode: Full control over each step
-   - Event queue visualizes the entire processing pipeline
+### 1. **🤖 Mastra Conversational Agents**
+   - **Natural language bulk operations**: "Find 50 restaurants near me"
+   - **Preview/confirm workflow**: See what will be created before executing
+   - **Dynamic sheet management**: Add/remove columns conversationally
+   - **Context retention**: Remembers previous requests and sheet state
+   - **Intelligent tools**: Google Search, Google Maps, Sheet manipulation
 
-3. **🔗 4 Gemini Operators**
-   - **Google Search**: Real-time web search with citations
-   - **URL Context**: Multi-URL content extraction and comparison
-   - **Structured Output**: Type-safe JSON generation with Zod schemas
-   - **Function Calling**: Natural language → API calls
+### 2. **⚡ Gemini Cell Operators**
+   - **Instant processing**: Type in cell → automatic AI enrichment
+   - **6 Specialized operators**: Google Search, URL Context, Structured Output, Function Calling, Academic Search, Similarity
+   - **Template intelligence**: Different behavior for scientific vs marketing sheets
+   - **Event-driven pipeline**: Visualize processing queue in real-time
 
-4. **📊 Multi-Sheet Workspace**
-   - Create unlimited sheets per user
-   - Real-time updates across team members
-   - Event history and audit trail
+### 3. **💡 CSV Import Intelligence**
+   - **Drag-and-drop CSV upload** with live preview
+   - **Automatic template suggestions** for data enrichment
+   - **Seamless integration** with both agents and operators
+
+### 4. **🎛️ Dual Control Modes**
+   - **Robots: ON** (orange) - Full automation, updates cascade automatically
+   - **Robots: OFF** (purple) - Manual control, preview each step
+   - **Agent Sidebar** - Chat interface for complex operations (Cmd/Ctrl+K)
 
 ## 🧠 How We Used Gemini
+
+### **Mastra Agent System**
+Built with **Mastra framework** + **Vertex AI Gemini 2.5 Flash**:
+
+```typescript
+// Natural language → Tool selection → Bulk operation
+await spreadsheetAgent.generateText({
+  input: "Find top 20 pizza places in SF",
+  context: { sheetId, userId },
+  tools: [googleMapsTool, sheetWriterTool, columnManagerTool]
+});
+// → Agent uses googleMapsTool → Creates 20 rows with preview
+```
+
+**Mastra Tools Available**:
+- 🔍 **Google Search Tool**: Web search with grounding
+- 🗺️ **Google Maps Tool**: Local business search with detailed data
+- 📝 **Sheet Writer Tool**: Bulk row creation with preview/execute modes
+- 🔧 **Column Manager Tool**: Add, remove, reorder columns dynamically
+- 📊 **Sheet Reader Tool**: Query existing sheet data and structure
+- 🗑️ **Row Manager Tool**: Delete specific or empty rows
+
+### **Cell Operator System**
+Event-driven processing with **6 specialized Gemini operators**:
 
 ### 1. **Google Search Grounding** (`google_search` operator)
 ```typescript
@@ -114,62 +154,101 @@ const result = await gemini.generateContent({
 - Drag images into cells → Gemini describes/extracts text
 - Screenshot → Structured data extraction
 
-## 🏗️ Technical Architecture
+## 🏗️ Dual Technical Architecture
 
+### **🔄 Complete System Flow**
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Next.js 15 + React 19 (Tiptap Editor)             │
-│  ┌───────────────────────────────────────────────┐ │
-│  │  User edits cell → Event Queue (PostgreSQL)   │ │
-│  │         ↓                                      │ │
-│  │  OperatorController dispatches to Gemini      │ │
-│  │         ↓                                      │ │
-│  │  Gemini 2.5 Flash processes with tools        │ │
-│  │         ↓                                      │ │
-│  │  SheetUpdater writes results back             │ │
-│  │         ↓                                      │ │
-│  │  Real-time UI updates (tRPC)                  │ │
-│  └───────────────────────────────────────────────┘ │
+│                    USER INTERFACE                   │
+│  ┌─────────────────┐    ┌─────────────────────────┐ │
+│  │  Agent Sidebar  │    │     Tiptap Editor       │ │
+│  │  (Chat + Tools) │    │    (Cell Grid)          │ │
+│  └─────────────────┘    └─────────────────────────┘ │
+│           │                        │               │
+│           ▼                        ▼               │
+│  ┌─────────────────┐    ┌─────────────────────────┐ │
+│  │ Mastra Agents   │    │   Event-Driven Pipeline │ │
+│  │ Bulk Operations │    │   Cell-by-Cell Process  │ │
+│  │ (Conversational)│    │   (Automatic Operators) │ │
+│  └─────────────────┘    └─────────────────────────┘ │
+│           │                        │               │
+│           └────────┐      ┌────────┘               │
+│                    ▼      ▼                        │
+│           ┌─────────────────────────┐               │
+│           │   Shared Database       │               │
+│           │   PostgreSQL + tRPC     │               │
+│           └─────────────────────────┘               │
 └─────────────────────────────────────────────────────┘
+```
+
+### **🤖 Mastra Agent Flow**
+```
+User Chat → Mastra Agent → Tool Selection → Bulk Operation → Events
+    ↓             ↓             ↓              ↓           ↓
+"Find pizza" → Context + → googleMapsTool → 20 rows → Triggers
+             Memory                        created   Operators
+```
+
+### **⚡ Operator Flow**
+```
+Cell Edit → Event Queue → Operator Controller → Gemini → Result
+    ↓           ↓              ↓               ↓        ↓
+ Debounce → Database → Route by content → Process → Write back
 ```
 
 ### Tech Stack
 - **Frontend**: Next.js 15, React 19, Tiptap (rich text tables)
 - **Backend**: tRPC, Drizzle ORM, PostgreSQL (Neon)
-- **AI**: Vertex AI Gemini 2.5 Flash, Google Gen AI SDK
+- **AI Frameworks**:
+  - **Mastra** (Conversational agents, tools, memory)
+  - **Custom Operators** (Event-driven cell processing)
+- **AI Models**: Vertex AI Gemini 2.5 Flash, Google Gen AI SDK
 - **Auth**: NextAuth.js (Google OAuth)
 - **Deployment**: Vercel
 
 ## 🎬 Demo Scenarios
 
-### Scenario 1: Competitive Analysis
+### **🗣️ Agent-Driven Scenario**: Restaurant Research
+```
+Agent Chat: "Find top 20 Italian restaurants in SF with ratings"
+    ↓ (Mastra Agent + Google Maps Tool)
+Result: 20 rows created with [Name, Address, Phone, Website, Rating]
+    ↓ (Triggers Operator Events)
+Auto-fill: Reviews extracted from websites, menu links, price ranges
+```
+
+### **⚡ Cell-Driven Scenario**: Competitive Analysis
 ```
 A1: "search top 5 CRM tools 2025"
-  → B1-B5: URLs of CRM products
-B1: [URLs] + "extract pricing"
-  → C1-C5: { product, pricing, features }
-C1: [Structured data] + "compare features"
-  → D1: Full comparison table
+  → B1-B5: URLs of CRM products (Google Search Operator)
+B1: [URLs] + context → pricing data extracted (URL Context Operator)
+  → C1-C5: { product, pricing, features } (Structured Output Operator)
+C1: [Data] → comparison table generated (Function Calling Operator)
 ```
 
-### Scenario 2: Data Enrichment Pipeline
+### **🔄 Hybrid Scenario**: Lead Enrichment
 ```
-A1: "John Doe, john@example.com"
-  → B1: { name: "John Doe", email: "john@example.com" }
-B1: [Structured data] + "search for LinkedIn profile"
-  → C1: LinkedIn URL
-C1: [URL] + "extract work history"
-  → D1: { companies: [...], roles: [...] }
+1. Agent Chat: "Import this CSV of leads and enrich with LinkedIn data"
+   → Agent processes CSV, creates rows with name/email
+
+2. Cell Processing: Each row automatically triggers:
+   → LinkedIn search (Google Search Operator)
+   → Profile extraction (URL Context Operator)
+   → Data structuring (Structured Output Operator)
+
+Result: Complete lead database with work history, company info, contact details
 ```
 
-### Scenario 3: API Documentation Assistant
+### **📊 CSV Import Scenario**: Company Analysis
 ```
-A1: "https://stripe.com/docs/api"
-  → B1: "Stripe API allows payments, subscriptions..."
-A2: "extract all payment endpoints"
-  → B2: { endpoints: ["/charges", "/refunds", ...] }
-A3: "generate curl examples"
-  → B3: curl -X POST https://api.stripe.com/v1/charges...
+1. Drag CSV file: "startup-list.csv" (Company Name, Website)
+   → Preview shows 50 companies
+   → Creates sheet with template prompt
+
+2. Agent Chat: "Add funding and employee count columns"
+   → Columns added dynamically
+
+3. Auto-enrichment: Website → Company info, funding data, employee counts
 ```
 
 ## 🚀 Getting Started
