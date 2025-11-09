@@ -9,7 +9,7 @@ import { TableCell } from '@tiptap/extension-table-cell'
 import { api } from "@/trpc/react"
 import { useCallback, useRef, useEffect, useState, useContext, createContext } from 'react'
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 
 interface SheetUpdateContextType {
   lastUpdate: Date | null;
@@ -782,7 +782,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           z-index: 10;
         }
       `}} />
-      <ScrollArea className="h-[calc(100vh-450px)] w-full rounded border border-gray-300">
+      <ScrollArea className="w-full">
       <div className="relative group">
         <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', position: 'relative' }}>
           <thead>
@@ -793,10 +793,9 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
                     key={i}
                     className="bg-blue-100 border border-blue-300 text-center font-semibold text-xs text-blue-900"
                     style={{
-                      padding: '4px 8px',
-                      minWidth: '1em',
+                      padding: '8px 12px',
+                      width: '250px',
                       boxSizing: 'border-box',
-                      width: `calc(100% / ${columnTitles.length})`
                     }}
                   >
                     <div className="flex items-center justify-between gap-1">
@@ -821,10 +820,9 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
                     key={i}
                     className="bg-gray-100 border border-gray-300 text-center font-semibold text-xs text-gray-700"
                     style={{
-                      padding: '4px 12px',
-                      minWidth: '1em',
+                      padding: '8px 12px',
+                      width: '250px',
                       boxSizing: 'border-box',
-                      width: `calc(100% / ${columnCount})`
                     }}
                   >
                     {i + 1}
@@ -836,7 +834,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
                   className="bg-yellow-100 border border-yellow-300 text-center font-semibold text-xs"
                   style={{
                     padding: '8px 12px',
-                    minWidth: '1em',
+                    width: '250px',
                     boxSizing: 'border-box'
                   }}
                 >
@@ -909,27 +907,30 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
             ))}
           </div>
         </div>
-        <div
-          onClick={handleAddRow}
-          className="w-full h-12 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-2 border-dashed border-blue-300 hover:border-blue-400 transition-all cursor-pointer flex items-center justify-center gap-2 rounded-lg mt-2"
-        >
-          <span className="text-blue-600 text-2xl font-bold">+</span>
-          <span className="text-blue-700 font-medium text-sm">Add Row</span>
-        </div>
       </div>
+      <ScrollBar orientation="horizontal" />
       </ScrollArea>
+
+      {/* Add Row Button - Always visible, viewport width */}
+      <div
+        onClick={handleAddRow}
+        className="h-12 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-t-2 border-dashed border-blue-300 hover:border-blue-400 transition-all cursor-pointer flex items-center justify-center gap-2"
+      >
+        <span className="text-blue-600 text-2xl font-bold">+</span>
+        <span className="text-blue-700 font-medium text-sm">Add Row</span>
+      </div>
       <style key={`table-styles-${columnCount}`} dangerouslySetInnerHTML={{ __html: `
           .ProseMirror table {
             border-collapse: collapse;
             table-layout: fixed;
             width: 100%;
             margin: 0;
-            overflow: hidden;
+            overflow: visible;
             margin-top: -1px;
           }
 
           .ProseMirror td {
-            min-width: 1em;
+            width: 250px;
             border: 1px solid #d1d5db;
             padding: 8px 12px;
             vertical-align: top;
@@ -940,7 +941,6 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            width: calc(100% / ${columnCount});
           }
 
           .ProseMirror tr:hover td {

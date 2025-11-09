@@ -7,6 +7,7 @@ import { SheetHeader } from "@/components/sheet-header";
 import { useState, useCallback, createContext, useContext, useEffect } from "react";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
+import Papa from "papaparse";
 
 interface SheetUpdateContextType {
   lastUpdate: Date | null;
@@ -99,18 +100,41 @@ export function SheetEditor({ sheetId, appUrl }: SheetEditorProps) {
     if (!currentSheet?.name) return;
 
     try {
-      // Fetch columns and cells
-      const response = await fetch(`/api/v1/sheets/${sheetId}/data?format=csv`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('apiKey') || ''}`,
-        },
-      });
+      // Fetch columns and cells using tRPC
+      const [columns, cells] = await Promise.all([
+        utils.sheet.getColumns.fetch({ sheetId }),
+        utils.cell.getCells.fetch({ sheetId }),
+      ]);
 
-      if (!response.ok) {
-        throw new Error('Failed to download CSV');
+      if (!columns || columns.length === 0) {
+        alert('No columns to export');
+        return;
       }
 
-      const blob = await response.blob();
+      // Build rows map
+      const rowsMap = new Map<number, Map<number, string>>();
+      cells.forEach((cell) => {
+        if (!rowsMap.has(cell.rowIndex)) {
+          rowsMap.set(cell.rowIndex, new Map());
+        }
+        rowsMap.get(cell.rowIndex)!.set(cell.colIndex, cell.content || '');
+      });
+
+      // Convert to array of arrays
+      const rowIndices = Array.from(rowsMap.keys()).sort((a, b) => a - b);
+      const rows = rowIndices.map((rowIndex) => {
+        const rowData = rowsMap.get(rowIndex)!;
+        return columns.map((col, idx) => rowData.get(idx) || '');
+      });
+
+      // Generate CSV
+      const csv = Papa.unparse({
+        fields: columns.map((col) => col.title),
+        data: rows,
+      });
+
+      // Trigger download
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -123,7 +147,7 @@ export function SheetEditor({ sheetId, appUrl }: SheetEditorProps) {
       console.error('Error downloading CSV:', error);
       alert('Failed to download CSV. Please try again.');
     }
-  }, [sheetId, currentSheet?.name]);
+  }, [sheetId, currentSheet?.name, utils]);
 
   const handleUpdateTick = useCallback(async () => {
     if (!sheetId) return;
@@ -192,7 +216,7 @@ export function SheetEditor({ sheetId, appUrl }: SheetEditorProps) {
 
   return (
     <SheetUpdateContext.Provider value={{ lastUpdate, pendingUpdates, selectedSheetId: sheetId }}>
-      <main className="container mx-auto min-h-screen bg-white">
+      <main className="fixed left-[var(--sidebar-width)] right-[var(--agent-panel-width)] top-0 bottom-0 bg-white overflow-auto">
         <SheetHeader
           sheetId={sheetId}
           appUrl={appUrl}
@@ -204,7 +228,7 @@ export function SheetEditor({ sheetId, appUrl }: SheetEditorProps) {
           onSelectSheet={handleSelectSheet}
         />
 
-        <div className="px-8 py-6 pt-40">
+        <div className="pt-[120px] pb-[200px]">
           <TiptapTable treatRobotsAsHumans={treatRobotsAsHumans} sheetId={sheetId} />
         </div>
       </main>

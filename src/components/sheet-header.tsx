@@ -106,7 +106,7 @@ export function SheetHeader({
   return (
     <>
       <div className="fixed top-0 left-[var(--sidebar-width)] right-[var(--agent-panel-width)] bg-white border-b border-gray-300 shadow-md z-50">
-        <div className="px-8 py-4 space-y-3">
+        <div className="px-4 py-3 space-y-2">
           {/* Title Row */}
           <div className="flex items-center gap-3">
             {editingTitle ? (
