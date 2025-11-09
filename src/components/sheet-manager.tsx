@@ -2,12 +2,14 @@
 
 import { TiptapTable } from "@/components/tiptap-table";
 import { CountdownTimer } from "@/components/countdown-timer";
+import { SheetSelector } from "@/components/sheet-selector";
 import { useState, useCallback, createContext, useContext, useEffect } from "react";
 import { api } from "@/trpc/react";
 
 interface SheetUpdateContextType {
   lastUpdate: Date | null;
   pendingUpdates: number;
+  selectedSheetId: string | null;
 }
 
 const SheetUpdateContext = createContext<SheetUpdateContextType | null>(null);
@@ -25,12 +27,26 @@ export function SheetManager() {
   const [pendingUpdates, setPendingUpdates] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [treatRobotsAsHumans, setTreatRobotsAsHumans] = useState(true);
+  const [selectedSheetId, setSelectedSheetId] = useState<string | null>(null);
+
+  const { data: sheets } = api.sheet.list.useQuery();
+
+  // Auto-select first sheet when sheets load
+  useEffect(() => {
+    if (sheets && sheets.length > 0 && !selectedSheetId) {
+      setSelectedSheetId(sheets[0].id);
+    }
+  }, [sheets, selectedSheetId]);
 
   // Test authentication by trying to fetch events once
-  const { error: authError, isLoading } = api.cell.getEvents.useQuery(undefined, {
-    refetchInterval: false,
-    retry: false,
-  });
+  const { error: authError, isLoading } = api.cell.getEvents.useQuery(
+    selectedSheetId ? { sheetId: selectedSheetId } : undefined,
+    {
+      enabled: !!selectedSheetId,
+      refetchInterval: false,
+      retry: false,
+    }
+  );
 
   // Set ready state based on query result
   useEffect(() => {
@@ -103,13 +119,17 @@ export function SheetManager() {
   }
 
   return (
-    <SheetUpdateContext.Provider value={{ lastUpdate, pendingUpdates }}>
+    <SheetUpdateContext.Provider value={{ lastUpdate, pendingUpdates, selectedSheetId }}>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">
             Event Queue Test - Tiptap Table
           </h1>
           <div className="flex items-center gap-4">
+            <SheetSelector
+              selectedSheetId={selectedSheetId}
+              onSelectSheet={setSelectedSheetId}
+            />
             {pendingUpdates > 0 && (
               <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -132,7 +152,7 @@ export function SheetManager() {
           </div>
         )}
 
-        <TiptapTable treatRobotsAsHumans={treatRobotsAsHumans} />
+        {selectedSheetId && <TiptapTable treatRobotsAsHumans={treatRobotsAsHumans} sheetId={selectedSheetId} />}
       </div>
     </SheetUpdateContext.Provider>
   );

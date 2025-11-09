@@ -30,11 +30,14 @@ const initialContent = `
 
 interface TiptapTableProps {
   treatRobotsAsHumans: boolean
+  sheetId: string
 }
 
-export function TiptapTable({ treatRobotsAsHumans }: TiptapTableProps) {
+export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) {
   const { lastUpdate } = useSheetUpdates()
   const isApplyingRobotUpdates = useRef(false)
+
+  const utils = api.useUtils()
 
   const updateCell = api.cell.updateCell.useMutation({
     onError: (error) => {
@@ -55,24 +58,29 @@ export function TiptapTable({ treatRobotsAsHumans }: TiptapTableProps) {
   })
 
   // Fetch cells from the database
-  const { data: cells, refetch: refetchCells } = api.cell.getCells.useQuery(undefined, {
-    refetchInterval: false,
-    retry: (failureCount, error) => {
-      if (error.data?.code === 'UNAUTHORIZED') return false;
-      return failureCount < 3;
-    },
-    refetchOnWindowFocus: false,
-  })
+  const { data: cells, refetch: refetchCells } = api.cell.getCells.useQuery(
+    { sheetId },
+    {
+      refetchInterval: false,
+      retry: (failureCount, error) => {
+        if (error.data?.code === 'UNAUTHORIZED') return false;
+        return failureCount < 3;
+      },
+      refetchOnWindowFocus: false,
+    }
+  )
 
-  const { data: events, refetch, error: eventsError } = api.cell.getEvents.useQuery(undefined, {
-    refetchInterval: false, // Disable polling - we use the 5-second timer instead
-    retry: (failureCount, error) => {
-      // Don't retry if unauthorized
-      if (error.data?.code === 'UNAUTHORIZED') return false;
-      return failureCount < 3;
-    },
-    refetchOnWindowFocus: false,
-  })
+  const { data: events, refetch, error: eventsError } = api.cell.getEvents.useQuery(
+    { sheetId },
+    {
+      refetchInterval: false,
+      retry: (failureCount, error) => {
+        if (error.data?.code === 'UNAUTHORIZED') return false;
+        return failureCount < 3;
+      },
+      refetchOnWindowFocus: false,
+    }
+  )
 
   // Debounce mechanism - only fire events after user stops typing
   const debounceRefs = useRef<Map<string, NodeJS.Timeout>>(new Map())
@@ -150,7 +158,10 @@ export function TiptapTable({ treatRobotsAsHumans }: TiptapTableProps) {
       // Parse the HTML to find table cells with content
       const parser = new DOMParser()
       const doc = parser.parseFromString(html, 'text/html')
-      const rows = doc.querySelectorAll('tr')
+      const tbody = doc.querySelector('tbody')
+      if (!tbody) return
+
+      const rows = tbody.querySelectorAll('tr')
 
       rows.forEach((row, rowIndex) => {
         const cells = row.querySelectorAll('td')
@@ -311,6 +322,13 @@ export function TiptapTable({ treatRobotsAsHumans }: TiptapTableProps) {
             box-sizing: border-box;
             position: relative;
             min-height: 40px;
+          }
+
+          .ProseMirror th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+            text-align: center;
+            color: #374151;
           }
 
           .ProseMirror td:first-child,
