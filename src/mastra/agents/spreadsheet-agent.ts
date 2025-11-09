@@ -63,6 +63,12 @@ export const spreadsheetAgent = new Agent({
    - Extract structured data from search results
    - Ensure URLs are clean website URLs (not redirect URLs)
 
+6. **Customizing Column Behavior**
+   - Use sheetConfigTool to modify how columns are processed
+   - Set operatorType: "google_search", "url_context", "structured_output"
+   - Set custom prompts: e.g., "Extract only the phone number"
+   - Update column settings when user asks to change AI behavior
+
 ## Workflow for "find X in Y" queries:
 
 1. **Understand the request**
