@@ -349,10 +349,59 @@ gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
 # Create key
 gcloud iam service-accounts keys create ~/gemini-key.json \
     --iam-account=gemini-app@YOUR_PROJECT_ID.iam.gserviceaccount.com
-
-# Set in production environment
-GOOGLE_APPLICATION_CREDENTIALS="/path/to/gemini-key.json"
 ```
+
+### Using Service Account JSON
+
+You have two options for configuring service account credentials:
+
+#### Option 1: File Path (Local Development)
+
+Set the file path in `.env`:
+
+```bash
+GOOGLE_APPLICATION_CREDENTIALS="/path/to/vertex.json"
+```
+
+#### Option 2: JSON String (Vercel/Production)
+
+Convert the JSON file to a single-line string and add to `.env`:
+
+```bash
+# One-liner command to add both variables (recommended):
+CREDS=$(cat vertex.json | tr -d '\n')
+echo "GOOGLE_CREDENTIALS_JSON='$CREDS'" >> .env
+echo "GOOGLE_APPLICATION_CREDENTIALS_JSON='$CREDS'" >> .env
+```
+
+Or add each separately:
+
+```bash
+# For Gemini client (src/server/gemini/client.ts)
+echo "GOOGLE_CREDENTIALS_JSON='$(cat vertex.json | tr -d '\n')'" >> .env
+
+# For Mastra/AI SDK (@ai-sdk/google-vertex)
+echo "GOOGLE_APPLICATION_CREDENTIALS_JSON='$(cat vertex.json | tr -d '\n')'" >> .env
+```
+
+Or manually add to `.env`:
+
+```bash
+GOOGLE_CREDENTIALS_JSON='{"type":"service_account","project_id":"vibesurfers-websurfing",...}'
+GOOGLE_APPLICATION_CREDENTIALS_JSON='{"type":"service_account","project_id":"vibesurfers-websurfing",...}'
+```
+
+**Important**:
+- The JSON must be on a single line (no newlines)
+- Wrap in single quotes to preserve special characters
+- This is the **recommended approach for Vercel** and other cloud platforms
+- **Both variables needed**: `GOOGLE_CREDENTIALS_JSON` for custom Gemini client, `GOOGLE_APPLICATION_CREDENTIALS_JSON` for Mastra/AI SDK
+
+**Why two variables?**
+- `GOOGLE_CREDENTIALS_JSON` - Used by the custom Gemini client (`src/server/gemini/client.ts`)
+- `GOOGLE_APPLICATION_CREDENTIALS_JSON` - Used by Mastra agents via `@ai-sdk/google-vertex`
+
+The client (`src/server/gemini/client.ts`) automatically detects and uses `GOOGLE_CREDENTIALS_JSON` if present, otherwise falls back to `GOOGLE_APPLICATION_CREDENTIALS`.
 
 ---
 
