@@ -9,6 +9,8 @@ import { GoogleSearchGeminiOperator } from "./google-search-operator";
 import { URLContextEnrichmentOperator } from "./url-context-operator";
 import { StructuredOutputConversionOperator } from "./structured-output-operator";
 import { FunctionCallingOperator } from "./function-calling-operator";
+import { SimilarityExpansionOperator } from "./similarity-operator";
+import { AcademicPDFSearchOperator } from "./academic-search-operator";
 import type { BaseOperator, OperatorName } from "@/types/operators";
 import { db } from "@/server/db";
 import { eventQueue } from "@/server/db/schema";
@@ -32,9 +34,9 @@ export interface SheetContext {
  * Base event structure (from PROJECT-ARCHITECTURE.md)
  */
 export interface BaseEvent<T = unknown> {
-  userId: string;
-  eventId: string;
-  eventType: EventType;
+  userid: string;
+  eventid: string;
+  eventtype: EventType;
   timestamp: Date;
   data: T;
   sheetContext?: SheetContext;
@@ -87,6 +89,8 @@ export class OperatorController {
       ["url_context", new URLContextEnrichmentOperator() as BaseOperator<unknown, unknown>],
       ["structured_output", new StructuredOutputConversionOperator() as BaseOperator<unknown, unknown>],
       ["function_calling", new FunctionCallingOperator() as BaseOperator<unknown, unknown>],
+      ["similarity_expansion", new SimilarityExpansionOperator() as BaseOperator<unknown, unknown>],
+      ["academic_search", new AcademicPDFSearchOperator() as BaseOperator<unknown, unknown>],
     ]);
   }
 
@@ -96,7 +100,7 @@ export class OperatorController {
    */
   async dispatch(event: BaseEvent): Promise<void> {
     try {
-      const operatorName = this.selectOperator(event.eventType, event.data);
+      const operatorName = this.selectOperator(event.eventtype, event.data, event.sheetContext);
       const operator = this.operators.get(operatorName);
 
       if (!operator) {
@@ -104,7 +108,7 @@ export class OperatorController {
       }
 
       console.log(
-        `[OperatorController] Dispatching event ${event.eventId} to ${operatorName}`
+        `[OperatorController] Dispatching event ${event.eventid} to ${operatorName}`
       );
 
       // Set status to processing for next column
@@ -115,11 +119,13 @@ export class OperatorController {
           'url_context': 'Analyzing URL...',
           'structured_output': 'Extracting data...',
           'function_calling': 'Calling function...',
+          'similarity_expansion': 'Finding similar concepts...',
+          'academic_search': 'Searching academic papers...',
         };
 
         await ColumnAwareWrapper.updateCellStatus(
           event.sheetContext,
-          event.userId,
+          event.userid,
           targetColIndex,
           'processing',
           operatorName,
@@ -139,8 +145,8 @@ export class OperatorController {
       if (event.sheetContext) {
         await ColumnAwareWrapper.writeToNextColumn(
           event.sheetContext,
-          event.userId,
-          event.eventId,
+          event.userid,
+          event.eventid,
           output,
           operatorName
         );
@@ -149,7 +155,7 @@ export class OperatorController {
         const targetColIndex = event.sheetContext.currentColumnIndex + 1;
         await ColumnAwareWrapper.updateCellStatus(
           event.sheetContext,
-          event.userId,
+          event.userid,
           targetColIndex,
           'completed'
         );
@@ -161,19 +167,19 @@ export class OperatorController {
       }
 
       // Mark event as completed
-      await this.completeEvent(event.eventId, output);
+      await this.completeEvent(event.eventid, output);
 
       console.log(
-        `[OperatorController] Successfully processed event ${event.eventId}`
+        `[OperatorController] Successfully processed event ${event.eventid}`
       );
     } catch (error) {
       console.error(
-        `[OperatorController] Error processing event ${event.eventId}:`,
+        `[OperatorController] Error processing event ${event.eventid}:`,
         error
       );
 
       // Try operator-specific error handler
-      const operatorName = this.selectOperator(event.eventType, event.data);
+      const operatorName = this.selectOperator(event.eventtype, event.data, event.sheetContext);
       const operator = this.operators.get(operatorName);
 
       if (operator?.onError) {
@@ -182,7 +188,7 @@ export class OperatorController {
       }
 
       // Mark event as failed
-      await this.failEvent(event.eventId, error as Error);
+      await this.failEvent(event.eventid, error as Error);
     }
   }
 
@@ -191,19 +197,41 @@ export class OperatorController {
    *
    * This implements the hardcoded processing directions from the architecture
    */
-  private selectOperator(eventType: EventType, data: unknown): OperatorName {
-    switch (eventType) {
+  private selectOperator(eventtype: EventType, data: unknown, sheetContext?: SheetContext): OperatorName {
+    switch (eventtype) {
       case "user_cell_edit":
       case "robot_cell_update": {
         const cellData = data as UpdateCellInput;
         const content = cellData.content.toLowerCase().trim();
 
-        // Detect search queries
+        // Priority 1: Check if this is a scientific template - always use academic search for search queries
+        if (sheetContext?.templateType === 'scientific') {
+          // For scientific templates, prioritize academic search for any search-like content
+          if (this.isSearchQuery(content) || this.isAcademicSearch(content)) {
+            console.log('[OperatorController] Scientific template detected - using academic_search');
+            return "academic_search";
+          }
+
+          // For URLs in scientific context, still use url_context but could be enhanced later
+          if (this.containsUrls(content)) {
+            return "url_context";
+          }
+
+          // Default for scientific templates: structured output for data extraction
+          return "structured_output";
+        }
+
+        // Priority 2: General academic/scientific search queries (for non-scientific templates)
+        if (this.isAcademicSearch(content)) {
+          return "academic_search";
+        }
+
+        // Priority 3: Regular search queries
         if (this.isSearchQuery(content)) {
           return "google_search";
         }
 
-        // Detect URLs
+        // Priority 4: URLs
         if (this.containsUrls(content)) {
           return "url_context";
         }
@@ -220,6 +248,10 @@ export class OperatorController {
           case "google_search":
             return "google_search";
 
+          case "academic_search":
+          case "research":
+            return "academic_search";
+
           case "enrich_urls":
           case "url_context":
             return "url_context";
@@ -232,6 +264,10 @@ export class OperatorController {
           case "structured_output":
             return "structured_output";
 
+          case "similarity_expansion":
+          case "find_similar":
+            return "similarity_expansion";
+
           default:
             // Default to structured output
             return "structured_output";
@@ -239,7 +275,7 @@ export class OperatorController {
       }
 
       default:
-        throw new Error(`Unknown event type: ${eventType}`);
+        throw new Error(`Unknown event type: ${eventtype}`);
     }
   }
 
@@ -356,9 +392,75 @@ export class OperatorController {
         };
       }
 
+      case "academic_search": {
+        const cellData = event.data as UpdateCellInput | ManualTriggerData;
+
+        let topic =
+          "content" in cellData
+            ? cellData.content.replace(/^(search:|find:|query:|research:)/i, "").trim()
+            : (cellData.parameters?.topic as string) || "";
+
+        // Extract research field and other parameters
+        const researchField = (cellData as ManualTriggerData).parameters?.researchField as string;
+        const yearRange = (cellData as ManualTriggerData).parameters?.yearRange as { start?: number; end?: number };
+        const minCitations = (cellData as ManualTriggerData).parameters?.minCitations as number;
+
+        if (event.sheetContext) {
+          const ctx = event.sheetContext;
+          const nextCol = ctx.columns[ctx.currentColumnIndex + 1];
+          if (nextCol) {
+            const contextPrompt = ColumnAwareWrapper.buildContextualPrompt(ctx, nextCol.title);
+            // Enhance topic with academic context
+            topic = `${topic} (Academic research focus: ${nextCol.title})`;
+            console.log('[OperatorController] Context-aware academic search topic:\n', topic);
+          }
+        }
+
+        return {
+          topic,
+          query: topic, // Also provide as query for base interface compatibility
+          researchField,
+          yearRange,
+          minCitations,
+          maxResults: 15,
+          includeReviews: true,
+        };
+      }
+
       default:
         return event.data;
     }
+  }
+
+  private isAcademicSearch(content: string): boolean {
+    const academicKeywords = [
+      // Research terms
+      'research', 'paper', 'papers', 'study', 'studies', 'publication', 'journal',
+      'article', 'academic', 'scholar', 'citation', 'literature', 'peer review',
+      'peer-reviewed', 'manuscript', 'thesis', 'dissertation',
+
+      // File formats
+      'pdf', 'doi', 'arxiv', 'pubmed',
+
+      // Scientific fields
+      'science', 'scientific', 'biology', 'physics', 'chemistry', 'mathematics',
+      'medicine', 'engineering', 'computer science', 'machine learning', 'ai',
+      'psychology', 'neuroscience', 'genomics', 'bioinformatics',
+
+      // Research indicators
+      'highly cited', 'impact factor', 'breakthrough', 'seminal',
+      'cutting edge', 'state of the art', 'systematic review'
+    ];
+
+    // Check for academic keywords
+    const keywordMatches = academicKeywords.filter(keyword =>
+      content.includes(keyword)
+    ).length;
+
+    // Also check for research-specific prefixes
+    const researchPrefixes = /^(research:|find papers|find research|academic search|literature review)/i;
+
+    return keywordMatches >= 1 || researchPrefixes.test(content);
   }
 
   private isSearchQuery(content: string): boolean {

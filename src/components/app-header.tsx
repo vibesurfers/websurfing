@@ -7,7 +7,7 @@ export function AppHeader() {
       <div className="max-w-7xl mx-auto flex items-center">
         <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
           <Image
-            src="/vibesurfers-logo-circle.svg"
+            src="/vibesurfers-logo.svg"
             alt="VibeSurfing Logo"
             width={32}
             height={32}

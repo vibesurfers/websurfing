@@ -60,6 +60,17 @@ export class ColumnAwareWrapper {
       prompt.push('');
     }
 
+    // Add scientific template specific guidance
+    if (ctx.templateType === 'scientific') {
+      prompt.push('SCIENTIFIC RESEARCH FOCUS:');
+      prompt.push('- Prioritize highly cited, peer-reviewed papers');
+      prompt.push('- Look for direct PDF access when possible');
+      prompt.push('- Focus on recent publications (last 5 years) unless historical context is needed');
+      prompt.push('- Target academic databases: arXiv, PubMed, Google Scholar, Semantic Scholar');
+      prompt.push('- Extract precise academic metadata (authors, citations, publication details)');
+      prompt.push('');
+    }
+
     // Add column structure
     prompt.push('COLUMN STRUCTURE:');
     ctx.columns.forEach((col, idx) => {
@@ -69,8 +80,13 @@ export class ColumnAwareWrapper {
     });
     prompt.push('');
 
-    // Add task
-    prompt.push(`TASK: Fill "${targetColumn}" based on the data in this row.`);
+    // Add task with scientific context if applicable
+    if (ctx.templateType === 'scientific') {
+      prompt.push(`TASK: Fill "${targetColumn}" based on the data in this row.`);
+      prompt.push('For academic content, ensure high quality and cite-ability.');
+    } else {
+      prompt.push(`TASK: Fill "${targetColumn}" based on the data in this row.`);
+    }
     prompt.push('');
 
     return prompt.join('\n');
@@ -100,6 +116,31 @@ export class ColumnAwareWrapper {
       case 'google_search':
         // Use first search result URL or title
         content = output.results?.[0]?.url || output.results?.[0]?.title || '';
+        break;
+      case 'academic_search':
+        // For academic search, prioritize PDF links or high-impact results
+        const academicResults = output.academicResults || output.results || [];
+        if (academicResults.length > 0) {
+          // Prioritize PDF links for scientific templates
+          const pdfResult = academicResults.find((r: any) => r.isPdfDirect || r.url?.includes('.pdf'));
+          if (pdfResult) {
+            content = pdfResult.url;
+          } else {
+            // Fall back to first high-impact result or any result
+            const highImpactResult = academicResults.find((r: any) => r.isHighImpact);
+            content = (highImpactResult?.url || academicResults[0]?.url || academicResults[0]?.title) || '';
+          }
+        }
+        break;
+      case 'similarity_expansion':
+        // Use the generated similar concepts/keywords
+        if (output.similarConcepts && Array.isArray(output.similarConcepts)) {
+          content = output.similarConcepts.slice(0, 5).join(', '); // Top 5 concepts
+        } else if (output.expandedTerms && Array.isArray(output.expandedTerms)) {
+          content = output.expandedTerms.slice(0, 5).join(', ');
+        } else {
+          content = output.summary || JSON.stringify(output);
+        }
         break;
       case 'url_context':
         // Use the summary or extracted text
