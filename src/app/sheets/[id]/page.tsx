@@ -1,6 +1,8 @@
 import { HydrateClient } from "@/trpc/server";
 import { auth, signIn } from "@/server/auth";
 import { SheetEditor } from "@/components/sheet-editor";
+import { AppHeader } from "@/components/app-header";
+import { headers } from "next/headers";
 
 interface SheetPageProps {
   params: Promise<{
@@ -9,12 +11,32 @@ interface SheetPageProps {
 }
 
 export default async function SheetPage({ params }: SheetPageProps) {
-  const session = await auth();
+  let session = await auth();
   const { id } = await params;
+
+  // Check for bypass userId in headers (for testing)
+  if (process.env.NODE_ENV === 'development') {
+    const headersList = await headers();
+    const bypassUserId = headersList.get('x-bypass-user-id');
+    if (bypassUserId) {
+      // Create mock session for testing
+      session = {
+        user: {
+          id: bypassUserId,
+          name: 'Test User',
+          email: 'test@example.com',
+        },
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      };
+      console.log('Sheet page: Using bypass session for testing:', bypassUserId);
+    }
+  }
 
   if (!session?.user) {
     return (
-      <main className="container mx-auto p-8 min-h-screen bg-white">
+      <>
+        <AppHeader />
+        <main className="container mx-auto p-8 min-h-screen bg-white">
         <div className="max-w-md mx-auto mt-8">
           <h1 className="text-3xl font-bold mb-6 text-gray-900 text-center">
             VibeSurfing - Web Search Spreadsheets
@@ -42,12 +64,16 @@ export default async function SheetPage({ params }: SheetPageProps) {
           </div>
         </div>
       </main>
+      </>
     );
   }
 
   return (
-    <HydrateClient>
-      <SheetEditor sheetId={id} />
-    </HydrateClient>
+    <>
+      <AppHeader />
+      <HydrateClient>
+        <SheetEditor sheetId={id} />
+      </HydrateClient>
+    </>
   );
 }

@@ -37,5 +37,7 @@ test.beforeEach(async ({ page }) => {
 # Codebase Documentation
 For comprehensive understanding of the application architecture, refer to:
 - `.tribe/current-docs-11-08-1919PM/CODEBASE_SUMMARY.MD` - Complete event flow documentation with verified line references ✅
+- `.tribe/current-docs-11-08-1919PM/ARCHITECTURE_EVOLUTION_PLAN.md` - Detailed plan for evolving to intelligent research engine ✅
 - All 12 sections have been verified for accuracy and contain precise file paths and line numbers
 - Covers the complete user input → AI processing → result display pipeline
+- Evolution plan identifies 5 CRITICAL sections requiring major overhaul for template-driven, quality-focused research

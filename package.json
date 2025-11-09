@@ -19,6 +19,7 @@
     "start": "next start",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:e2e:journey": "playwright test tests/user-journey-e2e.spec.ts",
     "test:gemini:search": "SKIP_ENV_VALIDATION=1 tsx tests/gemini/test-google-search.ts",
     "test:gemini:url": "SKIP_ENV_VALIDATION=1 tsx tests/gemini/test-url-context.ts",
     "test:gemini:structured": "SKIP_ENV_VALIDATION=1 tsx tests/gemini/test-structured-output.ts",

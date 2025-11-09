@@ -9,6 +9,7 @@ import {
 } from "@/components/template-builder/column-config-panel";
 import { api } from "@/trpc/react";
 import type { TemplateConfig } from "@/server/ai/template-generator";
+import { AppHeader } from "@/components/app-header";
 
 type BuilderMode = 'chat' | 'visual' | 'hybrid';
 
@@ -178,9 +179,11 @@ export default function NewTemplatePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+    <>
+      <AppHeader />
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -404,6 +407,6 @@ export default function NewTemplatePage() {
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }

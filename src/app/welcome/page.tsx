@@ -2,9 +2,28 @@ import { HydrateClient } from "@/trpc/server";
 import { auth, signIn } from "@/server/auth";
 import { WelcomeFlow } from "@/components/welcome-flow";
 import Image from "next/image";
+import { headers } from "next/headers";
 
 export default async function WelcomePage() {
-  const session = await auth();
+  let session = await auth();
+
+  // Check for bypass userId in headers (for testing)
+  if (process.env.NODE_ENV === 'development') {
+    const headersList = await headers();
+    const bypassUserId = headersList.get('x-bypass-user-id');
+    if (bypassUserId) {
+      // Create mock session for testing
+      session = {
+        user: {
+          id: bypassUserId,
+          name: 'Test User',
+          email: 'test@example.com',
+        },
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      };
+      console.log('Welcome page: Using bypass session for testing:', bypassUserId);
+    }
+  }
 
   if (!session?.user) {
     return (

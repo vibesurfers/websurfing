@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react';
+import { AppHeader } from '@/components/app-header';
 
 export default function VideoPage() {
   const [isHovered, setIsHovered] = useState(false);
@@ -11,7 +12,9 @@ export default function VideoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
+    <>
+      <AppHeader />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
       <div className="max-w-6xl w-full">
         <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
           Watch Demo
@@ -63,5 +66,6 @@ export default function VideoPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
