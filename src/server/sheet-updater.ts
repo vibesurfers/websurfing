@@ -12,7 +12,7 @@ export class SheetUpdater {
   constructor() {
     this.operatorController = new OperatorController();
   }
-  async updateSheet(userId: string, sheetId: string) {
+  async updateSheet(userId: string, sheetId: string): Promise<{ success: boolean; error?: string; appliedUpdates: any[]; totalApplied: number }> {
     console.log('Updating sheet for user:', userId, 'sheetId:', sheetId);
 
     try {
@@ -217,7 +217,7 @@ export class SheetUpdater {
     }
   }
 
-  async createSheetUpdate(sheetId: string, userId: string, rowIndex: number, colIndex: number, content: string, updateType = 'ai_response') {
+  async createSheetUpdate(sheetId: string, userId: string, rowIndex: number, colIndex: number, content: string, updateType = 'ai_response'): Promise<any> {
     try {
       const newUpdate = await db.insert(sheetUpdates).values({
         sheetId: sheetId,

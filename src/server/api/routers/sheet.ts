@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { sheets, columns, templates } from "@/server/db/schema";
+import { sheets, columns, templates, cells } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { getTemplate, type TemplateType } from "@/server/templates/column-templates";
 
@@ -187,5 +187,91 @@ export const sheetRouter = createTRPCRouter({
         .returning();
 
       return newColumn[0];
+    }),
+
+  createFromCsv: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(255),
+        headers: z.array(z.string().min(1)),
+        rows: z.array(z.array(z.string())),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      // Validate inputs
+      if (input.headers.length === 0) {
+        throw new Error("At least one header column is required");
+      }
+
+      if (input.rows.length === 0) {
+        throw new Error("At least one data row is required");
+      }
+
+      // Create the sheet
+      const newSheet = await ctx.db
+        .insert(sheets)
+        .values({
+          userId,
+          name: input.name,
+          templateType: null,
+          templateId: null,
+          isAutonomous: false,
+        })
+        .returning();
+
+      const sheetId = newSheet[0]!.id;
+
+      // Create columns from headers
+      const columnsToCreate = input.headers.map((header, index) => ({
+        sheetId,
+        title: header.trim() || `Column ${index + 1}`,
+        position: index,
+        dataType: 'text' as const,
+      }));
+
+      const createdColumns = await ctx.db
+        .insert(columns)
+        .values(columnsToCreate)
+        .returning();
+
+      // Populate cells with CSV data
+      const cellsToCreate: Array<{
+        sheetId: string;
+        userId: string;
+        rowIndex: number;
+        colIndex: number;
+        content: string;
+      }> = [];
+
+      input.rows.forEach((row, rowIndex) => {
+        row.forEach((cellContent, colIndex) => {
+          if (colIndex < input.headers.length && cellContent.trim()) {
+            cellsToCreate.push({
+              sheetId,
+              userId,
+              rowIndex,
+              colIndex,
+              content: cellContent.trim(),
+            });
+          }
+        });
+      });
+
+      // Insert cells in batches to avoid overwhelming the database
+      const batchSize = 500;
+      for (let i = 0; i < cellsToCreate.length; i += batchSize) {
+        const batch = cellsToCreate.slice(i, i + batchSize);
+        if (batch.length > 0) {
+          await ctx.db.insert(cells).values(batch);
+        }
+      }
+
+      return {
+        ...newSheet[0]!,
+        rowsImported: input.rows.length,
+        columnsCreated: createdColumns.length,
+      };
     }),
 });

@@ -256,6 +256,12 @@ export const columns = createTable(
     operatorType: d.varchar({ length: 50 }), // 'google_search', 'url_context', 'structured_output', 'function_calling'
     operatorConfig: d.jsonb(), // Operator-specific settings
     prompt: d.text(), // Custom prompt for this column's operator
+    maxLength: d.integer(), // Maximum character length
+    minLength: d.integer(), // Minimum character length
+    required: d.boolean().default(false), // Whether field is required
+    validationPattern: d.text(), // Regex pattern for validation
+    examples: d.jsonb(), // Array of example values
+    description: d.text(), // Description of what the column should contain
     createdAt: d.timestamp({ withTimezone: true }).defaultNow(),
     updatedAt: d.timestamp({ withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
   }),

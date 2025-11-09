@@ -215,13 +215,37 @@ export class GeminiAPIError extends Error {
 }
 
 /**
+ * Similarity & Concept Expansion Operator Types
+ */
+export interface SimilarityInput {
+  concept: string;
+  expansionType: "keywords" | "synonyms" | "related_concepts" | "search_terms" | "categories" | "all";
+  maxResults?: number;
+  domain?: string;
+  context?: string;
+}
+
+export interface SimilarityOutput {
+  originalConcept: string;
+  similarTerms: string[];
+  synonyms?: string[];
+  relatedConcepts?: string[];
+  searchTerms?: string[];
+  categories?: string[];
+  confidence: number;
+  reasoning?: string;
+}
+
+/**
  * Operator registry type
  */
 export type OperatorName =
   | "google_search"
   | "url_context"
   | "structured_output"
-  | "function_calling";
+  | "function_calling"
+  | "similarity_expansion"
+  | "academic_search";
 
 /**
  * Base operator interface

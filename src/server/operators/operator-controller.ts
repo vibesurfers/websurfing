@@ -9,10 +9,12 @@ import { GoogleSearchGeminiOperator } from "./google-search-operator";
 import { URLContextEnrichmentOperator } from "./url-context-operator";
 import { StructuredOutputConversionOperator } from "./structured-output-operator";
 import { FunctionCallingOperator } from "./function-calling-operator";
+import { SimilarityExpansionOperator } from "./similarity-operator";
+import { AcademicPDFSearchOperator } from "./academic-search-operator";
 import type { BaseOperator, OperatorName } from "@/types/operators";
 import { db } from "@/server/db";
 import { eventQueue } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { ColumnAwareWrapper } from "./column-aware-wrapper";
 
 /**
@@ -30,6 +32,12 @@ export interface SheetContext {
     operatorType?: string | null;
     operatorConfig?: any;
     prompt?: string | null;
+    maxLength?: number;
+    minLength?: number;
+    required?: boolean;
+    validationPattern?: string;
+    examples?: string[];
+    description?: string;
   }>;
   rowIndex: number;
   currentColumnIndex: number;
@@ -95,6 +103,8 @@ export class OperatorController {
       ["url_context", new URLContextEnrichmentOperator() as BaseOperator<unknown, unknown>],
       ["structured_output", new StructuredOutputConversionOperator() as BaseOperator<unknown, unknown>],
       ["function_calling", new FunctionCallingOperator() as BaseOperator<unknown, unknown>],
+      ["similarity_expansion", new SimilarityExpansionOperator() as BaseOperator<unknown, unknown>],
+      ["academic_search", new AcademicPDFSearchOperator() as BaseOperator<unknown, unknown>],
     ]);
   }
 
@@ -123,6 +133,8 @@ export class OperatorController {
           'url_context': 'Analyzing URL...',
           'structured_output': 'Extracting data...',
           'function_calling': 'Calling function...',
+          'similarity_expansion': 'Finding similar concepts...',
+          'academic_search': 'Searching academic papers...',
         };
 
         await ColumnAwareWrapper.updateCellStatus(
@@ -145,7 +157,7 @@ export class OperatorController {
 
       // Write result to next column in the row
       if (event.sheetContext) {
-        await ColumnAwareWrapper.writeToNextColumn(
+        const writeResult = await ColumnAwareWrapper.writeToNextColumn(
           event.sheetContext,
           event.userId,
           event.eventId,
@@ -153,13 +165,71 @@ export class OperatorController {
           operatorName
         );
 
+        console.log(`[OperatorController] Write result:`, {
+          success: writeResult.success,
+          needsRetry: writeResult.needsRetry,
+          issues: writeResult.validationIssues
+        });
+
+        // Handle retry if needed and not already attempted
+        const retryCount = await this.getRetryCount(event.eventId);
+        const maxRetries = 2;
+
+        if (writeResult.needsRetry && retryCount < maxRetries && writeResult.retryPrompt) {
+          console.log(`[OperatorController] Retrying with improved prompt (attempt ${retryCount + 1}/${maxRetries})`);
+
+          // Update retry count
+          await this.incrementRetryCount(event.eventId);
+
+          // Update cell status to show retry
+          const targetColIndex = event.sheetContext.currentColumnIndex + 1;
+          await ColumnAwareWrapper.updateCellStatus(
+            event.sheetContext,
+            event.userId,
+            targetColIndex,
+            'processing',
+            operatorName,
+            `Retrying... (${retryCount + 1}/${maxRetries})`
+          );
+
+          // Prepare improved input based on validation feedback
+          const improvedInput = this.prepareImprovedInput(event, operatorName, writeResult.retryPrompt);
+
+          try {
+            // Retry with improved prompt
+            const retryOutput = await operator.operation(improvedInput);
+            console.log(`[OperatorController] Retry output:`, retryOutput);
+
+            // Write retry result
+            const retryWriteResult = await ColumnAwareWrapper.writeToNextColumn(
+              event.sheetContext,
+              event.userId,
+              event.eventId,
+              retryOutput,
+              operatorName
+            );
+
+            if (retryWriteResult.success) {
+              console.log(`[OperatorController] Retry successful`);
+            } else {
+              console.warn(`[OperatorController] Retry failed, using original result`);
+            }
+
+          } catch (retryError) {
+            console.error(`[OperatorController] Retry failed:`, retryError);
+            // Continue with original result
+          }
+        }
+
         // Mark as completed
         const targetColIndex = event.sheetContext.currentColumnIndex + 1;
         await ColumnAwareWrapper.updateCellStatus(
           event.sheetContext,
           event.userId,
           targetColIndex,
-          'completed'
+          writeResult.success ? 'completed' : 'error',
+          operatorName,
+          writeResult.success ? undefined : writeResult.validationIssues?.join(', ')
         );
       }
 
@@ -221,12 +291,34 @@ export class OperatorController {
         const cellData = data as UpdateCellInput;
         const content = cellData.content.toLowerCase().trim();
 
-        // Detect search queries
+        // Priority 1: Check if this is a scientific template - always use academic search for search queries
+        if (sheetContext?.templateType === 'scientific') {
+          // For scientific templates, prioritize academic search for any search-like content
+          if (this.isSearchQuery(content) || this.isAcademicSearch(content)) {
+            console.log('[OperatorController] Scientific template detected - using academic_search');
+            return "academic_search";
+          }
+
+          // For URLs in scientific context, still use url_context but could be enhanced later
+          if (this.containsUrls(content)) {
+            return "url_context";
+          }
+
+          // Default for scientific templates: structured output for data extraction
+          return "structured_output";
+        }
+
+        // Priority 2: General academic/scientific search queries (for non-scientific templates)
+        if (this.isAcademicSearch(content)) {
+          return "academic_search";
+        }
+
+        // Priority 3: Regular search queries
         if (this.isSearchQuery(content)) {
           return "google_search";
         }
 
-        // Detect URLs
+        // Priority 4: URLs
         if (this.containsUrls(content)) {
           return "url_context";
         }
@@ -243,6 +335,10 @@ export class OperatorController {
           case "google_search":
             return "google_search";
 
+          case "academic_search":
+          case "research":
+            return "academic_search";
+
           case "enrich_urls":
           case "url_context":
             return "url_context";
@@ -254,6 +350,10 @@ export class OperatorController {
           case "extract_data":
           case "structured_output":
             return "structured_output";
+
+          case "similarity_expansion":
+          case "find_similar":
+            return "similarity_expansion";
 
           default:
             // Default to structured output
@@ -283,7 +383,7 @@ export class OperatorController {
           const ctx = event.sheetContext;
           const nextCol = ctx.columns[ctx.currentColumnIndex + 1];
           if (nextCol) {
-            const contextPrompt = ColumnAwareWrapper.buildContextualPrompt(ctx, nextCol.title);
+            const contextPrompt = ColumnAwareWrapper.buildContextualPromptWithFormat(ctx, nextCol.title, operatorName);
             // Build a focused query that includes the column goal
             query = `${contextPrompt}\n\nSearch query: Find information for "${nextCol.title}" based on: ${query}`;
             console.log('[OperatorController] Context-aware search query:\n', query);
@@ -311,7 +411,7 @@ export class OperatorController {
           const ctx = event.sheetContext;
           const nextCol = ctx.columns[ctx.currentColumnIndex + 1];
           if (nextCol) {
-            const contextPrompt = ColumnAwareWrapper.buildContextualPrompt(ctx, nextCol.title);
+            const contextPrompt = ColumnAwareWrapper.buildContextualPromptWithFormat(ctx, nextCol.title, operatorName);
             extractionPrompt = contextPrompt + (extractionPrompt ? `\n\nAdditional instructions: ${extractionPrompt}` : '');
             console.log('[OperatorController] Context-aware URL extraction prompt:\n', extractionPrompt);
           }
@@ -386,9 +486,75 @@ export class OperatorController {
         };
       }
 
+      case "academic_search": {
+        const cellData = event.data as UpdateCellInput | ManualTriggerData;
+
+        let topic =
+          "content" in cellData
+            ? cellData.content.replace(/^(search:|find:|query:|research:)/i, "").trim()
+            : (cellData.parameters?.topic as string) || "";
+
+        // Extract research field and other parameters
+        const researchField = (cellData as ManualTriggerData).parameters?.researchField as string;
+        const yearRange = (cellData as ManualTriggerData).parameters?.yearRange as { start?: number; end?: number };
+        const minCitations = (cellData as ManualTriggerData).parameters?.minCitations as number;
+
+        if (event.sheetContext) {
+          const ctx = event.sheetContext;
+          const nextCol = ctx.columns[ctx.currentColumnIndex + 1];
+          if (nextCol) {
+            const contextPrompt = ColumnAwareWrapper.buildContextualPromptWithFormat(ctx, nextCol.title, operatorName);
+            // Enhance topic with academic context
+            topic = `${topic} (Academic research focus: ${nextCol.title})`;
+            console.log('[OperatorController] Context-aware academic search topic:\n', topic);
+          }
+        }
+
+        return {
+          topic,
+          query: topic, // Also provide as query for base interface compatibility
+          researchField,
+          yearRange,
+          minCitations,
+          maxResults: 15,
+          includeReviews: true,
+        };
+      }
+
       default:
         return event.data;
     }
+  }
+
+  private isAcademicSearch(content: string): boolean {
+    const academicKeywords = [
+      // Research terms
+      'research', 'paper', 'papers', 'study', 'studies', 'publication', 'journal',
+      'article', 'academic', 'scholar', 'citation', 'literature', 'peer review',
+      'peer-reviewed', 'manuscript', 'thesis', 'dissertation',
+
+      // File formats
+      'pdf', 'doi', 'arxiv', 'pubmed',
+
+      // Scientific fields
+      'science', 'scientific', 'biology', 'physics', 'chemistry', 'mathematics',
+      'medicine', 'engineering', 'computer science', 'machine learning', 'ai',
+      'psychology', 'neuroscience', 'genomics', 'bioinformatics',
+
+      // Research indicators
+      'highly cited', 'impact factor', 'breakthrough', 'seminal',
+      'cutting edge', 'state of the art', 'systematic review'
+    ];
+
+    // Check for academic keywords
+    const keywordMatches = academicKeywords.filter(keyword =>
+      content.includes(keyword)
+    ).length;
+
+    // Also check for research-specific prefixes
+    const researchPrefixes = /^(research:|find papers|find research|academic search|literature review)/i;
+
+    return keywordMatches >= 1 || researchPrefixes.test(content);
   }
 
   private isSearchQuery(content: string): boolean {
@@ -463,6 +629,95 @@ export class OperatorController {
    */
   getRegisteredOperators(): OperatorName[] {
     return Array.from(this.operators.keys());
+  }
+
+  /**
+   * Get retry count for an event
+   */
+  private async getRetryCount(eventId: string): Promise<number> {
+    try {
+      const event = await db.select({ retryCount: eventQueue.retryCount })
+        .from(eventQueue)
+        .where(eq(eventQueue.id, eventId))
+        .limit(1);
+
+      return event[0]?.retryCount || 0;
+    } catch (error) {
+      console.error(`[OperatorController] Error getting retry count for ${eventId}:`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * Increment retry count for an event
+   */
+  private async incrementRetryCount(eventId: string): Promise<void> {
+    try {
+      // Use atomic SQL increment to avoid race conditions
+      await db.update(eventQueue)
+        .set({ retryCount: sql`${eventQueue.retryCount} + 1` })
+        .where(eq(eventQueue.id, eventId));
+    } catch (error) {
+      console.error(`[OperatorController] Error incrementing retry count for ${eventId}:`, error);
+    }
+  }
+
+  /**
+   * Prepare improved input based on validation feedback
+   */
+  private prepareImprovedInput(event: BaseEvent, operatorName: OperatorName, retryPrompt: string): unknown {
+    const originalInput = this.prepareInput(event, operatorName);
+
+    switch (operatorName) {
+      case "google_search": {
+        const googleInput = originalInput as { query: string; maxResults: number };
+        return {
+          ...googleInput,
+          query: retryPrompt
+        };
+      }
+
+      case "url_context": {
+        const urlInput = originalInput as { urls: string[]; extractionPrompt?: string };
+        return {
+          ...urlInput,
+          extractionPrompt: retryPrompt
+        };
+      }
+
+      case "structured_output": {
+        const structuredInput = originalInput as { rawData: string; outputSchema?: unknown; prompt?: string };
+        return {
+          ...structuredInput,
+          prompt: retryPrompt
+        };
+      }
+
+      case "academic_search": {
+        const academicInput = originalInput as { topic: string; query: string; [key: string]: unknown };
+        return {
+          ...academicInput,
+          topic: retryPrompt,
+          query: retryPrompt
+        };
+      }
+
+      case "similarity_expansion": {
+        const similarityInput = originalInput as { concept: string; [key: string]: unknown };
+        // Extract just the concept from the improved prompt
+        const conceptMatch = retryPrompt.match(/concept[:\s]+["']?([^"'\n]+)["']?/i);
+        const improvedConcept = conceptMatch ? conceptMatch[1] : retryPrompt;
+
+        return {
+          ...similarityInput,
+          concept: improvedConcept,
+          context: retryPrompt
+        };
+      }
+
+      default:
+        return originalInput;
+    }
   }
 }
 

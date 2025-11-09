@@ -1,0 +1,39 @@
+Based on the documentation analysis, here are the **cell router database mutation patterns**:
+
+## Database Mutation Patterns
+
+### **1. Cell Update Mutations** 
+- **File**: `src/server/api/routers/cell.ts:26-38`
+- **Pattern**: UPSERT with conflict resolution
+```sql
+INSERT INTO cells (sheetId, userId, rowIndex, colIndex, content) 
+VALUES (?, ?, ?, ?, ?)
+ON CONFLICT (sheetId, userId, rowIndex, colIndex) 
+DO UPDATE SET content = ?, updatedAt = ?
+```
+
+### **2. Event Queue Insertions**
+- **File**: `src/server/api/routers/cell.ts:41-53`  
+- **Pattern**: Insert pending events
+```sql
+INSERT INTO eventQueue (sheetId, userId, eventType, payload, status)
+VALUES (?, ?, 'user_cell_edit', ?, 'pending')
+```
+
+### **3. Event Processing Updates**
+- **File**: Background processor lines 22-32, 37-40
+- **Pattern**: Status transitions
+```sql
+UPDATE eventQueue SET status = 'processing' WHERE id IN (?);
+UPDATE eventQueue SET status = 'completed', processedAt = NOW() WHERE id = ?;
+```
+
+### **4. AI Response Mutations**
+- **Pattern**: Cell update + audit trail + new event
+```sql
+INSERT INTO cells... ON CONFLICT DO UPDATE...
+INSERT INTO sheetUpdates (updateType='ai_response')...  
+INSERT INTO eventQueue (eventType='robot_cell_update')...
+```
+
+**Key Lines**: Cell mutations at `cell.ts:26-38`, event creation at `cell.ts:41-53`.

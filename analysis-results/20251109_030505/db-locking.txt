@@ -1,0 +1,25 @@
+## Database Transaction Lock Analysis
+
+**Race Condition Risks:**
+
+1. **Event Processing Lock** (`lines 20-45`): ✅ **Safe**
+   - Uses `SELECT ... FOR UPDATE` to lock pending events
+   - Immediately marks as 'processing' to prevent double processing
+   - Proper transaction boundary prevents concurrent access
+
+2. **Cell Updates** (`lines 168-180`): ⚠️ **Potential Race Condition**
+   - Uses `onConflictDoUpdate` but no row-level locking
+   - Multiple concurrent updates to same cell could create timing issues
+   - No transaction isolation for the cell update operation
+
+3. **Sheet Update Creation** (`lines 212-230`): ⚠️ **No Concurrency Protection**
+   - Simple insert without any locking mechanism
+   - Could create duplicate updates for same cell position
+
+**Concurrent Editing Safety Issues:**
+
+- **Missing cell-level locks**: No protection when multiple users edit same cell simultaneously
+- **Lost update problem**: Later update overwrites earlier one without conflict detection
+- **No optimistic locking**: No version checking to detect concurrent modifications
+
+**Recommendation**: Add cell-level locking or optimistic concurrency control with version columns for true concurrent editing safety.

@@ -8,11 +8,15 @@ interface SheetPageProps {
   params: Promise<{
     id: string;
   }>;
+  searchParams: Promise<{
+    createTemplate?: string;
+  }>;
 }
 
-export default async function SheetPage({ params }: SheetPageProps) {
+export default async function SheetPage({ params, searchParams }: SheetPageProps) {
   let session = await auth();
   const { id } = await params;
+  const { createTemplate } = await searchParams;
 
   // Check for bypass userId in headers (for testing)
   if (process.env.NODE_ENV === 'development') {
@@ -72,7 +76,7 @@ export default async function SheetPage({ params }: SheetPageProps) {
     <>
       <AppHeader />
       <HydrateClient>
-        <SheetEditor sheetId={id} />
+        <SheetEditor sheetId={id} showTemplatePrompt={createTemplate === 'true'} />
       </HydrateClient>
     </>
   );
