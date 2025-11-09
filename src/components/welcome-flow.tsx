@@ -78,23 +78,36 @@ export function WelcomeFlow() {
         </div>
 
         <div className="space-y-6">
-          {/* Custom Template Builder CTA */}
-          <div className="border-2 border-purple-300 rounded-xl p-6 bg-gradient-to-br from-purple-50 to-pink-50">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-                  ✨ Create Custom Template
+          {/* Template Management */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Create Template */}
+            <div className="border-2 border-purple-300 rounded-xl p-6 bg-gradient-to-br from-purple-50 to-pink-50 hover:border-purple-400 transition-all cursor-pointer"
+              onClick={() => router.push('/templates/new')}
+            >
+              <div className="text-center">
+                <div className="text-4xl mb-3">✨</div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                  Create Template
                 </h2>
-                <p className="text-gray-600 mb-0">
-                  Chat with AI to design your own workflow or build visually
+                <p className="text-sm text-gray-600">
+                  Chat with AI to design your own workflow
                 </p>
               </div>
-              <button
-                onClick={() => router.push('/templates/new')}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-md hover:shadow-lg"
-              >
-                Build Template →
-              </button>
+            </div>
+
+            {/* Manage Templates */}
+            <div className="border-2 border-indigo-300 rounded-xl p-6 bg-gradient-to-br from-indigo-50 to-blue-50 hover:border-indigo-400 transition-all cursor-pointer"
+              onClick={() => router.push('/templates')}
+            >
+              <div className="text-center">
+                <div className="text-4xl mb-3">📚</div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                  My Templates
+                </h2>
+                <p className="text-sm text-gray-600">
+                  View and manage your saved templates
+                </p>
+              </div>
             </div>
           </div>
 
