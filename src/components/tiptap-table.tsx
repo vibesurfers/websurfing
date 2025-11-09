@@ -81,7 +81,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   const { data: cells, refetch: refetchCells } = api.cell.getCells.useQuery(
     { sheetId },
     {
-      refetchInterval: false,
+      refetchInterval: 2000,
       retry: (failureCount, error) => {
         if (error.data?.code === 'UNAUTHORIZED') return false;
         return failureCount < 3;
@@ -313,8 +313,16 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
 
   // Apply cell updates to the editor when cells change
   useEffect(() => {
+    console.log('[TiptapTable] Cell update effect triggered. Editor:', !!editor, 'Cells:', cells?.length || 0);
     if (!editor || !cells || cells.length === 0) return
 
+    // Don't update if editor is focused (user is actively typing)
+    if (editor.isFocused) {
+      console.log('[TiptapTable] Editor is focused, skipping cell update to prevent interruption');
+      return
+    }
+
+    console.log('[TiptapTable] Applying', cells.length, 'cells to editor');
     // Mark that we're applying robot updates
     isApplyingRobotUpdates.current = true
 
@@ -366,39 +374,43 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
 
     // Update cell contents from database
     let hasChanges = false
+    let updatedCount = 0;
     cells.forEach(cell => {
       const row = tbody.children[cell.rowIndex] as HTMLTableRowElement
       if (row && row.children[cell.colIndex]) {
         const td = row.children[cell.colIndex] as HTMLTableCellElement
         const currentContent = td.textContent?.trim() || ''
+        const dbContent = (cell.content || '').trim()
 
-        // Only update if this cell has new content from the database
-        // and it's different from what's currently shown
-        if (cell.content && cell.content !== currentContent) {
-          // Check if this is a recently user-edited cell (within last 3 seconds)
-          const cellKey = `${cell.rowIndex}-${cell.colIndex}`
-          const lastEdit = lastContentRef.current.get(cellKey)
+        // Only update if content from database is different from what's currently shown
+        if (dbContent !== currentContent) {
+          console.log(`[TiptapTable] Cell (${cell.rowIndex},${cell.colIndex}) needs update: "${currentContent}" -> "${dbContent.slice(0, 50)}..."`);
 
-          // Skip if user just edited this cell
-          if (lastEdit === cell.content || lastEdit === currentContent) {
-            return
-          }
-
-          td.textContent = cell.content
+          td.textContent = dbContent
           hasChanges = true
+          updatedCount++
+
+          // Update lastContentRef so we don't re-trigger events
+          const cellKey = `${cell.rowIndex}-${cell.colIndex}`
+          lastContentRef.current.set(cellKey, dbContent)
         }
       }
     })
 
+    console.log(`[TiptapTable] Updated ${updatedCount} cells out of ${cells.length} total`)
+
     // Apply changes back to editor if any cells were updated
     if (hasChanges) {
+      console.log('[TiptapTable] Updating editor with new cell content');
       const newHtml = table.outerHTML
       editor.commands.setContent(newHtml)
+    } else {
+      console.log('[TiptapTable] No changes detected, skipping editor update');
     }
 
     // Done applying robot updates
     isApplyingRobotUpdates.current = false
-  }, [cells, editor])
+  }, [cells, editor, columnCount])
 
   const triggerProcessing = async () => {
     await fetch('/api/update-sheet', { method: 'POST' })

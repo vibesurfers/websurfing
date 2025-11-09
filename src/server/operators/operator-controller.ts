@@ -232,9 +232,9 @@ export class OperatorController {
           const nextCol = ctx.columns[ctx.currentColumnIndex + 1];
           if (nextCol) {
             const contextPrompt = ColumnAwareWrapper.buildContextualPrompt(ctx, nextCol.title);
-            query = `${query} ${nextCol.title}`.trim();
-            console.log('[OperatorController] Context-aware search query:', query);
-            console.log('[OperatorController] Full context:\n', contextPrompt);
+            // Build a focused query that includes the column goal
+            query = `${contextPrompt}\n\nSearch query: Find information for "${nextCol.title}" based on: ${query}`;
+            console.log('[OperatorController] Context-aware search query:\n', query);
           }
         }
 
@@ -252,28 +252,67 @@ export class OperatorController {
             ? this.extractUrls(cellData.content)
             : (cellData.parameters?.urls as string[]) || [];
 
+        let extractionPrompt = (cellData as ManualTriggerData).parameters?.extractionPrompt as string | undefined;
+
+        // Build context-aware extraction prompt if sheet context is available
+        if (event.sheetContext) {
+          const ctx = event.sheetContext;
+          const nextCol = ctx.columns[ctx.currentColumnIndex + 1];
+          if (nextCol) {
+            const contextPrompt = ColumnAwareWrapper.buildContextualPrompt(ctx, nextCol.title);
+            extractionPrompt = contextPrompt + (extractionPrompt ? `\n\nAdditional instructions: ${extractionPrompt}` : '');
+            console.log('[OperatorController] Context-aware URL extraction prompt:\n', extractionPrompt);
+          }
+        }
+
         return {
           urls,
-          extractionPrompt: (cellData as ManualTriggerData).parameters
-            ?.extractionPrompt as string | undefined,
+          extractionPrompt,
         };
       }
 
       case "structured_output": {
         const cellData = event.data as UpdateCellInput | ManualTriggerData;
 
-        const rawData =
-          "content" in cellData
+        // Use row data as rawData if available, otherwise fall back to cell content
+        let rawData = "";
+        if (event.sheetContext) {
+          // Concatenate all row data for context
+          const rowDataArray = Object.entries(event.sheetContext.rowData)
+            .filter(([_, value]) => value && value.trim())
+            .map(([colIdx, value]) => {
+              const colTitle = event.sheetContext!.columns[parseInt(colIdx)]?.title || `Column ${colIdx}`;
+              return `${colTitle}: ${value}`;
+            });
+          rawData = rowDataArray.join('\n');
+        }
+
+        // Fall back to cell content if no row data
+        if (!rawData) {
+          rawData = "content" in cellData
             ? cellData.content
             : (cellData.parameters?.rawData as string) || "";
+        }
+
+        let prompt = (cellData as ManualTriggerData).parameters?.prompt as string | undefined;
+
+        // Build context-aware prompt if sheet context is available
+        if (event.sheetContext) {
+          const ctx = event.sheetContext;
+          const nextCol = ctx.columns[ctx.currentColumnIndex + 1];
+          if (nextCol) {
+            const contextPrompt = ColumnAwareWrapper.buildContextualPrompt(ctx, nextCol.title);
+            prompt = contextPrompt + (prompt ? `\n\nAdditional instructions: ${prompt}` : '');
+            console.log('[OperatorController] Context-aware structured output prompt:\n', prompt);
+            console.log('[OperatorController] Raw data for processing:\n', rawData);
+          }
+        }
 
         return {
           rawData,
           outputSchema:
             (cellData as ManualTriggerData).parameters?.schema || {},
-          prompt: (cellData as ManualTriggerData).parameters?.prompt as
-            | string
-            | undefined,
+          prompt,
         };
       }
 
