@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TemplateChat } from "@/components/chat-builder/template-chat";
 import {
@@ -24,15 +24,38 @@ export default function NewTemplatePage() {
   const [systemPrompt, setSystemPrompt] = useState('');
   const [columns, setColumns] = useState<ColumnConfig[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingSheet, setIsCreatingSheet] = useState(false);
 
   const createTemplate = api.template.create.useMutation({
     onSuccess: (data) => {
       setIsSaving(false);
-      router.push(`/templates/${data.id}`);
+      setTemplateId(data.id);
+
+      if (isCreatingSheet) {
+        // If we're in "use template" flow, create sheet immediately
+        setIsCreatingSheet(false);
+        createSheet.mutate({
+          name: `${templateName} - Sheet`,
+          templateId: data.id,
+        });
+      } else {
+        // Normal save flow
+        router.push(`/templates/${data.id}`);
+      }
     },
     onError: (error) => {
       setIsSaving(false);
+      setIsCreatingSheet(false);
       alert(`Failed to save template: ${error.message}`);
+    },
+  });
+
+  const createSheet = api.sheet.create.useMutation({
+    onSuccess: (data) => {
+      router.push(`/sheets/${data.id}`);
+    },
+    onError: (error) => {
+      alert(`Failed to create sheet: ${error.message}`);
     },
   });
 
@@ -178,22 +201,60 @@ export default function NewTemplatePage() {
     }
   };
 
+  const handleUseTemplate = () => {
+    if (!templateId && columns.length > 0) {
+      // First save the template, then create sheet
+      setIsCreatingSheet(true);
+      setIsSaving(true);
+
+      const templateData = {
+        name: templateName,
+        description: templateDescription,
+        icon: templateIcon,
+        isPublic: false,
+        isAutonomous,
+        systemPrompt: systemPrompt || undefined,
+        config: {},
+        columns: columns.map((col) => ({
+          title: col.title,
+          position: col.position,
+          operatorType: col.operatorType,
+          operatorConfig: col.operatorConfig,
+          prompt: col.prompt,
+          dataType: col.dataType,
+          dependencies: col.dependencies,
+          validationRules: {},
+          isRequired: col.isRequired,
+          defaultValue: undefined,
+        })),
+      };
+
+      createTemplate.mutate(templateData);
+    } else if (templateId) {
+      // Template already exists, create sheet with it
+      createSheet.mutate({
+        name: `${templateName} - Sheet`,
+        templateId,
+      });
+    }
+  };
+
   return (
-    <>
+    <React.Fragment>
       <AppHeader />
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Create New Template
-              </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Design a reusable workflow for data extraction
-              </p>
-            </div>
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Create New Template
+                </h1>
+                <p className="text-sm text-gray-500 mt-1">
+                  Design a reusable workflow for data extraction
+                </p>
+              </div>
 
             {/* Mode Selector */}
             <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
@@ -385,22 +446,32 @@ export default function NewTemplatePage() {
                 </div>
               </div>
 
-              {/* Save Button */}
+              {/* Action Buttons */}
               {columns.length > 0 && (
-                <div className="flex justify-end space-x-3">
+                <div className="flex justify-between items-center">
                   <button
                     onClick={() => router.push('/templates')}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
                   >
-                    Cancel
+                    ALL TEMPLATES
                   </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
-                  >
-                    {isSaving ? 'Saving...' : templateId ? 'Update Template' : 'Create Template'}
-                  </button>
+
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
+                    >
+                      {isSaving && !isCreatingSheet ? 'Saving...' : templateId ? 'Update Template' : 'Save Template'}
+                    </button>
+                    <button
+                      onClick={handleUseTemplate}
+                      disabled={isSaving || !templateName.trim()}
+                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
+                    >
+                      {isCreatingSheet ? 'Creating Sheet...' : 'USE TEMPLATE'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

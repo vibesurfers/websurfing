@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "@/trpc/react";
 import type { TemplateConfig } from "@/server/ai/template-generator";
 
@@ -29,6 +29,11 @@ export function TemplateChat({ onTemplateGenerated, onOpenInBuilder }: TemplateC
     },
   ]);
   const [input, setInput] = useState('');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedTemplate, setGeneratedTemplate] = useState<{
     id: string;
@@ -181,7 +186,12 @@ export function TemplateChat({ onTemplateGenerated, onOpenInBuilder }: TemplateC
                   message.role === 'user' ? 'text-blue-200' : 'text-gray-400'
                 }`}
               >
-                {message.timestamp.toLocaleTimeString()}
+                {isClient && message.timestamp.toLocaleTimeString('en-US', {
+                  hour12: true,
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  second: '2-digit'
+                })}
               </div>
             </div>
           </div>
