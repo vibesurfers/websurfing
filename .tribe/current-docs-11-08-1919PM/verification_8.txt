@@ -1,0 +1,31 @@
+Now I'll verify each line reference against the actual code:
+
+**Lines 97-120 - Content Extraction Switch Statement:**
+✅ **ACCURATE** - The switch statement exactly matches the documentation:
+- Lines 99-103: `case 'google_search'` extracts `output.results?.[0]?.url || output.results?.[0]?.title || ''`
+- Lines 104-107: `case 'url_context'` extracts `output.summary || output.extractedText || ''`
+- Lines 108-120: `case 'structured_output'` with Object.values logic
+- Lines 118-120: Default case with string/JSON.stringify logic
+
+**Lines 128-140 - SQL for cells table:**
+✅ **ACCURATE** - The SQL insert with ON CONFLICT matches exactly:
+- Line 128: `await db.insert(cells).values({`
+- Lines 129-133: Fields match (sheetId, userId, rowIndex, colIndex, content)
+- Lines 134-140: `onConflictDoUpdate` with content and updatedAt
+
+**Lines 143-151 - SQL for sheetUpdates:**
+✅ **ACCURATE** - The sheetUpdates insert matches:
+- Line 143: `await db.insert(sheetUpdates).values({`
+- Lines 144-151: All fields present including `updateType: 'ai_response'` and `appliedAt: new Date()`
+
+**Lines 163-175 - SQL for next event creation:**
+✅ **ACCURATE** - The eventQueue insert matches:
+- Line 163: `await db.insert(eventQueue).values({`
+- Lines 164-175: Fields include sheetId, userId, eventType: 'robot_cell_update', payload, status: 'pending'
+
+**Lines 160-162 - Stop condition:**
+✅ **ACCURATE** - The stop condition logic matches:
+- Lines 160-162: Comment and condition `if (nextColIndex < ctx.columns.length - 1)`
+- Lines 92-95: Early stop check `if (nextColIndex >= ctx.columns.length)`
+
+All line references in Section 8 are ✅ **ACCURATE** with no hallucinations found.

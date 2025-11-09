@@ -214,6 +214,26 @@ export const geminiUsageLog = createTable(
   ]
 );
 
+export const cellProcessingStatus = createTable(
+  "cell_processing_status",
+  (d) => ({
+    id: d.uuid().primaryKey().defaultRandom(),
+    sheetId: d.uuid("sheetid").notNull().references(() => sheets.id, { onDelete: 'cascade' }),
+    userId: d.varchar("userid", { length: 255 }).notNull().references(() => users.id),
+    rowIndex: d.integer("rowindex").notNull(),
+    colIndex: d.integer("colindex").notNull(),
+    status: d.varchar({ length: 20 }).notNull().default('idle'), // 'idle', 'processing', 'completed', 'error'
+    operatorName: d.varchar("operatorname", { length: 100 }), // 'google_search', 'url_context', etc.
+    statusMessage: d.varchar("statusmessage", { length: 255 }), // "Searching Google...", "Analyzing URL..."
+    updatedAt: d.timestamp("updatedat", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
+  }),
+  (t) => [
+    index("cell_status_sheet_idx").on(t.sheetId),
+    index("cell_status_position_idx").on(t.sheetId, t.rowIndex, t.colIndex),
+    index("cell_status_updated_idx").on(t.updatedAt),
+  ]
+);
+
 export const geminiUsageLogRelations = relations(geminiUsageLog, ({ one }) => ({
   user: one(users, { fields: [geminiUsageLog.userId], references: [users.id] }),
 }));

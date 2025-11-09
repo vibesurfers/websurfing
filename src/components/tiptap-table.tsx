@@ -31,13 +31,7 @@ function generateInitialContent(columnCount: number): string {
     return `<tr>${cells}</tr>`;
   }).join('\n      ');
 
-  return `
-  <table>
-    <tbody>
-      ${rows}
-    </tbody>
-  </table>
-`;
+  return `<table><tbody>${rows}</tbody></table>`;
 }
 
 interface TiptapTableProps {
@@ -51,6 +45,15 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   const [columnCount, setColumnCount] = useState(2)
   const [columnTitles, setColumnTitles] = useState<string[]>([])
   const [processingRows, setProcessingRows] = useState<Set<number>>(new Set())
+  const [confirmationPending, setConfirmationPending] = useState<{
+    rowIndex: number;
+    colIndex: number;
+    content: string;
+    affectedCells: number[];
+  } | null>(null)
+  const [isAddingColumn, setIsAddingColumn] = useState(false)
+  const [newColumnTitle, setNewColumnTitle] = useState('')
+  const columnInputRef = useRef<HTMLInputElement>(null)
 
   const utils = api.useUtils()
 
@@ -68,12 +71,36 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     }
   })
 
+  const updateCellWithoutEvent = api.cell.updateCellWithoutEvent.useMutation({
+    onSuccess: () => {
+      void utils.cell.getCells.invalidate({ sheetId });
+    },
+    onError: (error) => {
+      console.error('Failed to update cell without event:', error.message);
+      if (error.data?.code === 'UNAUTHORIZED') {
+        console.error('User not authenticated - please refresh the page');
+      }
+    }
+  })
+
   const clearCell = api.cell.clearCell.useMutation({
     onSuccess: () => {
       void utils.cell.getEvents.invalidate({ sheetId });
     },
     onError: (error) => {
       console.error('Failed to clear cell:', error.message);
+      if (error.data?.code === 'UNAUTHORIZED') {
+        console.error('User not authenticated - please refresh the page');
+      }
+    }
+  })
+
+  const clearCellsToRight = api.cell.clearCellsToRight.useMutation({
+    onSuccess: () => {
+      void utils.cell.getCells.invalidate({ sheetId });
+    },
+    onError: (error) => {
+      console.error('Failed to clear cells to the right:', error.message);
       if (error.data?.code === 'UNAUTHORIZED') {
         console.error('User not authenticated - please refresh the page');
       }
@@ -116,6 +143,26 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
       refetchOnWindowFocus: false,
     }
   )
+
+  const { data: processingStatus } = api.cell.getProcessingStatus.useQuery(
+    { sheetId },
+    {
+      refetchInterval: 2000,
+      retry: (failureCount, error) => {
+        if (error.data?.code === 'UNAUTHORIZED') return false;
+        return failureCount < 3;
+      },
+      refetchOnWindowFocus: false,
+    }
+  )
+
+  const addColumn = api.sheet.addColumn.useMutation({
+    onSuccess: () => {
+      void utils.sheet.getColumns.invalidate({ sheetId });
+      setIsAddingColumn(false);
+      setNewColumnTitle('');
+    },
+  })
 
   useEffect(() => {
     if (events) {
@@ -180,6 +227,32 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
             colIndex,
           })
         } else {
+          // Check if this row has existing data in other columns
+          const rowCells = cells?.filter(c => c.rowIndex === rowIndex) || [];
+          const hasExistingData = rowCells.some(c =>
+            c.colIndex !== colIndex && c.content && c.content.trim()
+          );
+
+          if (hasExistingData && !isRobotUpdate) {
+            // Determine which cells will be affected (all cells to the right)
+            const affectedCells = Array.from(
+              { length: columnCount - colIndex - 1 },
+              (_, i) => colIndex + i + 1
+            ).filter(idx => rowCells.some(c => c.colIndex === idx && c.content?.trim()));
+
+            if (affectedCells.length > 0) {
+              // Show confirmation dialog
+              console.log(`Row ${rowIndex} has existing data, showing confirmation`);
+              setConfirmationPending({
+                rowIndex,
+                colIndex,
+                content,
+                affectedCells,
+              });
+              return;
+            }
+          }
+
           // Normal update with content
           const updateSource = isRobotUpdate ? 'robot' : 'user'
           console.log(`Creating ${updateSource} cell update event at (${rowIndex}, ${colIndex}): "${content}"`)
@@ -200,7 +273,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     }, 1000) // Wait 1 second after user stops typing
 
     debounceRefs.current.set(cellKey, timeout)
-  }, [updateCell, clearCell, treatRobotsAsHumans, sheetId])
+  }, [updateCell, clearCell, treatRobotsAsHumans, sheetId, cells, columnCount])
 
   const editor = useEditor({
     extensions: [
@@ -312,7 +385,117 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     void utils.cell.getEvents.invalidate({ sheetId })
     void refetchCells()
     void refetch()
-  }, [sheetId, editor, utils, refetchCells, refetch])
+  }, [sheetId, editor, utils, refetchCells, refetch, columnCount])
+
+  useEffect(() => {
+    if (isAddingColumn && columnInputRef.current) {
+      columnInputRef.current.focus();
+    }
+  }, [isAddingColumn])
+
+  const handleAddColumn = () => {
+    setIsAddingColumn(true);
+
+    // Immediately add a temporary column to the editor to maintain alignment
+    if (editor) {
+      const html = editor.getHTML();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const table = doc.querySelector('table');
+      if (table) {
+        const tbody = table.querySelector('tbody') || table;
+        const rows = tbody.querySelectorAll('tr');
+
+        // Add a cell to each row
+        rows.forEach(row => {
+          const newCell = doc.createElement('td');
+          row.appendChild(newCell);
+        });
+
+        isApplyingRobotUpdates.current = true;
+        const newHtml = table.outerHTML;
+        editor.commands.setContent(newHtml);
+        isApplyingRobotUpdates.current = false;
+
+        // Update column count to reflect the new column
+        setColumnCount(prev => {
+          const newCount = prev + 1;
+          console.log('[TiptapTable] Column count increased to:', newCount);
+          return newCount;
+        });
+      }
+    }
+  }
+
+  const handleColumnTitleSubmit = () => {
+    if (!newColumnTitle.trim()) {
+      // User cancelled - remove the temporary column we added
+      handleCancelAddColumn();
+      return;
+    }
+
+    const nextPosition = columns?.length ?? (columnCount - 1); // -1 because we already added the column
+    addColumn.mutate({
+      sheetId,
+      title: newColumnTitle.trim(),
+      position: nextPosition,
+      dataType: 'text',
+    });
+  }
+
+  const handleCancelAddColumn = () => {
+    // Remove the temporary column from the editor
+    if (editor) {
+      const html = editor.getHTML();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const table = doc.querySelector('table');
+      if (table) {
+        const tbody = table.querySelector('tbody') || table;
+        const rows = tbody.querySelectorAll('tr');
+
+        // Remove the last cell from each row
+        rows.forEach(row => {
+          if (row.lastChild) {
+            row.removeChild(row.lastChild);
+          }
+        });
+
+        isApplyingRobotUpdates.current = true;
+        const newHtml = table.outerHTML;
+        editor.commands.setContent(newHtml);
+        isApplyingRobotUpdates.current = false;
+
+        // Update column count to reflect the removed column
+        setColumnCount(prev => prev - 1);
+      }
+    }
+
+    setIsAddingColumn(false);
+    setNewColumnTitle('');
+  }
+
+  const handleAddRow = () => {
+    if (!editor) return;
+
+    const html = editor.getHTML();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const table = doc.querySelector('table');
+    if (!table) return;
+
+    const tbody = table.querySelector('tbody') || table;
+    const newRow = doc.createElement('tr');
+    for (let i = 0; i < columnCount; i++) {
+      const newCell = doc.createElement('td');
+      newRow.appendChild(newCell);
+    }
+    tbody.appendChild(newRow);
+
+    isApplyingRobotUpdates.current = true;
+    editor.commands.setContent(`<div class="tableWrapper">${table.outerHTML}</div>`);
+    isApplyingRobotUpdates.current = false;
+  }
 
   // Apply cell updates to the editor when cells change
   useEffect(() => {
@@ -431,8 +614,11 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     // Apply changes back to editor if any cells were updated
     if (hasChanges) {
       console.log('[TiptapTable] Updating editor with new cell content');
-      const newHtml = table.outerHTML
-      editor.commands.setContent(newHtml)
+      const tableWrapper = doc.createElement('div');
+      tableWrapper.className = 'tableWrapper';
+      tableWrapper.appendChild(table);
+
+      editor.commands.setContent(`<div class="tableWrapper">${table.outerHTML}</div>`)
     } else {
       console.log('[TiptapTable] No changes detected, skipping editor update');
     }
@@ -534,12 +720,25 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
         }
 
         .processing-row {
-          opacity: 0.5;
+          opacity: 0.6;
           position: relative;
+          background-color: #f9fafb !important;
         }
 
         .processing-row td {
           position: relative;
+          background-color: #f9fafb !important;
+        }
+
+        .processing-row td::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(249, 250, 251, 0.8);
+          z-index: 5;
         }
 
         .processing-row td::after {
@@ -547,18 +746,27 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           position: absolute;
           top: 50%;
           left: 50%;
-          width: 16px;
-          height: 16px;
-          margin: -8px 0 0 -8px;
-          border: 2px solid #e5e7eb;
+          width: 20px;
+          height: 20px;
+          margin: -10px 0 0 -10px;
+          border: 3px solid #e5e7eb;
           border-top-color: #3b82f6;
           border-radius: 50%;
-          animation: spin-loader 0.6s linear infinite;
+          animation: spin-loader 0.8s linear infinite;
           z-index: 10;
         }
       `}} />
-      <div className="border rounded p-4">
-        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+      <div className="relative group">
+        {/* Add column button - full height */}
+        <div
+          className="absolute right-0 top-0 bottom-0 w-16 bg-white border border-gray-300 hover:bg-blue-50 transition-colors cursor-pointer flex items-center justify-center z-20"
+          style={{ borderLeft: 'none' }}
+          onClick={handleAddColumn}
+        >
+          <span className="text-gray-400 hover:text-blue-500 text-lg">+</span>
+        </div>
+
+        <table style={{ width: 'calc(100% - 60px)', borderCollapse: 'collapse', tableLayout: 'fixed', position: 'relative' }}>
           <thead>
             <tr>
               {columnTitles.length > 0 ? (
@@ -569,7 +777,8 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
                     style={{
                       padding: '8px 12px',
                       minWidth: '1em',
-                      boxSizing: 'border-box'
+                      boxSizing: 'border-box',
+                      width: `calc(100% / ${columnTitles.length})`
                     }}
                   >
                     {title}
@@ -583,22 +792,58 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
                     style={{
                       padding: '4px 12px',
                       minWidth: '1em',
-                      boxSizing: 'border-box'
+                      boxSizing: 'border-box',
+                      width: `calc(100% / ${columnCount})`
                     }}
                   >
                     {i + 1}
                   </th>
                 ))
               )}
+              {isAddingColumn && (
+                <th
+                  className="bg-yellow-100 border border-yellow-300 text-center font-semibold text-xs"
+                  style={{
+                    padding: '8px 12px',
+                    minWidth: '1em',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <input
+                    ref={columnInputRef}
+                    type="text"
+                    value={newColumnTitle}
+                    onChange={(e) => setNewColumnTitle(e.target.value)}
+                    onBlur={handleColumnTitleSubmit}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleColumnTitleSubmit();
+                      if (e.key === 'Escape') {
+                        handleCancelAddColumn();
+                      }
+                    }}
+                    placeholder="Column title..."
+                    className="w-full bg-transparent border-none outline-none text-center text-xs"
+                  />
+                </th>
+              )}
             </tr>
           </thead>
         </table>
-        <EditorContent editor={editor} />
-        <style dangerouslySetInnerHTML={{ __html: `
+        <div style={{ position: 'relative' }}>
+          <EditorContent editor={editor} />
+        </div>
+        <div
+          onClick={handleAddRow}
+          className="w-full h-10 bg-white border border-gray-300 hover:bg-blue-50 transition-colors cursor-pointer flex items-center justify-center"
+          style={{ borderTop: 'none' }}
+        >
+          <span className="text-gray-400 hover:text-blue-500 text-lg">+</span>
+        </div>
+        <style key={`table-styles-${columnCount}`} dangerouslySetInnerHTML={{ __html: `
           .ProseMirror table {
             border-collapse: collapse;
             table-layout: fixed;
-            width: 100%;
+            width: calc(100% - 60px);
             margin: 0;
             overflow: hidden;
             margin-top: -1px;
@@ -611,7 +856,21 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
             vertical-align: top;
             box-sizing: border-box;
             position: relative;
-            min-height: 40px;
+            height: 40px;
+            max-height: 40px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            width: calc(100% / ${columnCount});
+          }
+
+          .ProseMirror tr:hover td {
+            height: auto;
+            max-height: none;
+            overflow: visible;
+            white-space: normal;
+            z-index: 10;
+            background-color: #f9fafb;
           }
 
           .ProseMirror td:first-child {
@@ -696,6 +955,70 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
           </div>
         ))}
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmationPending && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md shadow-xl">
+            <h3 className="text-lg font-semibold mb-3">Re-process Row?</h3>
+            <p className="text-gray-700 mb-4">
+              This row already has data in {confirmationPending.affectedCells.length} column(s) to the right.
+              Do you want to clear and re-process those cells?
+            </p>
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+              <p className="text-sm text-yellow-800">
+                <strong>Affected columns:</strong> {confirmationPending.affectedCells.map(idx => columnTitles[idx] || `Column ${idx + 1}`).join(', ')}
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={async () => {
+                  const { rowIndex, colIndex, content } = confirmationPending;
+                  setConfirmationPending(null);
+                  const cellKey = `${rowIndex}-${colIndex}`;
+                  lastContentRef.current.set(cellKey, content);
+
+                  // Clear all cells to the right
+                  await clearCellsToRight.mutateAsync({
+                    sheetId,
+                    rowIndex,
+                    startColIndex: colIndex,
+                  });
+
+                  // Now update the edited cell and trigger processing
+                  updateCell.mutate({
+                    sheetId,
+                    rowIndex,
+                    colIndex,
+                    content,
+                  });
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Yes, Re-process
+              </button>
+              <button
+                onClick={() => {
+                  const { rowIndex, colIndex, content } = confirmationPending;
+                  setConfirmationPending(null);
+                  const cellKey = `${rowIndex}-${colIndex}`;
+                  lastContentRef.current.set(cellKey, content);
+                  console.log(`User declined re-processing, updating cell without event`);
+                  updateCellWithoutEvent.mutate({
+                    sheetId,
+                    rowIndex,
+                    colIndex,
+                    content,
+                  });
+                }}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+              >
+                No, Just Update This Cell
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

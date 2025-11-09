@@ -5,10 +5,48 @@
  */
 
 import { db } from "@/server/db";
-import { sheetUpdates, eventQueue, cells } from "@/server/db/schema";
+import { sheetUpdates, eventQueue, cells, cellProcessingStatus } from "@/server/db/schema";
+import { eq, and } from "drizzle-orm";
 import type { SheetContext } from "./operator-controller";
 
 export class ColumnAwareWrapper {
+  /**
+   * Update cell processing status
+   */
+  static async updateCellStatus(
+    ctx: SheetContext,
+    userId: string,
+    colIndex: number,
+    status: 'idle' | 'processing' | 'completed' | 'error',
+    operatorName?: string,
+    message?: string
+  ): Promise<void> {
+    await db.insert(cellProcessingStatus).values({
+      sheetId: ctx.sheetId,
+      userId,
+      rowIndex: ctx.rowIndex,
+      colIndex,
+      status,
+      operatorName: operatorName ?? null,
+      statusMessage: message ?? null,
+    }).onConflictDoNothing();
+
+    // Update if exists
+    await db.update(cellProcessingStatus)
+      .set({
+        status,
+        operatorName: operatorName ?? null,
+        statusMessage: message ?? null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(cellProcessingStatus.sheetId, ctx.sheetId),
+          eq(cellProcessingStatus.rowIndex, ctx.rowIndex),
+          eq(cellProcessingStatus.colIndex, colIndex)
+        )
+      );
+  }
   /**
    * Build contextual prompt including template goal, columns, and row data
    */

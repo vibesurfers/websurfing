@@ -49,7 +49,7 @@ const tasks = [
 const agents = tasks.map(task => {
   const outputFile = `${outputDir}/${task.id}.txt`;
 
-  return spawn('bash', ['-c', `(claude --model claude-3-5-haiku-20241022 --print "${task.prompt}" > ${outputFile})`], {
+  return spawn('bash', ['-c', `(claude --model claude-haiku-4-5-20251001 --print "${task.prompt}" > ${outputFile})`], {
     detached: true,
     stdio: 'ignore'
   });
@@ -72,11 +72,11 @@ OUTPUT_DIR="./agent-results/$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$OUTPUT_DIR"
 
 # Spawn 5 parallel agents with minimal prompts
-(claude --model claude-3-5-haiku-20241022 --print "List 5 API patterns. Brief." > "$OUTPUT_DIR/api-patterns.txt") & \
-(claude --model claude-3-5-haiku-20241022 --print "List 5 auth methods. Brief." > "$OUTPUT_DIR/auth-methods.txt") & \
-(claude --model claude-3-5-haiku-20241022 --print "Compare SQL vs NoSQL. Brief." > "$OUTPUT_DIR/databases.txt") & \
-(claude --model claude-3-5-haiku-20241022 --print "List 5 caching strategies. Brief." > "$OUTPUT_DIR/caching.txt") & \
-(claude --model claude-3-5-haiku-20241022 --print "List 5 scaling patterns. Brief." > "$OUTPUT_DIR/scaling.txt") & \
+(claude --model claude-haiku-4-5-20251001 --print "List 5 API patterns. Brief." > "$OUTPUT_DIR/api-patterns.txt") & \
+(claude --model claude-haiku-4-5-20251001 --print "List 5 auth methods. Brief." > "$OUTPUT_DIR/auth-methods.txt") & \
+(claude --model claude-haiku-4-5-20251001 --print "Compare SQL vs NoSQL. Brief." > "$OUTPUT_DIR/databases.txt") & \
+(claude --model claude-haiku-4-5-20251001 --print "List 5 caching strategies. Brief." > "$OUTPUT_DIR/caching.txt") & \
+(claude --model claude-haiku-4-5-20251001 --print "List 5 scaling patterns. Brief." > "$OUTPUT_DIR/scaling.txt") & \
 
 echo "✨ Spawned 5 parallel agents..."
 sleep 35
@@ -135,11 +135,11 @@ Choose the right model for your task:
 
 | Model | Best For | Cost | Speed |
 |-------|----------|------|-------|
-| claude-3-5-haiku-20241022 | Quick research, documentation, simple analysis | Lowest | Fastest |
+| claude-haiku-4-5-20251001 | Quick research, documentation, simple analysis | Lowest | Fastest |
 | Sonnet | Complex reasoning, code generation, analysis | Medium | Medium |
 | Opus | Architecture design, advanced refactoring | Highest | Slowest |
 
-**Recommendation**: Use claude-3-5-haiku-20241022 for parallel work (proven 100% success rate)
+**Recommendation**: Use claude-haiku-4-5-20251001 for parallel work (proven 100% success rate)
 
 ## Advanced Patterns
 
@@ -154,7 +154,7 @@ function spawnAgentArmy(taskPrefix: string, count: number, outputDir: string) {
     const output = `${outputDir}/agent${i}.txt`;
 
     agents.push(spawn('bash', ['-c',
-      `(claude --model claude-3-5-haiku-20241022 --print "${task}" > ${output})`
+      `(claude --model claude-haiku-4-5-20251001 --print "${task}" > ${output})`
     ], { detached: true, stdio: 'ignore' }));
   }
 
@@ -181,7 +181,7 @@ for batch in {1..4}; do
 
     for i in {1..5}; do
         agent_num=$((batch*5-4+i-1))
-        (claude --model claude-3-5-haiku-20241022 --print "Task $agent_num. Brief." > "$OUTPUT_DIR/agent$agent_num.txt") &
+        (claude --model claude-haiku-4-5-20251001 --print "Task $agent_num. Brief." > "$OUTPUT_DIR/agent$agent_num.txt") &
     done
 
     sleep 40
@@ -242,7 +242,7 @@ function spawnWithRetry(task: string, output: string, maxRetries = 3) {
 
   const trySpawn = () => {
     const agent = spawn('bash', ['-c',
-      `(claude --model claude-3-5-haiku-20241022 --print "${task}" > ${output})`
+      `(claude --model claude-haiku-4-5-20251001 --print "${task}" > ${output})`
     ], { detached: true, stdio: 'ignore' });
 
     setTimeout(() => {
@@ -283,7 +283,7 @@ for task in "${tasks[@]}"; do
     done
 
     # Spawn next agent
-    (claude --model claude-3-5-haiku-20241022 --print "$task. Brief." > "output_${active_count}.txt") &
+    (claude --model claude-haiku-4-5-20251001 --print "$task. Brief." > "output_${active_count}.txt") &
     ((active_count++))
 done
 ```
@@ -297,7 +297,7 @@ done
 - **Output Size**: 600-1000 bytes each
 - **Total Time**: ~35 seconds
 - **Input Tokens**: 30 (6 tokens × 5)
-- **Cost**: ~$0.001 with claude-3-5-haiku-20241022
+- **Cost**: ~$0.001 with claude-haiku-4-5-20251001
 
 ### Scaling (100 Agents)
 
@@ -313,13 +313,13 @@ done
 
 | ❌ WRONG | ✅ CORRECT |
 |---------|----------|
-| `haiku-4` | `claude-3-5-haiku-20241022` |
-| `haiku-4-5` | `claude-3-5-haiku-20241022` |
-| `claude-haiku-4-5` | `claude-3-5-haiku-20241022` |
+| `haiku-4` | `claude-haiku-4-5-20251001` |
+| `haiku-4-5` | `claude-haiku-4-5-20251001` |
+| `claude-3-5-haiku-20241022` | `claude-haiku-4-5-20251001` |
 | `sonnet-4` | `claude-sonnet-4-20250514` |
 | `opus-4` | `claude-opus-4-20250514` |
 
-**Always use**: `claude-3-5-haiku-20241022` for parallel agents
+**Always use**: `claude-haiku-4-5-20251001` for parallel agents
 
 ## Common Pitfalls
 
@@ -342,11 +342,11 @@ When user says "research [topic]":
 OUTPUT_DIR="./research/$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$OUTPUT_DIR"
 
-(claude --model claude-3-5-haiku-20241022 --print "Research [topic] patterns. Brief." > "$OUTPUT_DIR/patterns.txt") & \
-(claude --model claude-3-5-haiku-20241022 --print "Research [topic] best practices. Brief." > "$OUTPUT_DIR/practices.txt") & \
-(claude --model claude-3-5-haiku-20241022 --print "Research [topic] examples. Brief." > "$OUTPUT_DIR/examples.txt") & \
-(claude --model claude-3-5-haiku-20241022 --print "Research [topic] pitfalls. Brief." > "$OUTPUT_DIR/pitfalls.txt") & \
-(claude --model claude-3-5-haiku-20241022 --print "Research [topic] tools. Brief." > "$OUTPUT_DIR/tools.txt") & \
+(claude --model claude-haiku-4-5-20251001 --print "Research [topic] patterns. Brief." > "$OUTPUT_DIR/patterns.txt") & \
+(claude --model claude-haiku-4-5-20251001 --print "Research [topic] best practices. Brief." > "$OUTPUT_DIR/practices.txt") & \
+(claude --model claude-haiku-4-5-20251001 --print "Research [topic] examples. Brief." > "$OUTPUT_DIR/examples.txt") & \
+(claude --model claude-haiku-4-5-20251001 --print "Research [topic] pitfalls. Brief." > "$OUTPUT_DIR/pitfalls.txt") & \
+(claude --model claude-haiku-4-5-20251001 --print "Research [topic] tools. Brief." > "$OUTPUT_DIR/tools.txt") & \
 
 sleep 35
 cat "$OUTPUT_DIR"/*.txt
@@ -375,9 +375,9 @@ jobs:
         run: |
           mkdir -p analysis-results
 
-          (claude --model claude-3-5-haiku-20241022 --print "Analyze code quality in src/. Brief." > analysis-results/quality.txt) & \
-          (claude --model claude-3-5-haiku-20241022 --print "Find security issues in src/. Brief." > analysis-results/security.txt) & \
-          (claude --model claude-3-5-haiku-20241022 --print "Find performance issues in src/. Brief." > analysis-results/performance.txt) & \
+          (claude --model claude-haiku-4-5-20251001 --print "Analyze code quality in src/. Brief." > analysis-results/quality.txt) & \
+          (claude --model claude-haiku-4-5-20251001 --print "Find security issues in src/. Brief." > analysis-results/security.txt) & \
+          (claude --model claude-haiku-4-5-20251001 --print "Find performance issues in src/. Brief." > analysis-results/performance.txt) & \
 
           sleep 40
           cat analysis-results/*.txt
@@ -431,13 +431,13 @@ Parallel agent orchestration with Claude enables:
 
 **Quick Start**:
 ```bash
-(claude --model claude-3-5-haiku-20241022 --print "Your task. Brief." > output.txt) &
+(claude --model claude-haiku-4-5-20251001 --print "Your task. Brief." > output.txt) &
 ```
 
 **Production Template**:
 ```bash
 for task in "${tasks[@]}"; do
-    (claude --model claude-3-5-haiku-20241022 --print "$task. Brief." > "${task}.txt") &
+    (claude --model claude-haiku-4-5-20251001 --print "$task. Brief." > "${task}.txt") &
 done
 sleep 35
 ```

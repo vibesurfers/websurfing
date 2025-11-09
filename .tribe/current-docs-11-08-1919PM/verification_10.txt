@@ -1,0 +1,11 @@
+❌ **HALLUCINATION** - CODEBASE_SUMMARY.md does not exist.
+
+**Line References Verification:**
+
+- **Lines 120-142**: ✅ **ACCURATE** - getCells query with refetchInterval: 2000, retry logic, and refetchOnWindowFocus: false
+- **Lines 446-448**: ✅ **ACCURATE** - Cell update effect with editor/cells checks and console logging
+- **Lines 222-223**: ✅ **ACCURATE** - Content comparison logic checking if content !== lastContent  
+- **Lines 368-372**: ✅ **ACCURATE** - Robot updates application with isApplyingRobotUpdates flag and setContent
+- **Lines 153-163**: ✅ **ACCURATE** - Processing status query with same polling pattern as getCells
+
+All line references match actual code, but the document being verified doesn't exist.

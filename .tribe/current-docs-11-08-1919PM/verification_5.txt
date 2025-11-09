@@ -1,0 +1,25 @@
+❌ **HALLUCINATION** - Cannot verify Section 5 OPERATOR SELECTION LOGIC because CODEBASE_SUMMARY.MD file does not exist.
+
+However, I can verify the actual operator selection logic in the code:
+
+**Lines 194-244 (selectOperator method)**: ✅ **ACCURATE**
+- Contains proper switch statement for event types
+- Handles "user_cell_edit", "robot_cell_update", and "manual_trigger" cases
+- Returns operator names: "google_search", "url_context", "structured_output", "function_calling"
+
+**Lines 196-213**: ✅ **ACCURATE** 
+- Cell edit logic checks for search queries, URLs, defaults to structured_output
+
+**Lines 215-238**: ✅ **ACCURATE**
+- Manual trigger logic maps trigger types to operators correctly
+
+**Lines 251-274**: ✅ **ACCURATE**  
+- google_search input preparation with query processing and context awareness
+
+**Lines 276-301**: ✅ **ACCURATE**
+- url_context input preparation with URL extraction and contextual prompts
+
+**Lines 303-320**: ✅ **ACCURATE**
+- structured_output preparation using row data context
+
+The code exists and logic matches what would be expected, but cannot verify against non-existent CODEBASE_SUMMARY.MD.

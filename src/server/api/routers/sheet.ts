@@ -130,4 +130,39 @@ export const sheetRouter = createTRPCRouter({
 
       return { success: true };
     }),
+
+  addColumn: protectedProcedure
+    .input(
+      z.object({
+        sheetId: z.string().uuid(),
+        title: z.string().min(1).max(255),
+        position: z.number().int().min(0),
+        dataType: z.enum(['text', 'array', 'url', 'number']).default('text'),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      const sheet = await ctx.db
+        .select()
+        .from(sheets)
+        .where(eq(sheets.id, input.sheetId))
+        .limit(1);
+
+      if (!sheet[0]?.userId || sheet[0].userId !== userId) {
+        throw new Error("Sheet not found or unauthorized");
+      }
+
+      const newColumn = await ctx.db
+        .insert(columns)
+        .values({
+          sheetId: input.sheetId,
+          title: input.title,
+          position: input.position,
+          dataType: input.dataType,
+        })
+        .returning();
+
+      return newColumn[0];
+    }),
 });

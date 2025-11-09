@@ -107,6 +107,26 @@ export class OperatorController {
         `[OperatorController] Dispatching event ${event.eventId} to ${operatorName}`
       );
 
+      // Set status to processing for next column
+      if (event.sheetContext) {
+        const targetColIndex = event.sheetContext.currentColumnIndex + 1;
+        const statusMessages: Record<string, string> = {
+          'google_search': 'Searching Google...',
+          'url_context': 'Analyzing URL...',
+          'structured_output': 'Extracting data...',
+          'function_calling': 'Calling function...',
+        };
+
+        await ColumnAwareWrapper.updateCellStatus(
+          event.sheetContext,
+          event.userId,
+          targetColIndex,
+          'processing',
+          operatorName,
+          statusMessages[operatorName] || 'Processing...'
+        );
+      }
+
       // Prepare input
       const input = this.prepareInput(event, operatorName);
 
@@ -123,6 +143,15 @@ export class OperatorController {
           event.eventId,
           output,
           operatorName
+        );
+
+        // Mark as completed
+        const targetColIndex = event.sheetContext.currentColumnIndex + 1;
+        await ColumnAwareWrapper.updateCellStatus(
+          event.sheetContext,
+          event.userId,
+          targetColIndex,
+          'completed'
         );
       }
 

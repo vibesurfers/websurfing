@@ -35,6 +35,8 @@ export function WelcomeFlow() {
         console.log('[WelcomeFlow] Created sheet with ID:', newSheet.id);
         console.log('[WelcomeFlow] Navigating to:', `/sheets/${newSheet.id}`);
 
+        // Store in sessionStorage so SheetManager knows this is a newly created sheet
+        sessionStorage.setItem('justCreatedSheet', newSheet.id);
         router.push(`/sheets/${newSheet.id}`);
       }
     } catch (error) {

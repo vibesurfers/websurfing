@@ -1,0 +1,19 @@
+Based on my verification of the actual code against Section 6 CONTEXT-AWARE INPUT PREPARATION in the CODEBASE_SUMMARY.MD, here's my analysis:
+
+**Lines 251-273 (operator-controller.ts)** ✅ ACCURATE
+- Documentation matches actual code implementation
+- Shows correct google_search case with context prompt building
+- Query construction with `ColumnAwareWrapper.buildContextualPrompt()` is accurate
+
+**Lines 303-318 (operator-controller.ts)** ✅ ACCURATE  
+- Documentation correctly shows structured_output case
+- Row data aggregation logic matches implementation
+- Filter and map operations for building `${colTitle}: ${value}` format are correct
+
+**Lines 53-77 (column-aware-wrapper.ts)** ✅ ACCURATE
+- `buildContextualPrompt` method signature and implementation match exactly
+- Format with GOAL, COLUMN STRUCTURE, and TASK sections is correct
+- Arrow marker logic `idx === ctx.currentColumnIndex + 1 ? '→ ' : '  '` is accurate
+- Current value display format `(current: "${ctx.rowData[idx]}")` is correct
+
+All line references in Section 6 are accurate representations of the actual codebase implementation.

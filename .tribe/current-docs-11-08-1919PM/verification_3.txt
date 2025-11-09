@@ -1,0 +1,33 @@
+Now I'll verify each line reference from Section 3 BACKGROUND EVENT PROCESSOR against the actual code:
+
+## Section 3 BACKGROUND EVENT PROCESSOR Verification:
+
+**startup.ts:5-17** ❌ HALLUCINATION
+- Line 5-17 shows `startServerServices()` function, but the summary claims lines 5-17 when the function is actually lines 5-17. However, the line range is accurate.
+- ✅ ACCURATE: Function exists at correct lines
+
+**background-processor.ts:105-109** ✅ ACCURATE
+- Lines 105-109 show `startBackgroundProcessor()` function that calls `getBackgroundProcessor().start()`
+
+**background-processor.ts:8** ✅ ACCURATE
+- Line 8 shows `private pollInterval = 1000;`
+
+**background-processor.ts:33-43** ✅ ACCURATE  
+- Lines 33-43 show the `processLoop()` method with while loop and sleep
+
+**background-processor.ts:41** ✅ ACCURATE
+- Line 41 shows `await this.sleep(this.pollInterval);`
+
+**background-processor.ts:46-50** ✅ ACCURATE
+- Lines 46-50 show the SQL query for pending events with LIMIT 50
+
+**background-processor.ts:58-65** ✅ ACCURATE
+- Lines 58-65 show the Map-based grouping logic by sheetId
+
+**background-processor.ts:79-83** ✅ ACCURATE  
+- Lines 79-83 show `updateSheet(userId, sheetId)` call with `.finally()` cleanup
+
+**background-processor.ts:88** ✅ ACCURATE
+- Line 88 shows `await Promise.allSettled(processingPromises);`
+
+All line references in Section 3 are **ACCURATE** ✅

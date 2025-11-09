@@ -1,0 +1,21 @@
+Since CODEBASE_SUMMARY.MD doesn't exist, I'll analyze the specific line references you mentioned from the two files I can access. Let me examine the specific lines:
+
+**VERIFICATION RESULTS:**
+
+**src/server/sheet-updater.ts:**
+- **Line 28**: ✅ ACCURATE - `eq(eventQueue.status, 'pending')` matches description
+- **Line 39**: ✅ ACCURATE - `set({ status: 'processing' })` matches description  
+- **Line 76**: ✅ ACCURATE - `status: 'completed',` matches description
+- **Line 132**: ✅ ACCURATE - `set({ status: 'failed' })` matches description
+- **Lines 22-32**: ✅ ACCURATE - SQL query with FOR UPDATE locking as described
+- **Lines 37-40**: ✅ ACCURATE - Batch update of event status to 'processing'
+- **Lines 73-79**: ✅ ACCURATE - Event completion with status and processedAt timestamp
+- **Lines 399-405**: ❌ HALLUCINATION - These lines don't exist (file only has 216 lines)
+
+**src/server/operators/operator-controller.ts:**
+- **Line 401**: ✅ ACCURATE - `status: 'completed',` in completeEvent method
+- **Line 417**: ✅ ACCURATE - `status: 'failed',` in failEvent method  
+- **Lines 69-85**: ❌ HALLUCINATION - These lines are about row completion logic, not what's described
+- **Lines 19-44**: ✅ ACCURATE - SheetContext and BaseEvent interface definitions match
+
+**Summary:** 6/8 line references are accurate. Lines 399-405 in sheet-updater.ts and 69-85 in operator-controller.ts are hallucinations.

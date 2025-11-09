@@ -40,13 +40,18 @@ export function SheetManager() {
     const justCreatedSheet = sessionStorage.getItem('justCreatedSheet');
 
     if (sheetIdFromUrl) {
-      if (sheets?.some(s => s.id === sheetIdFromUrl)) {
+      // Always accept the sheet ID from URL if it's a newly created sheet
+      // or if it exists in our sheets list
+      const isJustCreated = justCreatedSheet === sheetIdFromUrl;
+      const existsInList = sheets?.some(s => s.id === sheetIdFromUrl);
+
+      if (isJustCreated || existsInList) {
         if (selectedSheetId !== sheetIdFromUrl) {
           console.log('[SheetManager] Setting selectedSheetId from URL:', sheetIdFromUrl);
           setSelectedSheetId(sheetIdFromUrl);
 
           // Clear the flag if this is the sheet we just created
-          if (justCreatedSheet === sheetIdFromUrl) {
+          if (isJustCreated) {
             sessionStorage.removeItem('justCreatedSheet');
           }
         }
