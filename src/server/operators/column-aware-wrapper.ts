@@ -187,6 +187,26 @@ export class ColumnAwareWrapper {
     // 4. Trim whitespace
     content = content.trim();
 
+    // 5. Filter out null/empty JSON values
+    if (content === 'null' || content === '{}' || content === '[]' || content === 'undefined') {
+      console.log('[ColumnAwareWrapper] Skipping null/empty JSON value');
+      return; // Don't write empty values
+    }
+
+    // 6. Clean JSON objects with null values
+    if (content.includes(':null') && content.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(content);
+        // If all values are null, skip
+        if (Object.values(parsed).every(v => v === null)) {
+          console.log('[ColumnAwareWrapper] Skipping object with all null values');
+          return;
+        }
+      } catch (e) {
+        // Not valid JSON, continue
+      }
+    }
+
     // Write DIRECTLY to cells table for immediate visibility
     await db.insert(cells).values({
       sheetId: ctx.sheetId,

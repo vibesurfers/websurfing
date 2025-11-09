@@ -13,16 +13,57 @@
   animation: shimmer 2s ease-in-out infinite;
 }
 
+/* Make table cells have relative positioning for status dots */
+td {
+  position: relative !important;
+}
+
+/* Status dot in top-right corner */
+.cell-processing::before,
+.cell-pending::before,
+.cell-completed::before,
+.cell-error::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  z-index: 1000;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+.cell-processing::before {
+  background-color: #3b82f6; /* Blue */
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.cell-pending::before {
+  background-color: #f59e0b; /* Orange */
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.cell-completed::before {
+  background-color: #10b981; /* Green */
+}
+
+.cell-error::before {
+  background-color: #ef4444; /* Red */
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Status message in bottom-right */
 .cell-processing::after {
   content: attr(data-status-message);
   position: absolute;
   bottom: 2px;
   right: 4px;
-  font-size: 10px;
+  font-size: 9px;
   color: #3b82f6;
   font-weight: 500;
   pointer-events: none;
-  opacity: 0.8;
+  opacity: 0.7;
 }
 
 .cell-completed {
@@ -35,18 +76,9 @@
   100% { background-position: -200% 0; }
 }
 
-/* Spinner for processing cells */
-.cell-processing::before {
-  content: "";
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 12px;
-  height: 12px;
-  border: 2px solid #3b82f6;
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
 }
 
 @keyframes spin {

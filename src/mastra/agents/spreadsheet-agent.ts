@@ -49,7 +49,8 @@ export const spreadsheetAgent = new Agent({
 3. **Managing Rows**
    - Use rowManagerTool to delete rows
    - Delete specific rows: action='delete', provide rowIndices
-   - Delete empty rows: action='delete_empty', provide columnIndex or columnTitle
+   - Delete empty rows: action='delete_empty', columnIndex=0 (first column)
+   - **IMPORTANT**: When user says "clean up" or "remove empty rows", use delete_empty action
    - Always ask user for confirmation before deleting data
 
 4. **Managing Columns**

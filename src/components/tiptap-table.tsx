@@ -26,12 +26,12 @@ function useSheetUpdates() {
 }
 
 function generateInitialContent(columnCount: number): string {
-  const rows = Array.from({ length: 8 }, () => {
-    const cells = Array.from({ length: columnCount }, () => '<td></td>').join('');
-    return `<tr>${cells}</tr>`;
-  }).join('\n      ');
+  // Start with just 1 empty row for better UX
+  // User can add more rows by clicking the "+" button
+  const cells = Array.from({ length: columnCount }, () => '<td></td>').join('');
+  const row = `<tr>${cells}</tr>`;
 
-  return `<table><tbody>${rows}</tbody></table>`;
+  return `<table><tbody>${row}</tbody></table>`;
 }
 
 interface TiptapTableProps {
@@ -441,6 +441,30 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     setNewColumnTitle('');
   }
 
+  const reprocessColumn = api.cell.reprocessColumn.useMutation({
+    onSuccess: (data) => {
+      console.log(`[TiptapTable] Reprocessing initiated: ${data.message}`);
+      // Invalidate queries to refresh
+      void utils.cell.getCells.invalidate({ sheetId });
+      void utils.cell.getProcessingStatus.invalidate({ sheetId });
+    },
+    onError: (error) => {
+      console.error('[TiptapTable] Reprocess failed:', error);
+      alert(`Failed to reprocess column: ${error.message}`);
+    },
+  });
+
+  const handleReprocessColumn = (colIndex: number) => {
+    const columnName = columnTitles[colIndex] || `Column ${colIndex + 1}`;
+    const confirmed = confirm(
+      `Reprocess all rows for "${columnName}"?\n\nThis will clear existing data and re-run the AI operators for this column.`
+    );
+
+    if (confirmed) {
+      reprocessColumn.mutate({ sheetId, colIndex });
+    }
+  }
+
   const handleAddRow = () => {
     if (!editor) return;
 
@@ -525,19 +549,26 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
         const cellKey = `${cell.rowIndex}-${cell.colIndex}`;
         const cellStatus = processingStatus?.[cellKey];
 
-        // Add processing class if cell is processing
+        // Remove all status classes first
+        td.classList.remove('cell-processing', 'cell-pending', 'cell-completed', 'cell-error');
+
+        // Apply status class based on current state
         if (cellStatus?.status === 'processing') {
           td.classList.add('cell-processing');
           td.setAttribute('data-status-message', cellStatus.message || 'Processing...');
-        } else {
-          td.classList.remove('cell-processing');
-          td.removeAttribute('data-status-message');
-        }
-
-        // Add completed class briefly when done
-        if (cellStatus?.status === 'completed' && dbContent && !td.classList.contains('cell-completed')) {
+        } else if (cellStatus?.status === 'completed' && dbContent) {
           td.classList.add('cell-completed');
-          setTimeout(() => td.classList.remove('cell-completed'), 2000); // Remove after 2s
+          // Remove completed class after 3 seconds
+          setTimeout(() => td.classList.remove('cell-completed'), 3000);
+        } else if (cellStatus?.status === 'error') {
+          td.classList.add('cell-error');
+          td.setAttribute('data-status-message', cellStatus.message || 'Error');
+        } else if (cellStatus?.status === 'idle' && !dbContent) {
+          // Idle with no content = pending
+          td.classList.add('cell-pending');
+        } else {
+          // No special status
+          td.removeAttribute('data-status-message');
         }
 
         // Only update if content from database is different from what's currently shown
@@ -746,13 +777,24 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
                     key={i}
                     className="bg-blue-100 border border-blue-300 text-center font-semibold text-xs text-blue-900"
                     style={{
-                      padding: '8px 12px',
+                      padding: '4px 8px',
                       minWidth: '1em',
                       boxSizing: 'border-box',
                       width: `calc(100% / ${columnTitles.length})`
                     }}
                   >
-                    {title}
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="flex-1">{title}</span>
+                      {i > 0 && ( // Don't show reprocess for first column
+                        <button
+                          onClick={() => handleReprocessColumn(i)}
+                          className="px-1.5 py-0.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs transition-colors"
+                          title={`Reprocess all rows for "${title}"`}
+                        >
+                          ↻
+                        </button>
+                      )}
+                    </div>
                   </th>
                 ))
               ) : (
@@ -805,9 +847,10 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
         </div>
         <div
           onClick={handleAddRow}
-          className="w-full h-10 bg-white hover:bg-blue-50 transition-colors cursor-pointer flex items-center justify-center"
+          className="w-full h-12 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-2 border-dashed border-blue-300 hover:border-blue-400 transition-all cursor-pointer flex items-center justify-center gap-2 rounded-lg mt-2"
         >
-          <span className="text-gray-400 hover:text-blue-500 text-lg">+</span>
+          <span className="text-blue-600 text-2xl font-bold">+</span>
+          <span className="text-blue-700 font-medium text-sm">Add Row</span>
         </div>
         <style key={`table-styles-${columnCount}`} dangerouslySetInnerHTML={{ __html: `
           .ProseMirror table {
