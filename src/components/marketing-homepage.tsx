@@ -64,8 +64,9 @@ B2: {
             <span className="text-2xl font-bold text-white">vibesurfing</span>
           </div>
           <button
-            onClick={() => router.push('/welcome')}
+            onClick={() => setShowSignIn(true)}
             className="px-6 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold rounded-lg transition-all shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/40"
+            data-testid="nav-launch-btn"
           >
             Launch App →
           </button>
