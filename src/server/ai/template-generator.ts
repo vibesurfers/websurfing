@@ -70,33 +70,7 @@ export async function generateTemplateFromDescription(
 ): Promise<TemplateConfig> {
   const client = await getGeminiClient();
 
-  // Detect if this is a science-focused request
-  const isScienceTrack = detectScienceTrack(userDescription);
-
-  const baseSystemInstruction = `You are a template configuration expert for a web scraping and AI-powered spreadsheet application.`;
-
-  const scienceEnhancement = isScienceTrack ? `
-
-SCIENCE TRACK SPECIALIZATION:
-This request appears to be science/academic focused. Apply these specialized guidelines:
-
-1. PRIORITIZE academic_search operator for finding research papers and scientific literature
-2. Use similarity_expansion to discover related concepts and research areas
-3. Focus on finding highly cited, peer-reviewed sources
-4. Structure workflows to extract academic metadata (citations, authors, publication details)
-5. Include quality indicators for research papers (impact factor, citation count)
-6. Target academic databases: arXiv, PubMed, Google Scholar, ResearchGate
-7. Emphasize PDF discovery for direct access to papers
-8. Consider review papers for comprehensive field overviews
-
-ACADEMIC SEARCH BEST PRACTICES:
-- Use academic_search for initial literature discovery
-- Follow with url_context to extract detailed paper information
-- Use structured_output to organize bibliographic data
-- Apply similarity_expansion to find related research areas
-- Always aim to provide PDF links when available` : '';
-
-  const systemInstruction = baseSystemInstruction + scienceEnhancement + `
+  const systemInstruction = `You are a template configuration expert for a web scraping and AI-powered spreadsheet application.
 
 The application works like this:
 1. Users create spreadsheets with columns
@@ -309,44 +283,3 @@ Provide 2-5 concrete, actionable suggestions.`;
   }
 }
 
-/**
- * Detect if a user description is science/academic focused
- */
-function detectScienceTrack(userDescription: string): boolean {
-  const description = userDescription.toLowerCase();
-
-  const scienceKeywords = [
-    // Academic terms
-    'research', 'paper', 'papers', 'study', 'studies', 'publication', 'journal',
-    'article', 'academic', 'scholar', 'citation', 'bibliography', 'literature',
-    'thesis', 'dissertation', 'peer review', 'peer-reviewed', 'manuscript',
-
-    // File formats
-    'pdf', 'doi', 'arxiv', 'pubmed',
-
-    // Scientific fields
-    'science', 'scientific', 'biology', 'physics', 'chemistry', 'mathematics',
-    'medicine', 'engineering', 'computer science', 'machine learning', 'ai',
-    'psychology', 'neuroscience', 'genomics', 'bioinformatics', 'statistics',
-
-    // Research activities
-    'experiment', 'hypothesis', 'theory', 'analysis', 'methodology', 'dataset',
-    'survey', 'review', 'meta-analysis', 'systematic review',
-
-    // Academic sources
-    'google scholar', 'nature', 'science magazine', 'plos', 'ieee', 'acm',
-    'springer', 'elsevier', 'wiley', 'oxford', 'cambridge',
-
-    // Research indicators
-    'highly cited', 'impact factor', 'h-index', 'breakthrough', 'seminal',
-    'landmark study', 'cutting edge', 'state of the art'
-  ];
-
-  // Check for presence of science keywords
-  const keywordMatches = scienceKeywords.filter(keyword =>
-    description.includes(keyword)
-  ).length;
-
-  // If 2 or more science keywords are found, classify as science track
-  return keywordMatches >= 2;
-}

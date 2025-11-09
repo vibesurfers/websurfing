@@ -54,8 +54,6 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
   const [isAddingColumn, setIsAddingColumn] = useState(false)
   const [newColumnTitle, setNewColumnTitle] = useState('')
   const columnInputRef = useRef<HTMLInputElement>(null)
-  const [selectedCell, setSelectedCell] = useState<{ rowIndex: number; colIndex: number } | null>(null)
-  const [dragDownVisible, setDragDownVisible] = useState(false)
   const [hoveredCell, setHoveredCell] = useState<{ rowIndex: number; colIndex: number } | null>(null)
   const [tooltipVisible, setTooltipVisible] = useState(false)
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
@@ -445,40 +443,6 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     });
   }
 
-  const handleDragDown = async () => {
-    if (!selectedCell || !cells) return;
-
-    // Find the content of the selected cell
-    const selectedCellData = cells.find(
-      (cell) => cell.rowIndex === selectedCell.rowIndex && cell.colIndex === selectedCell.colIndex
-    );
-
-    if (!selectedCellData?.content) return;
-
-    // Create mutations for all cells below the selected cell (up to 5 rows for now)
-    const mutations = [];
-    for (let i = 1; i <= 5; i++) {
-      const targetRowIndex = selectedCell.rowIndex + i;
-
-      mutations.push(
-        updateCellWithoutEvent.mutateAsync({
-          sheetId,
-          rowIndex: targetRowIndex,
-          colIndex: selectedCell.colIndex,
-          content: selectedCellData.content,
-        })
-      );
-    }
-
-    try {
-      await Promise.all(mutations);
-      // Hide the drag down chevron after action
-      setDragDownVisible(false);
-      setSelectedCell(null);
-    } catch (error) {
-      console.error('Error during drag down:', error);
-    }
-  };
 
   const handleCancelAddColumn = () => {
     // Use TipTap's native deleteColumn command to remove the temporary column
@@ -711,33 +675,7 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     if (!table) return;
 
     const handleCellClick = (event: Event) => {
-      const target = event.target as HTMLElement;
-      const cell = target.closest('td');
-
-      // If clicking outside a cell, clear selection
-      if (!cell) {
-        setSelectedCell(null);
-        setDragDownVisible(false);
-        return;
-      }
-
-      // Find the row and cell indices
-      const row = cell.closest('tr');
-      if (!row) return;
-
-      const tbody = row.closest('tbody');
-      if (!tbody) return;
-
-      const rows = Array.from(tbody.querySelectorAll('tr'));
-      const cells = Array.from(row.querySelectorAll('td'));
-
-      const rowIndex = rows.indexOf(row);
-      const colIndex = cells.indexOf(cell);
-
-      if (rowIndex >= 0 && colIndex >= 0) {
-        setSelectedCell({ rowIndex, colIndex });
-        setDragDownVisible(true);
-      }
+      // Click handler simplified - no longer manages drag down functionality
     };
 
     const handleCellMouseEnter = (event: Event) => {
@@ -780,23 +718,12 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
     table.addEventListener('mouseenter', handleCellMouseEnter, true);
     table.addEventListener('mouseleave', handleCellMouseLeave, true);
 
-    // Add document click listener to hide selection when clicking outside
-    const handleDocumentClick = (event: Event) => {
-      const target = event.target as HTMLElement;
-      if (!editorElement.contains(target)) {
-        setSelectedCell(null);
-        setDragDownVisible(false);
-      }
-    };
-
-    document.addEventListener('click', handleDocumentClick);
 
     // Cleanup
     return () => {
       table.removeEventListener('click', handleCellClick);
       table.removeEventListener('mouseenter', handleCellMouseEnter, true);
       table.removeEventListener('mouseleave', handleCellMouseLeave, true);
-      document.removeEventListener('click', handleDocumentClick);
     };
   }, [editor, cells]); // Re-run when cells change to ensure handlers are attached
 
@@ -997,28 +924,6 @@ export function TiptapTable({ treatRobotsAsHumans, sheetId }: TiptapTableProps) 
         <div style={{ position: 'relative' }}>
           <EditorContent editor={editor} />
 
-          {/* Drag Down Chevron */}
-          {dragDownVisible && selectedCell && (
-            <div
-              className="absolute bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors z-20"
-              style={{
-                top: `${(selectedCell.rowIndex + 1) * 40 - 5}px`,
-                left: `calc(${(selectedCell.colIndex + 0.5) * (100 / columnCount)}% - 30px)`,
-                transform: 'translateX(-50%)',
-              }}
-              title="Drag down for more like this"
-              onClick={handleDragDown}
-              onMouseEnter={() => setDragDownVisible(true)}
-              onMouseLeave={() => {
-                // Only hide if not actively dragging
-                setTimeout(() => setDragDownVisible(false), 2000)
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 10l5 5 5-5z"/>
-              </svg>
-            </div>
-          )}
         </div>
         <div
           onClick={handleAddRow}

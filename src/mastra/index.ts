@@ -7,6 +7,7 @@ import { env } from "@/env";
 import { testAgent } from "./agents/test-agent";
 import { spreadsheetAgent } from "./agents/spreadsheet-agent";
 import { scientificAgent } from "./agents/scientific-agent";
+import { supervisorAgent } from "./agents/supervisor-agent";
 
 /**
  * VibeSurfers Mastra Instance
@@ -17,6 +18,7 @@ export const mastra = new Mastra({
     testAgent,
     spreadsheetAgent,
     scientificAgent,
+    supervisorAgent,
   },
   // PostgreSQL storage for memory persistence
   storage: new PostgresStore({
@@ -45,4 +47,8 @@ export function getSpreadsheetAgent() {
 
 export function getScientificAgent() {
   return mastra.getAgent("scientificAgent");
+}
+
+export function getSupervisorAgent() {
+  return mastra.getAgent("supervisorAgent");
 }

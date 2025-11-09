@@ -7,6 +7,7 @@ import { agentRouter } from "@/server/api/routers/agent";
 import { columnConfigRouter } from "@/server/api/routers/column-config";
 import { mastraTestRouter } from "@/server/api/routers/mastra-test";
 import { spreadsheetAgentTestRouter } from "@/server/api/routers/spreadsheet-agent-test";
+import { supervisorRouter } from "@/server/api/routers/supervisor";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 /**
@@ -24,6 +25,7 @@ export const appRouter = createTRPCRouter({
   columnConfig: columnConfigRouter,
   mastraTest: mastraTestRouter,
   spreadsheetAgentTest: spreadsheetAgentTestRouter,
+  supervisor: supervisorRouter,
 });
 
 // export type definition of API

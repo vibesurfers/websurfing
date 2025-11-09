@@ -17,7 +17,7 @@ import { eq } from "drizzle-orm";
  */
 export const sheetWriterTool = createTool({
   id: "sheet-writer",
-  description: "Write multiple rows to a spreadsheet at once. Use 'preview' mode to show what will be created, then 'execute' mode after user confirmation. Each row is an array of cell values corresponding to column positions.",
+  description: "Write multiple rows to a spreadsheet at once. Use 'preview' mode to show what will be created, then 'execute' mode after user confirmation. Each row is an array of cell values corresponding to column positions. ⚠️ CRITICAL: ALWAYS include source URLs/citations - EVERY row MUST have at least one column with source links. Include MULTIPLE citations per cell when available - separate with commas or semicolons.",
   inputSchema: z.object({
     sheetId: z.string().uuid().describe("The UUID of the sheet to write to"),
     userId: z.string().describe("The user ID who owns this sheet"),

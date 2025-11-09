@@ -66,7 +66,24 @@ export const googleMapsTool = createTool({
 
       const response = await genAI.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: `Find the top ${maxResults} ${placeType} near ${location}. Include names, addresses, ratings, and other relevant information.`,
+        contents: `Find the top ${maxResults} ${placeType} near ${location}.
+
+⚠️ ABSOLUTE CITATION REQUIREMENT - EVERY PLACE MUST HAVE URLs ⚠️
+
+MANDATORY for EVERY single place (NO EXCEPTIONS):
+- Name
+- Full address
+- Website URL AND/OR Google Maps URL - NEVER leave blank
+- Rating if available
+- Phone number if available
+- Include MULTIPLE URLs when available (website, Maps, social media, etc.)
+
+CRITICAL REQUIREMENTS:
+- EVERY result MUST have at least one URL for citation
+- If no website exists, MUST include the Google Maps URL
+- Include ALL available URLs for each place - the more citations the better
+- Results without URLs will be REJECTED
+- When multiple sources exist for a place, include ALL of them`,
         config,
       });
 
@@ -78,16 +95,48 @@ export const googleMapsTool = createTool({
         chunkCount: groundingMetadata?.groundingChunks?.length || 0,
       });
 
-      // Extract grounded locations from Maps
+      // Extract grounded locations from Maps and validate URLs
       const places = groundingMetadata?.groundingChunks
         ?.filter((chunk: any) => chunk.maps)
-        .map((chunk: any) => ({
-          name: chunk.maps?.title || "Unknown Place",
-          address: chunk.maps?.address || undefined,
-          placeId: chunk.maps?.placeId || undefined,
-          rating: chunk.maps?.rating?.toString() || undefined,
-          uri: chunk.maps?.uri || "",
-        })) || [];
+        .map((chunk: any) => {
+          let uri = chunk.maps?.uri || "";
+
+          // Validate and clean the URI
+          if (uri) {
+            try {
+              // Check for redirect patterns
+              if (uri.includes('redirect') ||
+                  uri.includes('grounding-api') ||
+                  uri.includes('maps.app.goo.gl')) {
+                console.warn(`[Google Maps] Redirect URL detected: ${uri}`);
+
+                // For Google Maps URLs, try to construct a clean Maps URL
+                if (chunk.maps?.placeId) {
+                  uri = `https://maps.google.com/maps/place/?q=place_id:${chunk.maps.placeId}`;
+                } else if (chunk.maps?.title && chunk.maps?.address) {
+                  const query = encodeURIComponent(`${chunk.maps.title} ${chunk.maps.address}`);
+                  uri = `https://maps.google.com/maps/search/?api=1&query=${query}`;
+                }
+              }
+            } catch (error) {
+              console.error(`[Google Maps] Error validating URL: ${uri}`, error);
+            }
+          }
+
+          // Ensure every place has at least a Google Maps search URL
+          if (!uri && chunk.maps?.title) {
+            const query = encodeURIComponent(chunk.maps.title + (chunk.maps?.address ? ` ${chunk.maps.address}` : ''));
+            uri = `https://maps.google.com/maps/search/?api=1&query=${query}`;
+          }
+
+          return {
+            name: chunk.maps?.title || "Unknown Place",
+            address: chunk.maps?.address || undefined,
+            placeId: chunk.maps?.placeId || undefined,
+            rating: chunk.maps?.rating?.toString() || undefined,
+            uri: uri,
+          };
+        }) || [];
 
       const widgetToken = groundingMetadata?.googleMapsWidgetContextToken || undefined;
 

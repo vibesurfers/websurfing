@@ -59,16 +59,23 @@ Return the top ${maxResults} most relevant results in this exact JSON format:
   ]
 }
 
-IMPORTANT URL INSTRUCTIONS:
+⚠️ ABSOLUTE CITATION REQUIREMENT - NO EXCEPTIONS ⚠️
+EVERY single result MUST have a valid URL - this is NON-NEGOTIABLE!
 - Extract the ACTUAL website URL (e.g., "https://n-ix.com", "https://devsdata.com")
 - DO NOT include redirect URLs or grounding-api-redirect URLs
 - Use the main domain from the search result
 - If you see a redirect URL, extract the actual destination domain
+- If no specific website exists, use the search result page URL
+- NEVER return a result without a URL - results without URLs will be REJECTED
+- Include MULTIPLE citations when available - the more sources the better!
 
-Focus on:
-- Clean, direct website URLs only
-- Business listings with full information
-- Most recent and relevant results`,
+MANDATORY:
+- Clean, direct website URLs for EVERY result - no exceptions
+- Business listings with COMPLETE URL information
+- Include ALL relevant URLs found for each result
+- If you find multiple sources for the same information, include ALL of them
+- Every single result MUST have at least one citation URL
+- More citations = better quality results`,
       });
 
       console.log(`[Google Search] Raw response:`, result.text);
@@ -101,15 +108,72 @@ Focus on:
         };
       }
 
-      const results = parsedResults.results.slice(0, maxResults);
+      let results = parsedResults.results.slice(0, maxResults);
 
-      console.log(`[Google Search] Found ${results.length} results`);
+      // Validate URLs in results
+      const validatedResults = results.map(result => {
+        const validation: any = {
+          isValid: false,
+          isRedirect: false,
+          cleanedUrl: undefined,
+        };
+
+        try {
+          // Check if URL is properly formatted
+          const urlObj = new URL(result.url);
+          validation.isValid = true;
+
+          // Clean the URL (remove tracking params)
+          const cleanUrl = new URL(urlObj.origin + urlObj.pathname);
+          validation.cleanedUrl = cleanUrl.toString();
+
+          // Check for common redirect patterns
+          if (result.url.includes('redirect') ||
+              result.url.includes('grounding-api') ||
+              result.url.includes('bit.ly') ||
+              result.url.includes('tinyurl') ||
+              result.url.includes('goo.gl')) {
+            validation.isRedirect = true;
+            console.warn(`[Google Search] Redirect URL detected: ${result.url}`);
+
+            // Try to extract actual URL from snippet or title
+            const domainMatch = result.snippet.match(/(?:https?:\/\/)?([\w\-\.]+\.[a-z]{2,})/i);
+            if (domainMatch) {
+              const extractedDomain = domainMatch[1];
+              validation.cleanedUrl = `https://${extractedDomain}`;
+              console.log(`[Google Search] Extracted domain: ${validation.cleanedUrl}`);
+            }
+          }
+
+          // Update URL with cleaned version if available and valid
+          if (validation.cleanedUrl && validation.cleanedUrl !== result.url) {
+            result.url = validation.cleanedUrl;
+          }
+        } catch (error) {
+          validation.isValid = false;
+          console.error(`[Google Search] Invalid URL: ${result.url}`);
+        }
+
+        return {
+          ...result,
+          urlValidation: validation,
+        };
+      });
+
+      // Filter out results with invalid URLs that couldn't be fixed
+      const validResults = validatedResults.filter(r =>
+        r.urlValidation?.isValid &&
+        (!r.urlValidation?.isRedirect || r.urlValidation?.cleanedUrl)
+      );
+
+      console.log(`[Google Search] Found ${results.length} results, ${validResults.length} with valid URLs`);
 
       return {
         success: true,
-        results,
+        results: validResults,
         searchQuery,
-        resultCount: results.length,
+        resultCount: validResults.length,
+        validUrlCount: validResults.length,
       };
     } catch (error) {
       console.error("[Google Search] Error:", error);

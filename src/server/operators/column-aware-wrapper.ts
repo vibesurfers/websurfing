@@ -87,16 +87,6 @@ export class ColumnAwareWrapper {
       prompt.push('');
     }
 
-    // Add scientific template specific guidance
-    if (ctx.templateType === 'scientific') {
-      prompt.push('SCIENTIFIC RESEARCH FOCUS:');
-      prompt.push('- Prioritize highly cited, peer-reviewed papers');
-      prompt.push('- Look for direct PDF access when possible');
-      prompt.push('- Focus on recent publications (last 5 years) unless historical context is needed');
-      prompt.push('- Target academic databases: arXiv, PubMed, Google Scholar, Semantic Scholar');
-      prompt.push('- Extract precise academic metadata (authors, citations, publication details)');
-      prompt.push('');
-    }
 
     // Add column structure
     prompt.push('COLUMN STRUCTURE:');
@@ -139,13 +129,8 @@ export class ColumnAwareWrapper {
       prompt.push('');
     }
 
-    // Add task with scientific context if applicable
-    if (ctx.templateType === 'scientific') {
-      prompt.push(`TASK: Fill "${targetColumn}" based on the data in this row.`);
-      prompt.push('For academic content, ensure high quality and cite-ability.');
-    } else {
-      prompt.push(`TASK: Fill "${targetColumn}" based on the data in this row.`);
-    }
+    // Add task
+    prompt.push(`TASK: Fill "${targetColumn}" based on the data in this row.`);
     prompt.push('');
 
     return prompt.join('\n');

@@ -13,3 +13,6 @@ export { csvAnalyzerTool } from "./csv-analyzer";
 export { pdfAnalyzerTool } from "./pdf-analyzer";
 export { googleSearchTool } from "./google-search";
 export { googleMapsTool } from "./google-maps";
+export { urlValidatorTool } from "./url-validator";
+export { eventMonitorTool } from "./event-monitor";
+export { failureRecoveryTool } from "./failure-recovery";

@@ -268,62 +268,43 @@ export class OperatorController {
    * Select appropriate operator based on event type and data
    *
    * Priority:
-   * 1. Column-specific operatorType (if configured)
-   * 2. Hardcoded detection logic (fallback)
+   * 1. Column-specific operatorType (if configured) - ALWAYS RESPECTED
+   * 2. Content-based detection (fallback only when no column config)
    */
   private selectOperator(eventType: EventType, data: unknown, sheetContext?: SheetContext): OperatorName {
-    // Check if we have sheet context with column config
+    // PRIORITY 1: Check if we have sheet context with explicit column operator config
     if (sheetContext) {
       const nextColIndex = sheetContext.currentColumnIndex + 1;
       const nextColumn = sheetContext.columns[nextColIndex];
 
-      // If column has explicit operator type configured, use it!
+      // If column has explicit operator type configured, use it! This ALWAYS takes precedence.
       if (nextColumn?.operatorType) {
         console.log(`[OperatorController] Using configured operator: ${nextColumn.operatorType} for column "${nextColumn.title}"`);
         return nextColumn.operatorType as OperatorName;
       }
     }
 
-    // Fallback to content-based detection
+    // PRIORITY 2: Fallback to content-based detection ONLY when no column config exists
     switch (eventType) {
       case "user_cell_edit":
       case "robot_cell_update": {
         const cellData = data as UpdateCellInput;
         const content = cellData.content.toLowerCase().trim();
 
-        // Priority 1: Check if this is a scientific template - always use academic search for search queries
-        if (sheetContext?.templateType === 'scientific') {
-          // For scientific templates, prioritize academic search for any search-like content
-          if (this.isSearchQuery(content) || this.isAcademicSearch(content)) {
-            console.log('[OperatorController] Scientific template detected - using academic_search');
-            return "academic_search";
-          }
-
-          // For URLs in scientific context, still use url_context but could be enhanced later
-          if (this.containsUrls(content)) {
-            return "url_context";
-          }
-
-          // Default for scientific templates: structured output for data extraction
-          return "structured_output";
-        }
-
-        // Priority 2: General academic/scientific search queries (for non-scientific templates)
-        if (this.isAcademicSearch(content)) {
-          return "academic_search";
-        }
-
-        // Priority 3: Regular search queries
+        // Content-based detection for unconfigured columns
+        // Priority 2a: Regular search queries
         if (this.isSearchQuery(content)) {
+          console.log('[OperatorController] Search query detected - using google_search');
           return "google_search";
         }
 
-        // Priority 4: URLs
+        // Priority 2c: URL content
         if (this.containsUrls(content)) {
           return "url_context";
         }
 
-        // Default: structured output for data extraction
+        // Final fallback: structured output for data extraction
+        console.log('[OperatorController] No specific pattern detected - using structured_output');
         return "structured_output";
       }
 
@@ -526,36 +507,6 @@ export class OperatorController {
     }
   }
 
-  private isAcademicSearch(content: string): boolean {
-    const academicKeywords = [
-      // Research terms
-      'research', 'paper', 'papers', 'study', 'studies', 'publication', 'journal',
-      'article', 'academic', 'scholar', 'citation', 'literature', 'peer review',
-      'peer-reviewed', 'manuscript', 'thesis', 'dissertation',
-
-      // File formats
-      'pdf', 'doi', 'arxiv', 'pubmed',
-
-      // Scientific fields
-      'science', 'scientific', 'biology', 'physics', 'chemistry', 'mathematics',
-      'medicine', 'engineering', 'computer science', 'machine learning', 'ai',
-      'psychology', 'neuroscience', 'genomics', 'bioinformatics',
-
-      // Research indicators
-      'highly cited', 'impact factor', 'breakthrough', 'seminal',
-      'cutting edge', 'state of the art', 'systematic review'
-    ];
-
-    // Check for academic keywords
-    const keywordMatches = academicKeywords.filter(keyword =>
-      content.includes(keyword)
-    ).length;
-
-    // Also check for research-specific prefixes
-    const researchPrefixes = /^(research:|find papers|find research|academic search|literature review)/i;
-
-    return keywordMatches >= 1 || researchPrefixes.test(content);
-  }
 
   private isSearchQuery(content: string): boolean {
     // Check for search prefixes
