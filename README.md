@@ -1,357 +1,171 @@
-# VibeSheets 🚀
+# Better Clay: AI-Powered Lead Enrichment 🎯
 
-**Team Vibesurfers** | YC Vibe Coding Hackathon 2025
+> Transform any spreadsheet into an intelligent lead enrichment platform using Google Search and AI - no stale databases needed.
 
-> A natural language-powered spreadsheet that transforms cells into AI agents. Type, ask, automate - let Gemini do the work.
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](#open-source-contributions) [![BYOK](https://img.shields.io/badge/API_Keys-Bring_Your_Own-orange.svg)](#bring-your-own-keys)
 
-[![Demo](https://img.shields.io/badge/Demo-Live-green)]() [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+## Why Better Clay?
 
-## 🎯 The Problem We're Solving
+Traditional tools like Clay.com charge premium prices for outdated database information. **Better Clay** takes a revolutionary approach:
 
-Modern spreadsheets are powerful but rigid. Data enrichment requires switching between tabs, copy-pasting, and manual API calls. What if your spreadsheet could:
-- **Search the web** and populate results automatically
-- **Extract structured data** from messy text
-- **Call APIs** based on natural language
-- **Chain operations** across cells like a visual programming language
+- **Real-time Google Search**: Get fresh data directly from the web, not months-old databases
+- **AI-Powered Extraction**: Use Gemini to intelligently extract and structure data from any source
+- **Bring Your Own Keys**: No vendor lock-in or markups - use your own API keys and control your costs
+- **Open Source**: Fully customizable and extendable to your needs
 
-**VibeSheets** makes this real with Gemini 2.5.
+## What It Does
 
-## 💡 What We Built
+Better Clay is an AI-powered spreadsheet that can:
 
-A collaborative spreadsheet where **every cell is a potential AI agent**:
+1. **Search the web** for any information using natural language
+2. **Extract structured data** from websites and search results
+3. **Enrich leads** by finding company info, contacts, and insights
+4. **Identify ICPs** by searching for specific criteria and signals
 
-```
-Cell A1: "search for Next.js 15 features"
-  ↓ (Gemini Google Search)
-Cell B1: https://nextjs.org/docs, https://react.dev...
-  ↓ (Gemini URL Context)
-Cell C1: { features: [...], releaseDate: "..." }
-  ↓ (Gemini Structured Output)
-Cell D1: "✓ 12 features extracted"
-```
-
-### Key Features
-
-1. **🔍 Natural Language Triggers**
-   - Type `search: best coffee in SF` → Gemini searches and populates adjacent cells
-   - Type URLs → Gemini extracts and summarizes content
-   - Type raw data → Gemini structures it into JSON
-
-2. **🤖 Autonomous Cascading**
-   - Robot mode: Updates trigger new AI operations automatically
-   - Human mode: Full control over each step
-   - Event queue visualizes the entire processing pipeline
-
-3. **🔗 4 Gemini Operators**
-   - **Google Search**: Real-time web search with citations
-   - **URL Context**: Multi-URL content extraction and comparison
-   - **Structured Output**: Type-safe JSON generation with Zod schemas
-   - **Function Calling**: Natural language → API calls
-
-4. **📊 Multi-Sheet Workspace**
-   - Create unlimited sheets per user
-   - Real-time updates across team members
-   - Event history and audit trail
-
-## 🧠 How We Used Gemini
-
-### 1. **Google Search Grounding** (`google_search` operator)
-```typescript
-// User types: "who won 2024 euro cup?"
-const result = await gemini.generateContent({
-  contents: cellContent,
-  config: { tools: [{ googleSearch: {} }] }
-});
-// → Returns: "Spain won" + grounding metadata with sources
-```
-
-**Impact**: No more tab-switching. Search results flow directly into your workflow.
-
-### 2. **URL Context Tool** (`url_context` operator)
-```typescript
-// User pastes: https://docs.api.com/v1
-const result = await gemini.generateContent({
-  contents: "Extract API endpoints and their parameters",
-  config: { tools: [{ urlContext: {} }] }
-});
-// → Returns: Structured API documentation
-```
-
-**Impact**: Compare docs, extract data from multiple sources in one cell.
-
-### 3. **Structured Output** (`structured_output` operator)
-```typescript
-// User pastes messy customer data
-const result = await gemini.generateContent({
-  contents: rawText,
-  config: {
-    responseMimeType: "application/json",
-    responseJsonSchema: zodToJsonSchema(CustomerSchema)
-  }
-});
-// → Returns: Type-safe { name, email, phone } object
-```
-
-**Impact**: Turn chaos into clean data. Always valid, always typed.
-
-### 4. **Function Calling** (`function_calling` operator)
-```typescript
-// User types: "schedule meeting with Alice tomorrow at 2pm"
-const result = await gemini.generateContent({
-  contents: cellContent,
-  config: {
-    tools: [{
-      functionDeclarations: [scheduleMeetingFunction]
-    }]
-  }
-});
-// → Gemini calls: scheduleMeeting({ attendee: "Alice", ... })
-```
-
-**Impact**: Natural language becomes executable code.
-
-### 5. **Multimodal Vision** (coming soon)
-- Drag images into cells → Gemini describes/extracts text
-- Screenshot → Structured data extraction
-
-## 🏗️ Technical Architecture
+### Example: Lead Enrichment Workflow
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  Next.js 15 + React 19 (Tiptap Editor)             │
-│  ┌───────────────────────────────────────────────┐ │
-│  │  User edits cell → Event Queue (PostgreSQL)   │ │
-│  │         ↓                                      │ │
-│  │  OperatorController dispatches to Gemini      │ │
-│  │         ↓                                      │ │
-│  │  Gemini 2.5 Flash processes with tools        │ │
-│  │         ↓                                      │ │
-│  │  SheetUpdater writes results back             │ │
-│  │         ↓                                      │ │
-│  │  Real-time UI updates (tRPC)                  │ │
-│  └───────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────┘
+Cell A1: "search: [Company Name] funding news 2024"
+  → B1: Latest funding info from web search
+
+Cell A2: "find LinkedIn profile of CEO at [Company]"
+  → B2: CEO's LinkedIn URL and summary
+
+Cell A3: "[Company Website URL]"
+  → B3: Extracted company description, team size, tech stack
 ```
 
-### Tech Stack
-- **Frontend**: Next.js 15, React 19, Tiptap (rich text tables)
-- **Backend**: tRPC, Drizzle ORM, PostgreSQL (Neon)
-- **AI**: Vertex AI Gemini 2.5 Flash, Google Gen AI SDK
-- **Auth**: NextAuth.js (Google OAuth)
-- **Deployment**: Vercel
+## Current Features
 
-## 🎬 Demo Scenarios
+- **AI-Powered Spreadsheet**: Every cell can execute searches and extract data
+- **Google Search Integration**: Real-time web search in any cell
+- **URL Content Extraction**: Paste URLs to automatically extract and summarize
+- **Structured Data Output**: Convert messy web data into clean JSON
+- **Natural Language Commands**: Type questions, get answers
+- **Template System**: Save and reuse enrichment workflows
 
-### Scenario 1: Competitive Analysis
-```
-A1: "search top 5 CRM tools 2025"
-  → B1-B5: URLs of CRM products
-B1: [URLs] + "extract pricing"
-  → C1-C5: { product, pricing, features }
-C1: [Structured data] + "compare features"
-  → D1: Full comparison table
-```
+## Bring Your Own Keys
 
-### Scenario 2: Data Enrichment Pipeline
-```
-A1: "John Doe, john@example.com"
-  → B1: { name: "John Doe", email: "john@example.com" }
-B1: [Structured data] + "search for LinkedIn profile"
-  → C1: LinkedIn URL
-C1: [URL] + "extract work history"
-  → D1: { companies: [...], roles: [...] }
-```
+This is a **BYOK (Bring Your Own Keys)** repository. You control your costs:
 
-### Scenario 3: API Documentation Assistant
-```
-A1: "https://stripe.com/docs/api"
-  → B1: "Stripe API allows payments, subscriptions..."
-A2: "extract all payment endpoints"
-  → B2: { endpoints: ["/charges", "/refunds", ...] }
-A3: "generate curl examples"
-  → B3: curl -X POST https://api.stripe.com/v1/charges...
-```
+### Required API Keys
 
-## 🚀 Getting Started
+Create a `.env` file:
 
-### Prerequisites
 ```bash
-node >= 18
-pnpm >= 8
-PostgreSQL database (or Neon)
-Google Cloud Project with Vertex AI enabled
-```
-
-### Installation
-
-1. **Clone and install**
-```bash
-git clone https://github.com/vibesurfers/websurfing
-cd vibesheets
-pnpm install
-```
-
-2. **Configure environment**
-```bash
-cp .env.example .env
-```
-
-Edit `.env`:
-```bash
-# Database
-DATABASE_URL="postgresql://..."
-
-# Google Cloud (for Vertex AI)
+# Google Cloud / Gemini (Required)
 GOOGLE_CLOUD_PROJECT="your-project-id"
 GOOGLE_CLOUD_LOCATION="us-central1"
 
-# Auth with ADC (local development)
-# Run: gcloud auth application-default login
+# Or use Google AI Studio (simpler)
+GOOGLE_GENERATIVE_AI_API_KEY="your-gemini-api-key"
 
-# Or use service account JSON (production)
-GOOGLE_CREDENTIALS_JSON='{"type":"service_account",...}'
+# Database (Required)
+DATABASE_URL="postgresql://..."
 
-# NextAuth
-AUTH_SECRET="your-secret"
-AUTH_GOOGLE_ID="your-google-oauth-id"
-AUTH_GOOGLE_SECRET="your-google-oauth-secret"
+# Authentication (Required)
+AUTH_SECRET="generate-random-secret"
+AUTH_GOOGLE_ID="oauth-client-id"
+AUTH_GOOGLE_SECRET="oauth-secret"
 ```
 
-3. **Setup database**
+## Quick Start
+
 ```bash
+# Clone the repository
+git clone https://github.com/vibesurfers/websurfing
+cd websurfing
+
+# Install dependencies
+pnpm install
+
+# Configure your API keys
+cp .env.example .env
+# Edit .env with your keys
+
+# Setup database
 pnpm db:push
-```
 
-4. **Run development server**
-```bash
+# Start development
 pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
 
-### Testing Gemini Operators
+## How to Use for Lead Enrichment
 
-```bash
-# Test individual operators
-pnpm test:gemini:search       # Google Search
-pnpm test:gemini:url          # URL Context
-pnpm test:gemini:structured   # Structured Output
-pnpm test:gemini:functions    # Function Calling
+1. **Import your leads** (CSV or manual entry)
+2. **Use search commands** to find information:
+   - `"search: [Company] latest news"`
+   - `"find email pattern for [Domain]"`
+   - `"[Company] technology stack site:stackshare.com"`
+3. **Extract from URLs**: Paste company websites, LinkedIn profiles, news articles
+4. **Export enriched data** as CSV for your CRM
 
-# Test complete pipeline
-pnpm test:gemini:e2e
+## Roadmap
 
-# Run all tests
-pnpm test:gemini:all
-```
+### Current (Working Now)
+- ✅ Spreadsheet interface with AI agent
+- ✅ Google Search integration
+- ✅ URL content extraction
+- ✅ Natural language processing
+- ✅ CSV import/export
 
-## 📚 Usage Guide
+### Phase 1: Lead Enrichment Features (Q1 2025)
+- [ ] ICP scoring algorithm
+- [ ] Email pattern detection
+- [ ] LinkedIn profile extraction
+- [ ] Technology stack identification
+- [ ] Company size and growth signals
 
-### Basic Operations
+### Phase 2: Advanced Intelligence (Q2 2025)
+- [ ] Intent signal detection from news/jobs
+- [ ] Competitive intelligence gathering
+- [ ] Automated enrichment workflows
+- [ ] Bulk processing with rate limiting
 
-1. **Create a new sheet**
-   - Click "+ New" in the sheet selector
-   - Name your sheet
+### Phase 3: Integrations (Q3 2025)
+- [ ] Direct CRM sync (Salesforce, HubSpot)
+- [ ] Webhook triggers for real-time enrichment
+- [ ] Additional data sources (LinkedIn, Twitter)
+- [ ] Custom scoring models
 
-2. **Trigger Google Search**
-   - Type: `search: your query` or `who is...?` or `what is...?`
-   - Wait 5 seconds or click "Process Events"
-   - Results appear in adjacent cells
+## Open Source Contributions
 
-3. **Process URLs**
-   - Paste URLs in cells
-   - They auto-process with URL Context operator
-   - Summaries/extractions populate automatically
+We welcome contributions! This project is in active development.
 
-4. **Extract Structured Data**
-   - Paste raw text (emails, invoices, resumes)
-   - Gemini extracts to JSON schema
-   - Results are type-safe and validated
+### Good First Issues
+- Add email pattern detection
+- Implement company size extraction
+- Create enrichment templates
+- Add export formats (Excel, JSON)
+- Improve search query generation
 
-5. **Toggle Robot Mode**
-   - **Robots: ON** (orange) - Updates cascade automatically
-   - **Robots: OFF** (purple) - Manual control over each step
+### How to Contribute
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-### Advanced: Custom Operators
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-Create your own Gemini operator:
+## Tech Stack
 
-```typescript
-// src/server/operators/my-operator.ts
-export class MyCustomOperator implements BaseOperator {
-  async operation(input: MyInput): Promise<MyOutput> {
-    const client = getGeminiClient();
-    const result = await client.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: input.prompt,
-      config: { /* your config */ }
-    });
-    return { data: result.text };
-  }
-}
-```
+- **Frontend**: Next.js 15, React 19, TipTap Editor
+- **Backend**: tRPC, Drizzle ORM, PostgreSQL
+- **AI**: Google Gemini 2.5 Flash
+- **Auth**: NextAuth.js
+- **Search**: Google Search API via Gemini
 
-Register in `operator-controller.ts`:
-```typescript
-this.operators.set("my_operator", new MyCustomOperator());
-```
+## Community
 
-## 🎯 Hackathon Alignment
+- **Issues**: [GitHub Issues](https://github.com/vibesurfers/websurfing/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/vibesurfers/websurfing/discussions)
 
-### Problem Statement: **Enhanced Integrations**
-
-> "How can we plug in databases, DevOps, infrastructure, auth, and other necessary elements into software generation tools?"
-
-**Our Answer**: VibeSheets proves Gemini can be the universal adapter between:
-- Natural language (user intent)
-- External APIs (Google Search, URLs, functions)
-- Structured data (databases, spreadsheets)
-
-### Why This Matters
-
-1. **Impact (25%)** 
-   - Replaces 10+ tools: Zapier, Google Sheets formulas, web scrapers, API clients
-   - Saves hours on data enrichment workflows
-   - Makes AI accessible to non-programmers
-
-2. **Demo (50%)**
-   - Fully functional with 4 production-ready operators
-   - Real-time cascading updates
-   - Live event queue visualization
-   - E2E tests demonstrate reliability
-
-3. **Creativity (15%)**
-   - Novel "cell as agent" paradigm
-   - Visual programming meets natural language
-   - Robot/human toggle for controllable autonomy
-
-4. **Pitch (10%)**
-   - Clear value prop: "Your spreadsheet, turbocharged by Gemini"
-   - Relatable demos: competitive analysis, data enrichment
-   - Enterprise-ready architecture
-
-## 🔮 Future Roadmap
-
-### Short-term
-- [ ] Image/PDF cell support (Gemini Vision)
-- [ ] Real-time collaboration (multiplayer)
-- [ ] Formula language: `=GEMINI("search: ...", A1)`
-- [ ] Operator marketplace (community operators)
-
-### Long-term
-- [ ] Gemini Code Assist integration (generate Python/SQL in cells)
-- [ ] Database connectors (PostgreSQL, BigQuery)
-- [ ] Scheduled automations (cron-like triggers)
-- [ ] Export to Google Sheets/Excel with preserved logic
-
-## 👥 Team Vibesurfers
-
-- **Maksym** - Gemini integration, Mastra Agent integration, deployment
-- **Alex** - Spreadsheet component
-
-## 📄 License
+## License
 
 MIT License - see [LICENSE](LICENSE)
 
+---
 
-[View Demo]() | [Watch Video]() | [GitHub](https://github.com/vibesurfers/websurfing)
+**Note**: This project is under active development. The lead enrichment features are being built on top of the existing spreadsheet infrastructure. Currently, it functions as a general-purpose AI spreadsheet that can be used for web research and data collection, with specialized lead enrichment capabilities coming soon.
